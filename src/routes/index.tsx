@@ -74,6 +74,9 @@ function Index() {
               description="যেকোনো প্রশ্ন বাংলা বা ইংরেজিতে লিখুন"
               icon={<Send className="size-10 -rotate-12 text-primary" />}
             >
+              <Send className="size-10 -rotate-12 text-primary" />
+              <h2 className="font-display text-2xl font-semibold">আজ কীভাবে সাহায্য করতে পারি?</h2>
+              <p className="text-sm text-muted-foreground">যেকোনো প্রশ্ন বাংলা বা ইংরেজিতে লিখুন</p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 {suggestions.map((s) => (
                   <button
