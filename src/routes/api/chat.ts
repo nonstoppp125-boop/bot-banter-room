@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.LOVABLE_API_KEY;
+        const apiKey = process.env['LOVABLE_API_KEY'];
         if (!apiKey) return Response.json({ error: "AI is not configured" }, { status: 500 });
         let messages: UIMessage[];
         try {
