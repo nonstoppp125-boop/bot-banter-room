@@ -2,11 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
-import { Send, SquarePen } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
-  ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
@@ -49,79 +48,80 @@ function Index() {
     sendMessage({ text });
   };
 
+  const composer = (
+    <PromptInput className="composer" onSubmit={(msg) => send(msg.text)}>
+      <PromptInputTextarea autoFocus placeholder="যেকোনো কিছু জিজ্ঞেস করুন" className="min-h-12 px-5 pt-4 text-[15px]" />
+      <PromptInputFooter className="px-3 pb-3">
+        <PromptInputTools />
+        <PromptInputSubmit status={status} onStop={stop} className="rounded-full" />
+      </PromptInputFooter>
+    </PromptInput>
+  );
+  const empty = messages.length === 0;
+
   return (
-    <div className="flex h-dvh flex-col bg-background">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground">
-            <Send className="size-4 -rotate-12" />
-          </div>
-          <span className="font-display text-lg font-semibold">Doot</span>
-        </div>
+    <div className="flex h-dvh flex-col bg-background font-sans">
+      <header className="flex items-center justify-between px-3 py-2">
+        <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Doot</span>
         <button
           onClick={() => setMessages([])}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted"
+          aria-label="নতুন চ্যাট"
+          className="grid size-9 place-items-center rounded-lg text-foreground hover:bg-accent"
         >
-          <SquarePen className="size-4" /> নতুন চ্যাট
+          <SquarePen className="size-5" />
         </button>
       </header>
 
-      <Conversation className="flex-1">
-        <ConversationContent className="mx-auto w-full max-w-3xl">
-          {messages.length === 0 ? (
-            <ConversationEmptyState
-              title="আজ কীভাবে সাহায্য করতে পারি?"
-              description="যেকোনো প্রশ্ন বাংলা বা ইংরেজিতে লিখুন"
-              icon={<Send className="size-10 -rotate-12 text-primary" />}
-            >
-              <Send className="size-10 -rotate-12 text-primary" />
-              <h2 className="font-display text-2xl font-semibold">আজ কীভাবে সাহায্য করতে পারি?</h2>
-              <p className="text-sm text-muted-foreground">যেকোনো প্রশ্ন বাংলা বা ইংরেজিতে লিখুন</p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => send(s)}
-                    className="rounded-full border border-border px-4 py-2 text-sm hover:bg-muted"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </ConversationEmptyState>
-          ) : (
-            messages.map((m) => (
-              <Message from={m.role} key={m.id}>
-                <MessageContent>
-                  {m.parts.map((p, i) =>
-                    p.type === "text" ? (
-                      m.role === "assistant" ? (
-                        <MessageResponse key={i}>{p.text}</MessageResponse>
-                      ) : (
-                        <span key={i} className="whitespace-pre-wrap">{p.text}</span>
-                      )
-                    ) : null,
-                  )}
-                </MessageContent>
-              </Message>
-            ))
-          )}
-          {status === "submitted" && <Shimmer>ভাবছি...</Shimmer>}
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </ConversationContent>
-        <ConversationScrollButton />
-      </Conversation>
-
-      <div className="mx-auto w-full max-w-3xl px-4 pb-4">
-        <PromptInput onSubmit={(msg) => send(msg.text)}>
-          <PromptInputTextarea autoFocus placeholder="মেসেজ লিখুন..." />
-          <PromptInputFooter>
-            <PromptInputTools />
-            <PromptInputSubmit status={status} onStop={stop} />
-          </PromptInputFooter>
-        </PromptInput>
-        <p className="mt-2 text-center text-xs text-muted-foreground">Doot ভুল করতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।</p>
-      </div>
+      {empty ? (
+        <main className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
+          <h1 className="mb-8 text-center font-display text-2xl font-medium sm:text-3xl">
+            আজ কীভাবে সাহায্য করতে পারি?
+          </h1>
+          <div className="w-full max-w-3xl">{composer}</div>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onClick={() => send(s)}
+                className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-accent"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </main>
+      ) : (
+        <>
+          <Conversation className="flex-1">
+            <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6">
+              {messages.map((m) => (
+                <Message from={m.role} key={m.id}>
+                  <MessageContent>
+                    {m.parts.map((p, i) =>
+                      p.type === "text" ? (
+                        m.role === "assistant" ? (
+                          <MessageResponse key={i}>{p.text}</MessageResponse>
+                        ) : (
+                          <span key={i} className="whitespace-pre-wrap">{p.text}</span>
+                        )
+                      ) : null,
+                    )}
+                  </MessageContent>
+                </Message>
+              ))}
+              {status === "submitted" && <Shimmer>ভাবছি...</Shimmer>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+          <div className="mx-auto w-full max-w-3xl px-4 pb-3">
+            {composer}
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Doot ভুল করতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
