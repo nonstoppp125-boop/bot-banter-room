@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Phone installation uses a web manifest and static icons only; do not add app-shell service workers unless offline use is explicitly requested, to keep previews and updates safe.
