@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Doot — AI চ্যাট",
-  "short_name": "Doot",
-  "description": "বাংলা ও ইংরেজিতে Doot AI চ্যাট।",
+  "name": "Liza",
+  "short_name": "Liza",
+  "description": "বাংলা ও ইংরেজিতে Liza AI চ্যাট।",
   "lang": "bn",
   "start_url": "/",
   "scope": "/",
