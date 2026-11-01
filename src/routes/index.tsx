@@ -21,9 +21,9 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Doot — AI চ্যাট" },
+      { title: "Liza — AI চ্যাট" },
       { name: "description", content: "ChatGPT-এর মতো AI চ্যাট, বাংলা ও ইংরেজিতে।" },
-      { property: "og:title", content: "Doot — AI চ্যাট" },
+      { property: "og:title", content: "Liza — AI চ্যাট" },
       { property: "og:description", content: "ChatGPT-এর মতো AI চ্যাট, বাংলা ও ইংরেজিতে।" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -62,7 +62,7 @@ function Index() {
   return (
     <div className="flex h-dvh flex-col bg-background font-sans">
       <header className="flex items-center justify-between px-3 py-2">
-        <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Doot</span>
+        <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Liza</span>
         <button
           onClick={() => setMessages([])}
           aria-label="নতুন চ্যাট"
@@ -117,7 +117,7 @@ function Index() {
           <div className="mx-auto w-full max-w-3xl px-4 pb-3">
             {composer}
             <p className="mt-2 text-center text-xs text-muted-foreground">
-              Doot ভুল করতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।
+              Liza ভুল করতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।
             </p>
           </div>
         </>
