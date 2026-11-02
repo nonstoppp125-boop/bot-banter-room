@@ -33,6 +33,18 @@ export async function createMultiAgentResponsesCall(
   instructions: string,
   originalMessages: UIMessage[],
 ) {
+  // Keep the free-tier-friendly path to one model request by default.
+  // Enable the higher-cost parallel agent workflow only when explicitly configured.
+  if (process.env.DOOT_MULTI_AGENT !== "true") {
+    return createResponsesCall(
+      request,
+      config,
+      messages,
+      instructions,
+      originalMessages,
+    );
+  }
+
   const reports = await Promise.allSettled(
     AGENTS.map(async (agent) => {
       const call = createResponsesCall(
