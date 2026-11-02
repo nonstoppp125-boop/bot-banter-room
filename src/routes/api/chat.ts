@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, type UIMessage } from "ai";
-import { createResponsesCall } from "@/lib/ai/responses";
+import { createMultiAgentResponsesCall } from "@/lib/ai/orchestrator";
 
 const SYSTEM =
   "You are Doot, a friendly helpful assistant. Reply in the same language the user writes in (Bangla if they write Bangla). Use markdown when helpful.";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/api/chat")({
           return Response.json({ error: "Invalid request" }, { status: 400 });
         }
         const modelMessages = await convertToModelMessages(messages);
-        return createResponsesCall(
+        return createMultiAgentResponsesCall(
           request,
           { baseURL: "https://ai.gateway.lovable.dev/v1", apiKey, model: "openai/gpt-6-astra" },
           modelMessages,
