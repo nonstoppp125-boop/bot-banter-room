@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SquarePen } from "lucide-react";
 import {
   Conversation,
@@ -18,13 +18,18 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Liza — AI চ্যাট" },
-      { name: "description", content: "ChatGPT-এর মতো AI চ্যাট, বাংলা ও ইংরেজিতে।" },
-      { property: "og:title", content: "Liza — AI চ্যাট" },
-      { property: "og:description", content: "ChatGPT-এর মতো AI চ্যাট, বাংলা ও ইংরেজিতে।" },
+      { title: "Doot — AI Assistant" },
+      { name: "description", content: "Doot — বাংলা ও ইংরেজিতে AI assistant।" },
+      { property: "og:title", content: "Doot — AI Assistant" },
+      { property: "og:description", content: "Doot — বাংলা ও ইংরেজিতে AI assistant।" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -36,6 +41,23 @@ const suggestions = ["আমাকে একটা গল্প বলো", "Tel
 
 function Index() {
   const [error, setError] = useState<string | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+  }, []);
+
+  const installApp = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     onError: (e) => setError(e.message || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।"),
@@ -62,7 +84,14 @@ function Index() {
   return (
     <div className="flex h-dvh flex-col bg-background font-sans">
       <header className="flex items-center justify-between px-3 py-2">
-        <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Liza</span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Doot</span>
+          {installPrompt && (
+            <button onClick={installApp} className="rounded-full bg-primary px-3 py-2 text-xs font-medium text-primary-foreground">
+              Install app
+            </button>
+          )}
+        </div>
         <button
           onClick={() => setMessages([])}
           aria-label="নতুন চ্যাট"

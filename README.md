@@ -1,51 +1,56 @@
-# Doot — সম্পাদনাযোগ্য ওয়েব অ্যাপ
+# Doot — ফ্রি-টিয়ার AI চ্যাট ও Android PWA
 
-এই ZIP-এ অ্যাপের সম্পূর্ণ সম্পাদনাযোগ্য সোর্স কোড, ছবি ও প্রয়োজনীয় সেটিংস আছে। এটি Android APK বা iPhone IPA নয়; ZIP সরাসরি ফোনে ইনস্টল হবে না।
+Doot হলো একটি installable web app। এটি APK নয়; HTTPS-এ publish করার পর Android Chrome থেকে **Install app / Add to Home screen** দিয়ে ইনস্টল করা যাবে। চ্যাট চালাতে ইন্টারনেট প্রয়োজন।
 
-## ফোনে অ্যাপ হিসেবে যোগ করা
+## সম্পূর্ণ ফ্রি রাখার সেটআপ
 
-প্রথমে Lovable থেকে অ্যাপটি Publish করতে হবে; এই প্যাকেজ তৈরি করার সময় অ্যাপ প্রকাশ করা হয়নি। প্রকাশিত HTTPS লিংক খুলুন:
+- **AI:** Google Gemini API Free Tier ব্যবহার করে। Free tier-এ নির্দিষ্ট মডেল ও usage quota আছে; quota শেষ হলে অপেক্ষা করতে হবে। Unlimited free AI-এর নিশ্চয়তা নেই।
+- **Hosting:** Cloudflare-এর Free plan-এ deploy করা যাবে; hosting/worker limits প্রযোজ্য।
+- **No paid fallback:** অ্যাপ নিজে থেকে কোনো paid provider-এ switch করবে না। Billing/payment method যোগ করবেন না।
+- Gemini Free Tier-এর availability Google account/project অনুযায়ী বদলাতে পারে। Free tier না দেখালে paid billing চালু করবেন না; থামুন।
 
-- Android: Chrome মেনু → Add to Home screen / Install app (ব্রাউজারভেদে নাম আলাদা হতে পারে)।
-- iPhone: Safari → Share → Add to Home Screen।
+Google-এর free-tier request data product improvement-এর জন্য ব্যবহৃত হতে পারে। সংবেদনশীল বা গোপন তথ্য পাঠাবেন না।
 
-হোম স্ক্রিনে Doot আইকন থাকবে; সেখান থেকে আলাদা অ্যাপের মতো খুলতে পারবেন। ইন্টারনেট প্রয়োজন, অফলাইনে চ্যাট চলবে না। এটি App Store/Play Store প্যাকেজ নয়।
+## Gemini API key তৈরি
 
-## নিজের কম্পিউটারে চালানো
+1. Google AI Studio খুলুন: https://aistudio.google.com/apikey
+2. API key তৈরি করুন এবং নিশ্চিত করুন project-এ **Free Tier** access আছে।
+3. key শুধু server-side environment secret হিসেবে দিন: `GEMINI_API_KEY`।
+4. key কখনো frontend code, GitHub commit, chat message, বা `VITE_` variable-এ রাখবেন না।
 
-বর্তমান সমর্থিত Node.js (22.12+ বা নতুন LTS) ও Bun ইনস্টল করুন। ZIP খুলে `doot-source` ফোল্ডারে টার্মিনাল খুলুন:
+লোকাল development-এর জন্য `.env.example` কপি করে `.env` বানান, তারপর নিজের key দিন। `.env` commit করবেন না।
+
+## চালানো ও যাচাই
+
+প্রয়োজন: Node.js 22.12+ এবং Bun।
 
 ```sh
 bun install
 bun run dev
 ```
 
-টার্মিনালে দেখানো লোকাল লিংক ব্রাউজারে খুলুন। যাচাই করতে `bun run test`, আর হোস্ট করার ফাইল তৈরি করতে `bun run build`।
+পরীক্ষা ও production build:
 
-## AI চালানোর গুরুত্বপূর্ণ শর্ত
+```sh
+bun run test
+bun run build
+```
 
-বর্তমান চ্যাট Lovable AI Gateway ব্যবহার করে। এই ZIP-এ কোনো গোপন API key দেওয়া হয়নি। নিজের সার্ভারে AI চালাতে gateway access-সহ `LOVABLE_API_KEY` সার্ভারের environment-এ সেট করতে হবে। লোকাল ব্যবহারে `.env.example` থেকে `.env` বানিয়ে নিজের key দিন। কখনো key প্রকাশ করবেন না বা `VITE_` দিয়ে রাখবেন না। শুধু কোড ডাউনলোড করলেই gateway access পাওয়া যায় না।
+Default mode-এ প্রতিটি user message-এর জন্য একটি model call হয়, যাতে free quota বাঁচে। `DOOT_MULTI_AGENT=true` দিলে দুইটি parallel reviewer/solver call ও একটি synthesis call হতে পারে—এতে quota দ্রুত শেষ হবে। সাধারণ ব্যবহারে এটি বন্ধ রাখুন।
 
-Key না থাকলে পেজ খুলবে, কিন্তু AI উত্তর দেবে না। AI ব্যবহার ও হোস্টিং সম্পূর্ণ বিনামূল্যে থাকার নিশ্চয়তা নেই; সংশ্লিষ্ট সেবার নিয়ম ও খরচ প্রযোজ্য।
+## Android-এ install
 
-বর্তমানে এটি আলাদা AI চ্যাট; আপনার আগের Telegram বট এখনো যুক্ত নয়।
+Cloudflare-এ server-side app deploy করে HTTPS URL পাওয়ার পর Android Chrome-এ URL খুলুন → browser menu → **Install app** অথবা **Add to Home screen**। এখনো live deployment URL তৈরি হয়নি; শুধু repository branch থেকে app install করা যাবে না।
 
-## ডিজাইন ও কাজ পরিবর্তন
+## Hosting
 
-- মূল চ্যাট পেজ, নাম, শুরুর প্রশ্ন: `src/routes/index.tsx`
-- রং, ফন্ট ও ডিজাইন: `src/styles.css`
-- মেসেজ দেখানো: `src/components/ai-elements/message.tsx`
-- মেসেজ লেখার বক্স: `src/components/ai-elements/prompt-input.tsx`
-- AI অনুরোধ ও নির্দেশনা: `src/routes/api/chat.ts`
-- AI সেবা সংযোগ: `src/lib/ai/responses.ts`
-- ফোনের অ্যাপ নাম: `public/manifest.webmanifest`
-- অ্যাপ আইকন: `public/icons/`
-- পেজের সাধারণ তথ্য: `src/routes/__root.tsx`
+Cloudflare Free account ব্যবহার করে repository import ও server-side `GEMINI_API_KEY` secret configure করতে হবে। Static-only hosting যথেষ্ট নয়, কারণ `/api/chat` সার্ভারে চলে। Deployment config/build output যাচাই না করে deploy সফল হয়েছে বলা যাবে না।
 
-VS Code বা যেকোনো কোড এডিটরে পরিবর্তন করতে পারবেন। পরিবর্তন ফোনে পৌঁছাতে আবার প্রকাশ করতে হবে। Lovable-এ পরিবর্তন চালিয়ে যেতে মূল প্রজেক্ট ব্যবহার করুন; GitHub সংযোগ দিয়েও সোর্স সংরক্ষণ করা যায়।
+## কোডের মূল ফাইল
 
-## হোস্টিং
-
-এটি React 19, TypeScript, Tailwind CSS ও TanStack Start অ্যাপ। AI উত্তর দেওয়ার অংশ সার্ভারে চলে; শুধু static HTML hosting যথেষ্ট নয়। বর্তমান configuration Cloudflare-compatible output ব্যবহার করে; অন্য হোস্টে দিলে configuration বদলানো লাগতে পারে।
-
-`node_modules`, generated build output, repository metadata ও গোপন environment files বাদ দেওয়া হয়েছে। `package.json` ও `bun.lock` থেকে dependency আবার ইনস্টল করা যাবে।
+- Chat UI: `src/routes/index.tsx`
+- API route: `src/routes/api/chat.ts`
+- Gemini provider: `src/lib/ai/gemini.ts`
+- Multi-agent workflow: `src/lib/ai/orchestrator.ts`
+- PWA manifest: `public/manifest.webmanifest`
+- Service worker: `public/sw.js`
