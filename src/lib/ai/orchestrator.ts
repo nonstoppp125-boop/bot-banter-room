@@ -1,7 +1,7 @@
 import type { ModelMessage, UIMessage } from "ai";
-import { createResponsesCall } from "./responses";
+import { createGeminiCall } from "./gemini";
 
-type GatewayConfig = {
+type GeminiConfig = {
   baseURL: string;
   apiKey: string;
   model: string;
@@ -21,22 +21,20 @@ const AGENTS = [
 ] as const;
 
 /**
- * Base multi-agent pipeline:
+ * Optional multi-agent pipeline:
  * 1. Two independent agents analyze the same conversation in parallel.
  * 2. A final Doot response synthesizes their findings.
- * The final answer remains streamed to the existing chat UI.
+ * Default is one request to conserve Gemini Free Tier quota.
  */
 export async function createMultiAgentResponsesCall(
   request: Request,
-  config: GatewayConfig,
+  config: GeminiConfig,
   messages: ModelMessage[],
   instructions: string,
   originalMessages: UIMessage[],
 ) {
-  // Keep the free-tier-friendly path to one model request by default.
-  // Enable the higher-cost parallel agent workflow only when explicitly configured.
   if (process.env.DOOT_MULTI_AGENT !== "true") {
-    return createResponsesCall(
+    return createGeminiCall(
       request,
       config,
       messages,
@@ -47,12 +45,7 @@ export async function createMultiAgentResponsesCall(
 
   const reports = await Promise.allSettled(
     AGENTS.map(async (agent) => {
-      const call = createResponsesCall(
-        request,
-        config,
-        messages,
-        agent.instructions,
-      );
+      const call = createGeminiCall(request, config, messages, agent.instructions);
       return { name: agent.name, report: await call.result.text };
     }),
   );
@@ -65,9 +58,8 @@ export async function createMultiAgentResponsesCall(
     result.status === "fulfilled" ? [result.value] : [],
   );
 
-  // Fail open: a temporary agent failure must not make Doot unavailable.
   if (successfulReports.length === 0) {
-    return createResponsesCall(
+    return createGeminiCall(
       request,
       config,
       messages,
@@ -87,7 +79,7 @@ export async function createMultiAgentResponsesCall(
       agentContext,
   };
 
-  return createResponsesCall(
+  return createGeminiCall(
     request,
     config,
     [...messages, synthesisMessage],
