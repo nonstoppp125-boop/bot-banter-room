@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { env } from "cloudflare:workers";
 import { createOpenAI } from "@ai-sdk/openai";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
@@ -9,7 +10,7 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.GROQ_API_KEY;
+        const apiKey = env.GROQ_API_KEY;
         if (!apiKey) {
           return Response.json(
             { error: "GROQ_API_KEY is not configured on the server" },
