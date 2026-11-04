@@ -3,6 +3,10 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
+type CloudflareBindings = {
+  GROQ_API_KEY?: string;
+};
+
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
@@ -47,6 +51,12 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // TanStack route handlers do not receive the Worker env argument directly.
+      // Expose only the required binding server-side; never send it to the client.
+      (globalThis as typeof globalThis & {
+        __cloudflareBindings?: CloudflareBindings;
+      }).__cloudflareBindings = env as CloudflareBindings;
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
