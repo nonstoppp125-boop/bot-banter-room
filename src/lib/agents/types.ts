@@ -1,7 +1,11 @@
-import type { UIMessage } from "ai";
+import type { ModelMessage, UIMessage } from "ai";
 
-/** Worker bindings this app reads. Secret names must match the Cloudflare config. */
-export type AgentEnv = { GROQ_API_KEY?: string | undefined };
+/** Worker bindings this app reads. Names must match the Cloudflare config. */
+export type AgentEnv = {
+  GROQ_API_KEY?: string | undefined;
+  /** Plain-text Worker variable; multi-agent runs only when exactly "true". */
+  DOOT_MULTI_AGENT?: string | undefined;
+};
 
 export type AgentRunInput = {
   messages: UIMessage[];
@@ -9,10 +13,18 @@ export type AgentRunInput = {
   signal: AbortSignal;
 };
 
-/** A mountable agent. `run` must return a streaming UI-message Response. */
+export type SpecialistInput = {
+  apiKey: string;
+  messages: ModelMessage[];
+  signal: AbortSignal;
+};
+
+/** A mountable agent. Chat agents stream via `run`; specialists return text via `generate`. */
 export type AgentDefinition = {
   id: string;
   name: string;
   description: string;
-  run: (input: AgentRunInput) => Promise<Response> | Response;
+  role: "chat" | "specialist";
+  run?: (input: AgentRunInput) => Promise<Response> | Response;
+  generate?: (input: SpecialistInput) => Promise<string>;
 };
