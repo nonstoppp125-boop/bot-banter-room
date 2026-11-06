@@ -88,7 +88,8 @@ function Index() {
     if (!text.trim() || busy) return;
     setError(null);
     setSidebarOpen(false);
-    if (!activeChatId) setActiveChatId(crypto.randomUUID());\n    sendMessage({ text: text.trim() });
+    if (!activeChatId) setActiveChatId(crypto.randomUUID());
+    sendMessage({ text: text.trim() });
   };
 
   const newChat = () => {
@@ -98,7 +99,24 @@ function Index() {
     setSidebarOpen(false);
   };
 
-  const openChat = (chat: SavedChat) => {\n    stop();\n    setActiveChatId(chat.id);\n    setMessages(chat.messages);\n    setError(null);\n    setSidebarOpen(false);\n  };\n\n  const deleteChat = (id: string) => {\n    setChatHistory((current) => {\n      const next = current.filter((chat) => chat.id !== id);\n      localStorage.setItem("liza-chats", JSON.stringify(next));\n      return next;\n    });\n    if (activeChatId === id) { setMessages([]); setActiveChatId(null); }\n  };\n\n  const copyMessage = async (id: string, text: string) => {
+  const openChat = (chat: SavedChat) => {
+    stop();
+    setActiveChatId(chat.id);
+    setMessages(chat.messages);
+    setError(null);
+    setSidebarOpen(false);
+  };
+
+  const deleteChat = (id: string) => {
+    setChatHistory((current) => {
+      const next = current.filter((chat) => chat.id !== id);
+      localStorage.setItem("liza-chats", JSON.stringify(next));
+      return next;
+    });
+    if (activeChatId === id) { setMessages([]); setActiveChatId(null); }
+  };
+
+  const copyMessage = async (id: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
