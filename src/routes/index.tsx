@@ -104,9 +104,15 @@ function Index() {
       .filter((part) => part.type === "text")
       .map((part) => part.text)
       .join(" ").trim();
-    const title = firstText ? firstText.slice(0, 42) : "নতুন চ্যাট";
-    const updated: SavedChat = { id: activeChatId, title, messages, updatedAt: Date.now() };
+    const generatedTitle = firstText ? firstText.slice(0, 42) : "নতুন চ্যাট";
     setChatHistory((current) => {
+      const previous = current.find((chat) => chat.id === activeChatId);
+      const updated: SavedChat = {
+        id: activeChatId,
+        title: previous?.title ?? generatedTitle,
+        messages,
+        updatedAt: Date.now(),
+      };
       const next = [updated, ...current.filter((chat) => chat.id !== activeChatId)].slice(0, 30);
       try { localStorage.setItem("liza-chats", JSON.stringify(next)); } catch {
         setError("ডিভাইসের storage পূর্ণ। পুরোনো চ্যাট মুছে জায়গা খালি করুন।");
