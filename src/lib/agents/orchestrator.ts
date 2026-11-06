@@ -9,7 +9,12 @@ import type { AgentEnv, AgentRunInput } from "./types";
 export function getAgentEnv(request: Request): AgentEnv {
   const env = (request as Request & { runtime?: { cloudflare?: { env?: AgentEnv } } }).runtime
     ?.cloudflare?.env;
-  return { GROQ_API_KEY: env?.GROQ_API_KEY, DOOT_MULTI_AGENT: env?.DOOT_MULTI_AGENT };
+  // Cloudflare binding names are case-sensitive. Support the legacy mixed-case
+  // name already configured in this Worker as well as the canonical name.
+  return {
+    GROQ_API_KEY: env?.GROQ_API_KEY ?? env?.Groq_API_Key ?? env?.Groq_API_KEY,
+    DOOT_MULTI_AGENT: env?.DOOT_MULTI_AGENT,
+  };
 }
 
 export function isMultiAgentEnabled(env: AgentEnv): boolean {
