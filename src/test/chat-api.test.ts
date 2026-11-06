@@ -83,9 +83,31 @@ describe("POST /api/chat orchestrator", () => {
     expect(await res.json()).toEqual({ error: "GROQ_API_KEY is not configured on the server" });
   });
 
+  it("accepts the mixed-case Groq secret name already used in Cloudflare", async () => {
+    const res = await handleChatRequest(req({ messages: msgs }, { Groq_API_Key: "secret-k" }));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("হ্যালো");
+    expect(calls[0]?.apiKey).toBe("secret-k");
+  });
+
   it("returns 400 for an invalid body", async () => {
     expect((await handleChatRequest(req("not json", KEY))).status).toBe(400);
     expect((await handleChatRequest(req({ messages: "x" }, KEY))).status).toBe(400);
+  });
+
+  it("rejects oversized chat history", async () => {
+    const tooMany = Array.from({ length: 41 }, (_, i) => ({
+      id: String(i), role: "user", parts: [{ type: "text", text: "hi" }],
+    }));
+    const res = await handleChatRequest(req({ messages: tooMany }, KEY));
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects oversized individual message text", async () => {
+    const res = await handleChatRequest(req({
+      messages: [{ id: "1", role: "user", parts: [{ type: "text", text: "x".repeat(20_001) }] }],
+    }, KEY));
+    expect(res.status).toBe(400);
   });
 
   it("by default makes one Groq call (no specialists), even for unknown agentId", async () => {

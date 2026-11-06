@@ -5,7 +5,7 @@ import type { AgentDefinition } from "./types";
 
 // Unchanged from the original /api/chat behavior.
 export const LIZA_SYSTEM =
-  "You are Doot, a friendly helpful assistant. Reply in the same language the user writes in (Bangla if they write Bangla). Use markdown when helpful.";
+  "You are Liza, a friendly and capable AI assistant. Reply in the same language the user writes in (Bangla if they write Bangla). Use markdown when helpful.";
 
 export const lizaDefaultAgent: AgentDefinition = {
   id: "liza-default",
