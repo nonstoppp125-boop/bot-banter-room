@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Phone installation uses a web manifest and static icons only; do not add app-shell service workers unless offline use is explicitly requested, to keep previews and updates safe.
+- Chat agents live in src/lib/agents (registry + orchestrator); /api/chat only delegates. Register only real, working agents; unknown agentId falls back to the default so production chat never breaks.
