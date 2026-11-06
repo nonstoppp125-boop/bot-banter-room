@@ -68,17 +68,54 @@ function Index() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem("liza-theme");
-    const isDark = saved === "dark";
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    try {
+      const savedTheme = localStorage.getItem("liza-theme");
+      const isDark = savedTheme === "dark";
+      setDark(isDark);
+      document.documentElement.classList.toggle("dark", isDark);
+      const savedChats = localStorage.getItem("liza-chats");
+      if (savedChats) {
+        const parsed: unknown = JSON.parse(savedChats);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((item): item is SavedChat =>
+            item && typeof item.id === "string" && typeof item.title === "string" &&
+            Array.isArray(item.messages) && typeof item.updatedAt === "number"
+          ).slice(0, 30);
+          setChatHistory(valid);
+        }
+      }
+    } catch {
+      setError("এই ডিভাইসের সংরক্ষিত ডেটা পড়া যায়নি। ব্রাউজারের storage permission পরীক্ষা করুন।");
+    } finally {
+      setHistoryReady(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!historyReady || !activeChatId || messages.length === 0) return;
+    const firstUserMessage = messages.find((message) => message.role === "user");
+    const firstText = firstUserMessage?.parts
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join(" ").trim();
+    const title = firstText ? firstText.slice(0, 42) : "নতুন চ্যাট";
+    const updated: SavedChat = { id: activeChatId, title, messages, updatedAt: Date.now() };
+    setChatHistory((current) => {
+      const next = [updated, ...current.filter((chat) => chat.id !== activeChatId)].slice(0, 30);
+      try { localStorage.setItem("liza-chats", JSON.stringify(next)); } catch {
+        setError("ডিভাইসের storage পূর্ণ। পুরোনো চ্যাট মুছে জায়গা খালি করুন।");
+      }
+      return next;
+    });
+  }, [activeChatId, historyReady, messages]);
 
   const toggleTheme = () => {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("liza-theme", next ? "dark" : "light");
+    try { localStorage.setItem("liza-theme", next ? "dark" : "light"); } catch {
+      setError("থিম সংরক্ষণ করা যায়নি।");
+    }
   };
 
   const busy = status === "submitted" || status === "streaming";
@@ -111,7 +148,9 @@ function Index() {
   const deleteChat = (id: string) => {
     setChatHistory((current) => {
       const next = current.filter((chat) => chat.id !== id);
-      localStorage.setItem("liza-chats", JSON.stringify(next));
+      try { localStorage.setItem("liza-chats", JSON.stringify(next)); } catch {
+        setError("চ্যাটের তালিকা আপডেট করা যায়নি।");
+      }
       return next;
     });
     if (activeChatId === id) { setMessages([]); setActiveChatId(null); }
@@ -152,6 +191,20 @@ function Index() {
           <div className="flex items-center gap-3 rounded-xl bg-black/[.045] px-3 py-2.5 text-sm font-medium dark:bg-white/[.07]">
             <MessageSquare size={16} className="text-[#6558e8]" /> AI চ্যাট
             <span className="ml-auto size-1.5 rounded-full bg-emerald-500" />
+          </div>
+        </div>
+
+        <div className="mt-6 min-h-0 flex-1 overflow-y-auto">
+          <div className="px-3 text-[11px] font-semibold uppercase tracking-[.13em] text-muted-foreground">সাম্প্রতিক চ্যাট</div>
+          <div className="mt-2 space-y-1">
+            {chatHistory.length === 0 ? (
+              <p className="px-3 py-3 text-xs text-muted-foreground">এখনো কোনো সংরক্ষিত চ্যাট নেই</p>
+            ) : chatHistory.map((chat) => (
+              <div key={chat.id} className={`group flex items-center gap-1 rounded-xl ${activeChatId === chat.id ? "bg-black/[.07] dark:bg-white/[.08]" : "hover:bg-black/[.04] dark:hover:bg-white/[.05]"}`}>
+                <button onClick={() => openChat(chat)} className="min-w-0 flex-1 truncate px-3 py-2.5 text-left text-xs text-foreground">{chat.title}</button>
+                <button onClick={() => deleteChat(chat.id)} aria-label={`চ্যাট মুছুন: ${chat.title}`} className="mr-1 grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground opacity-70 hover:bg-destructive/10 hover:text-destructive"><X size={14} /></button>
+              </div>
+            ))}
           </div>
         </div>
 
