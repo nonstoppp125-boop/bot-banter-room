@@ -5,7 +5,6 @@ import {
   ArrowUp,
   Check,
   ChevronDown,
-  Command,
   Copy,
   Menu,
   MessageSquare,
