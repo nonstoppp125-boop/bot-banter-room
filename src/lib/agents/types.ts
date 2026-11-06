@@ -1,12 +1,12 @@
 import type { UIMessage } from "ai";
 
 /** Worker bindings this app reads. Secret names must match the Cloudflare config. */
-export type AgentEnv = { GROQ_API_KEY?: string };
+export type AgentEnv = { GROQ_API_KEY?: string | undefined };
 
 export type AgentRunInput = {
   messages: UIMessage[];
   env: AgentEnv;
-  signal?: AbortSignal;
+  signal: AbortSignal;
 };
 
 /** A mountable agent. `run` must return a streaming UI-message Response. */
