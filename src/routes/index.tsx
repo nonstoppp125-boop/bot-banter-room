@@ -95,6 +95,7 @@ function Index() {
   const newChat = () => {
     stop();
     setMessages([]);
+    setActiveChatId(null);
     setError(null);
     setSidebarOpen(false);
   };
