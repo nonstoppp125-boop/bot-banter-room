@@ -9,11 +9,13 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Nitro's cloudflare-module preset attaches the Worker env bindings to the
+        // incoming Request as request.runtime.cloudflare.env (documented Nitro API).
         const apiKey = (
-          globalThis as typeof globalThis & {
-            __cloudflareBindings?: { GROQ_API_KEY?: string };
+          request as Request & {
+            runtime?: { cloudflare?: { env?: { GROQ_API_KEY?: string } } };
           }
-        ).__cloudflareBindings?.GROQ_API_KEY;
+        ).runtime?.cloudflare?.env?.GROQ_API_KEY;
 
         if (!apiKey) {
           return Response.json(
