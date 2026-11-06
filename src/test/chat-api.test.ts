@@ -83,6 +83,13 @@ describe("POST /api/chat orchestrator", () => {
     expect(await res.json()).toEqual({ error: "GROQ_API_KEY is not configured on the server" });
   });
 
+  it("accepts the mixed-case Groq secret name already used in Cloudflare", async () => {
+    const res = await handleChatRequest(req({ messages: msgs }, { Groq_API_Key: "secret-k" }));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("হ্যালো");
+    expect(calls[0]?.apiKey).toBe("secret-k");
+  });
+
   it("returns 400 for an invalid body", async () => {
     expect((await handleChatRequest(req("not json", KEY))).status).toBe(400);
     expect((await handleChatRequest(req({ messages: "x" }, KEY))).status).toBe(400);
