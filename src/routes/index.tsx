@@ -9,6 +9,8 @@ import {
   MessageSquare,
   Moon,
   Plus,
+  Pencil,
+  Search,
   Sparkles,
   SquarePen,
   Sun,
@@ -59,6 +61,7 @@ function Index() {
   const [dark, setDark] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<SavedChat[]>([]);
+  const [historyQuery, setHistoryQuery] = useState("");
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const { messages, sendMessage, status, stop, setMessages } = useChat({
@@ -148,6 +151,20 @@ function Index() {
     setSidebarOpen(false);
   };
 
+  const renameChat = (id: string) => {
+    const current = chatHistory.find((chat) => chat.id === id);
+    if (!current) return;
+    const nextTitle = window.prompt("চ্যাটের নতুন নাম লিখুন", current.title)?.trim();
+    if (!nextTitle) return;
+    setChatHistory((items) => {
+      const next = items.map((chat) => chat.id === id ? { ...chat, title: nextTitle.slice(0, 80) } : chat);
+      try { localStorage.setItem("liza-chats", JSON.stringify(next)); } catch {
+        setError("চ্যাটের নাম সংরক্ষণ করা যায়নি।");
+      }
+      return next;
+    });
+  };
+
   const deleteChat = (id: string) => {
     setChatHistory((current) => {
       const next = current.filter((chat) => chat.id !== id);
@@ -199,12 +216,21 @@ function Index() {
 
         <div className="mt-6 min-h-0 flex-1 overflow-y-auto">
           <div className="px-3 text-[11px] font-semibold uppercase tracking-[.13em] text-muted-foreground">সাম্প্রতিক চ্যাট</div>
+          {chatHistory.length > 0 && (
+            <div className="relative mt-2">
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input value={historyQuery} onChange={(event) => setHistoryQuery(event.target.value)} placeholder="চ্যাট খুঁজুন..." aria-label="চ্যাট খুঁজুন" className="h-9 w-full rounded-xl border border-border bg-white/70 pl-9 pr-3 text-xs outline-none focus:border-[#9b92f5] dark:bg-white/[.04]" />
+            </div>
+          )}
           <div className="mt-2 space-y-1">
             {chatHistory.length === 0 ? (
               <p className="px-3 py-3 text-xs text-muted-foreground">এখনো কোনো সংরক্ষিত চ্যাট নেই</p>
-            ) : chatHistory.map((chat) => (
+            ) : chatHistory.filter((chat) => chat.title.toLowerCase().includes(historyQuery.toLowerCase())).length === 0 ? (
+              <p className="px-3 py-3 text-xs text-muted-foreground">কোনো চ্যাট পাওয়া যায়নি</p>
+            ) : chatHistory.filter((chat) => chat.title.toLowerCase().includes(historyQuery.toLowerCase())).map((chat) => (
               <div key={chat.id} className={`group flex items-center gap-1 rounded-xl ${activeChatId === chat.id ? "bg-black/[.07] dark:bg-white/[.08]" : "hover:bg-black/[.04] dark:hover:bg-white/[.05]"}`}>
                 <button onClick={() => openChat(chat)} className="min-w-0 flex-1 truncate px-3 py-2.5 text-left text-xs text-foreground">{chat.title}</button>
+                <button onClick={() => renameChat(chat.id)} aria-label={`চ্যাটের নাম বদলান: ${chat.title}`} className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground opacity-70 hover:bg-accent hover:text-foreground"><Pencil size={13} /></button>
                 <button onClick={() => deleteChat(chat.id)} aria-label={`চ্যাট মুছুন: ${chat.title}`} className="mr-1 grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground opacity-70 hover:bg-destructive/10 hover:text-destructive"><X size={14} /></button>
               </div>
             ))}
