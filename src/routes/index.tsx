@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
-  ArrowUp,
   Check,
   ChevronDown,
   Copy,
