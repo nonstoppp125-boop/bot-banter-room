@@ -95,6 +95,21 @@ describe("POST /api/chat orchestrator", () => {
     expect((await handleChatRequest(req({ messages: "x" }, KEY))).status).toBe(400);
   });
 
+  it("rejects oversized chat history", async () => {
+    const tooMany = Array.from({ length: 41 }, (_, i) => ({
+      id: String(i), role: "user", parts: [{ type: "text", text: "hi" }],
+    }));
+    const res = await handleChatRequest(req({ messages: tooMany }, KEY));
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects oversized individual message text", async () => {
+    const res = await handleChatRequest(req({
+      messages: [{ id: "1", role: "user", parts: [{ type: "text", text: "x".repeat(20_001) }] }],
+    }, KEY));
+    expect(res.status).toBe(400);
+  });
+
   it("by default makes one Groq call (no specialists), even for unknown agentId", async () => {
     const res = await handleChatRequest(req({ messages: msgs, agentId: "nope" }, KEY));
     expect(res.status).toBe(200);
