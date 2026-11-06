@@ -81,6 +81,10 @@ function Index() {
             Array.isArray(item.messages) && typeof item.updatedAt === "number"
           ).slice(0, 30);
           setChatHistory(valid);
+          if (valid.length > 0) {
+            setActiveChatId(valid[0].id);
+            setMessages(valid[0].messages);
+          }
         }
       }
     } catch {
