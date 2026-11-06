@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   ArrowUp,
   Check,
@@ -52,11 +52,16 @@ const suggestions = [
   { icon: "⌁", title: "কোডিং সহায়তা", prompt: "আমি একটি প্রজেক্ট বানাতে চাই। আমাকে ধাপে ধাপে গাইড করো।" },
 ];
 
+type SavedChat = { id: string; title: string; messages: UIMessage[]; updatedAt: number };
+
 function Index() {
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<SavedChat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [historyReady, setHistoryReady] = useState(false);
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     onError: (e) => setError(e.message || "সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।"),
@@ -83,7 +88,7 @@ function Index() {
     if (!text.trim() || busy) return;
     setError(null);
     setSidebarOpen(false);
-    sendMessage({ text: text.trim() });
+    if (!activeChatId) setActiveChatId(crypto.randomUUID());\n    sendMessage({ text: text.trim() });
   };
 
   const newChat = () => {
@@ -93,7 +98,7 @@ function Index() {
     setSidebarOpen(false);
   };
 
-  const copyMessage = async (id: string, text: string) => {
+  const openChat = (chat: SavedChat) => {\n    stop();\n    setActiveChatId(chat.id);\n    setMessages(chat.messages);\n    setError(null);\n    setSidebarOpen(false);\n  };\n\n  const deleteChat = (id: string) => {\n    setChatHistory((current) => {\n      const next = current.filter((chat) => chat.id !== id);\n      localStorage.setItem("liza-chats", JSON.stringify(next));\n      return next;\n    });\n    if (activeChatId === id) { setMessages([]); setActiveChatId(null); }\n  };\n\n  const copyMessage = async (id: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
