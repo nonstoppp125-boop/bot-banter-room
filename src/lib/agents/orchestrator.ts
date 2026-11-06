@@ -1,16 +1,53 @@
-import type { UIMessage } from "ai";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
-import { getAgent } from "./registry";
-import type { AgentEnv } from "./types";
+import { groqModel } from "./groq";
+import { LIZA_SYSTEM } from "./liza-default";
+import { getAgent, getSpecialist } from "./registry";
+import type { AgentEnv, AgentRunInput } from "./types";
 
 /** Nitro's cloudflare-module preset attaches Worker bindings at request.runtime.cloudflare.env. */
 export function getAgentEnv(request: Request): AgentEnv {
   const env = (request as Request & { runtime?: { cloudflare?: { env?: AgentEnv } } }).runtime
     ?.cloudflare?.env;
-  return { GROQ_API_KEY: env?.GROQ_API_KEY };
+  return { GROQ_API_KEY: env?.GROQ_API_KEY, DOOT_MULTI_AGENT: env?.DOOT_MULTI_AGENT };
 }
 
-/** Handles a chat request: checks the key, validates the body, delegates to the agent. */
+export function isMultiAgentEnabled(env: AgentEnv): boolean {
+  return env.DOOT_MULTI_AGENT === "true";
+}
+
+/** Problem Solver + Quality Reviewer in parallel, then one streamed synthesis. */
+export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
+  const { messages, env, signal } = input;
+  const apiKey = env.GROQ_API_KEY!;
+  const modelMessages = await convertToModelMessages(messages);
+
+  const [solver, reviewer] = await Promise.allSettled([
+    getSpecialist("problem-solver").generate!({ apiKey, messages: modelMessages, signal }),
+    getSpecialist("quality-reviewer").generate!({ apiKey, messages: modelMessages, signal }),
+  ]);
+
+  if (signal.aborted) return new Response(null, { status: 499 });
+
+  const notes: string[] = [];
+  if (solver.status === "fulfilled" && solver.value.trim())
+    notes.push(`Problem Solver notes:\n${solver.value}`);
+  if (reviewer.status === "fulfilled" && reviewer.value.trim())
+    notes.push(`Quality Reviewer notes:\n${reviewer.value}`);
+
+  // Both specialists failed: answer exactly like the normal single agent.
+  if (notes.length === 0) return getAgent(undefined).run!(input);
+
+  const result = streamText({
+    model: groqModel(apiKey),
+    instructions: `${LIZA_SYSTEM}\n\nWrite the final answer to the user using these internal specialist notes. Do not mention the specialists.\n\n${notes.join("\n\n")}`,
+    messages: modelMessages,
+    abortSignal: signal,
+  });
+  return result.toUIMessageStreamResponse({ originalMessages: messages });
+}
+
+/** Handles a chat request: checks the key, validates the body, delegates to an agent. */
 export async function handleChatRequest(request: Request): Promise<Response> {
   const env = getAgentEnv(request);
   if (!env.GROQ_API_KEY) {
@@ -31,6 +68,7 @@ export async function handleChatRequest(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const agent = getAgent(typeof agentId === "string" ? agentId : undefined);
-  return agent.run({ messages, env, signal: request.signal });
+  const input = { messages, env, signal: request.signal };
+  if (isMultiAgentEnabled(env)) return runMultiAgent(input);
+  return getAgent(typeof agentId === "string" ? agentId : undefined).run!(input);
 }
