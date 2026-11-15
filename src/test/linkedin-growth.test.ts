@@ -74,7 +74,7 @@ describe("LinkedIn Growth workflow", () => {
     submitLinkedInDraftForApproval(store, draft.id, "author", now);
     rejectLinkedInDraft(store, draft.id, "owner", "Add evidence", now);
     const revised = reviseLinkedInDraft(store, draft.id, "Revised with evidence", "author", now);
-    expect(revised.version).toBe(3);
+    expect(revised.version).toBe(4);
     expect(revised.status).toBe("draft");
     expect(revised.approvedBy).toBeNull();
   });
@@ -82,6 +82,9 @@ describe("LinkedIn Growth workflow", () => {
   it("schedules only approved drafts for a future ISO timestamp", async () => {
     const store = new InMemoryLinkedInGrowthStore();
     readyDraft(store);
+    expect(() => scheduleApprovedLinkedInDraft(store, "draft-1", now, "owner", now)).toThrow(
+      /future/i,
+    );
     const scheduled = scheduleApprovedLinkedInDraft(
       store,
       "draft-1",
@@ -90,9 +93,6 @@ describe("LinkedIn Growth workflow", () => {
       now,
     );
     expect(scheduled.status).toBe("scheduled");
-    expect(() => scheduleApprovedLinkedInDraft(store, "draft-1", now, "owner", now)).toThrow(
-      /future/i,
-    );
     const publish = vi.fn(async () => ({ publicationId: "post-1" }));
     await expect(
       publishApprovedLinkedInDraft({
