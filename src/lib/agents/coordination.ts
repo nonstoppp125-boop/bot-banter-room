@@ -478,6 +478,9 @@ export async function runAgentWorkflow(
     }
   }
 
+  // All launched tasks must settle before results and metrics are finalized.
+  if (activePromises.size > 0) await Promise.all(activePromises);
+
   const byAgent: Record<
     string,
     {
