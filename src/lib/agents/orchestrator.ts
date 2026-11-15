@@ -371,6 +371,9 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     notes.push(`Quality Reviewer notes:\\n${review.output.trim()}`);
   }
 
+  // If every specialist and the independent reviewer failed, use the safe default path.
+  if (notes.length === 0) return runDefaultAgent(input);
+
   const result = streamText({
     ...PROVIDER_REQUEST_OPTIONS,
     model: groqModel(apiKey, model),
