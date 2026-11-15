@@ -362,7 +362,7 @@ describe("POST /api/chat orchestrator", () => {
       validateAgentRegistry([invalid({ role: "unknown" as typeof first.role })]),
     ).toThrow(/invalid role/);
     expect(() => validateAgentRegistry([invalid({ id: " padded-id " })])).toThrow(
-      /invalid or duplicate agent id/,
+      /invalid or duplicate agent id/i,
     );
 
     const specialist = agents.find((agent) => agent.role === "specialist");
@@ -398,7 +398,7 @@ describe("POST /api/chat orchestrator", () => {
         if (!agent.generate) throw new Error(`Missing generator: ${agent.id}`);
         return agent.generate({
           apiKey: "test-key",
-          messages: [],
+          messages: [{ role: "user", content: "Run a specialist capability smoke test." }],
           signal: new AbortController().signal,
         });
       }),
