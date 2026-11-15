@@ -55,7 +55,7 @@ jobs:
         id: config
         run: |
           set -euo pipefail
-          mapfile -t configs < <(find .output -type f \\( -name wrangler.json -o -name wrangler.jsonc \\) -print)
+          mapfile -t configs < <(find .output -type f \( -name wrangler.json -o -name wrangler.jsonc \) -print)
           if [ "${#configs[@]}" -ne 1 ]; then
             echo "Expected exactly one Nitro-generated Wrangler config under .output; found ${#configs[@]}."
             find .output -maxdepth 4 -type f | head -80
