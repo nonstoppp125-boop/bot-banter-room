@@ -334,8 +334,8 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     }
   }
 
-  // Do not let a generic reviewer response replace all failed specialist work.
-  if (notes.length === 0) return runDefaultAgent(input);
+  // Review both successful outputs and explicit specialist failure evidence.
+  // A failed specialist must not silently bypass the independent quality review.
 
   // Phase 2: review actual specialist outputs and explicit failure states.
   const reviewMessages = [
