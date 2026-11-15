@@ -1,0 +1,12 @@
+{
+  "ratelimits": [
+    {
+      "name": "CHAT_RATE_LIMITER",
+      "namespace_id": "68427193",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ]
+}
