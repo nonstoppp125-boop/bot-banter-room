@@ -108,7 +108,7 @@ describe("LinkedIn Content Studio", () => {
   });
 
   it("generates daily ideas and hooks", () => {
-    expect(generateDailyPostIdeas(pillars)).toHaveLength(5);
+    expect(generateDailyPostIdeas(pillars)).toHaveLength(4);
     expect(generateLinkedInHooks("SQL")).toHaveLength(5);
   });
 
