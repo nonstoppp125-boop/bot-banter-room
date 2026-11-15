@@ -33,3 +33,30 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
+      - name: Validate Nitro-generated Wrangler configuration
+        run: |
+          set -euo pipefail
+          mapfile -t configs < <(find .output -type f \\( -name wrangler.json -o -name wrangler.jsonc \\) -print)
+          if [ "${#configs[@]}" -ne 1 ]; then
+            echo "Expected exactly one Nitro-generated Wrangler config under .output; found ${#configs[@]}."
+            find .output -maxdepth 4 -type f | head -80
+            exit 1
+          fi
+          node --input-type=module - "${configs[0]}" <<'NODE'
+          import fs from "node:fs";
+          const path = process.argv[2];
+          const config = JSON.parse(fs.readFileSync(path, "utf8"));
+          const missing = ["name", "main", "compatibility_date"].filter(
+            (key) => typeof config[key] !== "string" || !config[key].trim(),
+          );
+          if (missing.length) {
+            console.error("Generated Wrangler config is incomplete:", missing.join(", "));
+            process.exit(1);
+          }
+          if (!Array.isArray(config.ratelimits) ||
+              !config.ratelimits.some((binding) => binding.name === "CHAT_RATE_LIMITER")) {
+            console.error("Generated config is missing the CHAT_RATE_LIMITER binding.");
+            process.exit(1);
+          }
+          console.log("Validated generated Worker config:", path);
+          NODE
