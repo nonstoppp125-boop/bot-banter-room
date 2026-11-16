@@ -280,7 +280,7 @@ export async function handleTelegramWebhookRequest(
       await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: "Your account is not linked yet. Open Liza Settings → Integrations, generate a Telegram link code, and send /link CODE here." });
       return json({ ok: true, linked: false });
     }
-    const taskMatch = command.match(/^\\/task(?:@\\w+)?(?:\\s+([\\s\\S]+))?$/i);
+    const taskMatch = command.match(/^\/task(?:@\w+)?(?:\s+([\s\S]+))?$/i);
     if (taskMatch) {
       const taskText = (taskMatch[1] ?? "").trim();
       if (!taskText || taskText.length > 20_000) {
@@ -301,16 +301,16 @@ export async function handleTelegramWebhookRequest(
         : "Plan saved as queued. Open the Liza web Tasks page and choose Run with Manager; background execution is not enabled.";
       await sendTelegramText({
         token: botToken, chatId: message.chatId, fetcher,
-        text: "Manager task saved: " + task.id + "\\nStatus: " + status + "\\nSpecialists: " + plan.agentIds.join(", ") + "\\n" + statusText,
+        text: "Manager task saved: " + task.id + "\nStatus: " + status + "\nSpecialists: " + plan.agentIds.join(", ") + "\n" + statusText,
       });
       return json({ ok: true, taskId: task.id, status });
     }
-    if (/^\\/tasks(?:@\\w+)?$/i.test(command)) {
+    if (/^\/tasks(?:@\w+)?$/i.test(command)) {
       const tasks = await createD1TaskStore(database).list({
         workspaceId: identity.workspaceId, userId: identity.userId, limit: 10,
       });
       const summary = tasks.length
-        ? tasks.map((task) => task.status.toUpperCase() + " · " + task.id + "\\n" + task.inputSummary.slice(0, 160)).join("\\n\\n")
+        ? tasks.map((task) => task.status.toUpperCase() + " · " + task.id + "\n" + task.inputSummary.slice(0, 160)).join("\n\n")
         : "No Manager tasks have been saved yet. Send /task followed by a task description to create one.";
       for (const chunk of splitTelegramText(summary)) {
         await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: chunk });
