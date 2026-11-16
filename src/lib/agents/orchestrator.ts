@@ -636,7 +636,7 @@ export async function loadUserMemoryContext(request: Request, env: AgentEnv, mes
     if (!session?.workspaceId) return undefined;
     const query = [...messages].reverse().find((message) => message.role === "user")?.parts
       .filter((part) => part.type === "text").map((part) => part.text).join("\n").slice(0, 200) ?? "";
-    if (query.trim().length < 2) return undefined;
+    if (query.trim().length < 3) return undefined;
     const memories = await createD1MemoryStore(database).search({
       workspaceId: session.workspaceId, userId: session.userId, query, now, limit: 6,
     });
