@@ -1,4 +1,4 @@
-import { verifyApprovalForAction, type ApprovalAction, type ApprovalRecord } from "./approval-store";
+import { verifyApprovalForAction, type ApprovalAction, type ApprovalStore } from "./approval-store";
 /**
  * Fail-closed authorization contract for future external-action executors.
  * This module does not execute actions or provide durable idempotency storage.
@@ -136,7 +136,9 @@ export function createD1ActionStore(database: D1ActionDatabase): DurableActionSt
 
 /** Verify the persisted approval against this exact action before claiming its idempotency key. */
 export async function executeVerifiedApprovedAction<T>(input:{
-  approval:ApprovalRecord|null;
+  approvalStore:ApprovalStore|null;
+  approvalId:string;
+  actorUserId:string;
   workspaceId:string;
   actionType:ApprovalAction;
   payloadHash:string;
@@ -145,18 +147,10 @@ export async function executeVerifiedApprovedAction<T>(input:{
   store:DurableActionStore|null;
   execute:()=>Promise<T>;
 }):Promise<{executed:true;result:T}>{
-  const decision=verifyApprovalForAction({
-    approval:input.approval,
-    workspaceId:input.workspaceId,
-    actionType:input.actionType,
-    payloadHash:input.payloadHash,
-    now:input.now,
-  });
+  if(!input.approvalStore)throw new Error("Persisted approval storage is unavailable.");
+  const approval=await input.approvalStore.get({id:input.approvalId,workspaceId:input.workspaceId,actorUserId:input.actorUserId});
+  if(!approval||approval.decidedByUserId!==input.actorUserId)throw new Error("External action blocked: persisted approval not found for the approving user.");
+  const decision=verifyApprovalForAction({approval,workspaceId:input.workspaceId,actionType:input.actionType,payloadHash:input.payloadHash,now:input.now});
   if(!decision.allowed)throw new Error("External action blocked: "+decision.reason);
-  return executeApprovedAction({
-    approvedByUser:true,
-    idempotencyKey:input.idempotencyKey,
-    store:input.store,
-    execute:input.execute,
-  });
+  return executeApprovedAction({approvedByUser:true,idempotencyKey:input.idempotencyKey,store:input.store,execute:input.execute});
 }
