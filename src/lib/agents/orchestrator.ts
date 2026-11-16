@@ -275,8 +275,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     }
   }
 
-  const subtaskByAgent = new Map(plannedSubtasks.map((task) => [task.agentId, task]));
-  const specialistTasks = plannedSubtasks.map((subtask) => ({
+    const specialistTasks = plannedSubtasks.map((subtask) => ({
     id: `specialist-${subtask.agentId}`,
     agentId: subtask.agentId,
     dependsOn: subtask.dependsOn.map((dependency) => `specialist-${dependency}`),
