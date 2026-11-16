@@ -35,3 +35,13 @@ No merge to main; no production deployment.
 - Added regression coverage for workspace-scoped writes, reads and invalid workspace IDs.
 - CI run `43827000844` passed TypeScript, 46 test files / 343 tests, production build and Nitro-generated Wrangler configuration validation.
 - Still open: authenticated analytics API, explicit save/load UI, dedicated campaign/audience/content/trend report views, D1 provisioning and live platform adapters. No production persistence or provider integration is claimed.
+
+
+## 2026-11-16 — Workspace analytics API and persistence UI
+
+- Added `GET/POST /api/analytics`, registered in the TanStack route tree.
+- Both methods require an active session and current workspace membership; POST additionally requires workspace admin role, same-origin JSON, and a bounded batch of 1–100 records.
+- Imports are normalized and stored through the workspace-scoped D1 adapter. Client-supplied provenance is deliberately replaced with `user-import` and an explicit unverified-provenance limitation; imported CSV cannot claim official-provider authenticity.
+- Analytics page now loads saved workspace snapshots and persists CSV imports. “Clear view” only clears the current display, not durable records.
+- Added API tests for cross-origin rejection, authentication/configuration, workspace isolation, role gating, batch limits and invalid filters.
+- Remaining: provider OAuth/official API ingestion, delete/retention controls, pagination, larger safe import workflow, and live D1 migration/runtime verification.
