@@ -178,3 +178,13 @@ No merge to main; no production deployment.
 
 - Owners can cancel queued or approval-gated tasks before execution. Generic state transitions remain unable to unlock approvals or bypass the bounded retry method.
 - Latest GitHub Actions run `43873475716`: SUCCESS — TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation.
+
+
+## 2026-11-16 — Persisted task execution and approval bridge
+
+- Corrected earlier remaining-work wording: `POST /api/tasks/execute` now provides explicit, authenticated, synchronous specialist execution from a persisted task plan. It checks session/workspace ownership, validates the saved Manager plan, atomically claims only a queued task, propagates request cancellation, enforces a 110-second limit, bounds persisted output, and stores completed/failed/cancelled state.
+- High-risk tasks require a persisted approval record bound to the exact task/workspace/user/plan hash. The approval inbox records the owner/admin decision; `PATCH /api/tasks` verifies the persisted approval and atomically unlocks the task; execution re-verifies the approval before specialist invocation.
+- Failed low-risk tasks may be manually requeued with an atomic two-retry ceiling. This is not automatic retry or a background queue.
+- Telegram `/task` now creates the same persisted approval metadata for high-risk plans; `/approvals` can decide it. Unlock and explicit specialist execution still occur through the authenticated web Tasks page.
+- CI run `43871570424` verified its exact head commit: TypeScript PASS, 51 test files / 395 tests PASS, production build PASS and generated Wrangler Worker config PASS. Later commits on this branch require fresh CI evidence.
+- Remaining: durable background queue consumer, crash/lease recovery, automated retry scheduling, live D1/Access provisioning and runtime smoke tests. External publishers/messengers/deletion executors remain separate and disabled.
