@@ -154,6 +154,23 @@ function TasksPage() {
     } finally { setSubmitting(false); }
   };
 
+  const recover = async (taskId: string) => {
+    setSubmitting(true); setError(null); setNotice(null);
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "PATCH", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ action: "recover", taskId }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Stale task could not be recovered.");
+      setNotice("Stale execution recovered as failed. You can review the error and use the bounded retry control.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Stale task could not be recovered.");
+    } finally { setSubmitting(false); }
+  };
+
   const retry = async (taskId: string) => {
     setSubmitting(true); setError(null); setNotice(null);
     try {
@@ -214,6 +231,7 @@ function TasksPage() {
                     {task.status === "needs_approval" && <button type="button" onClick={() => void unlock(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Verify approval & unlock</button>}
                     {task.status === "failed" && <button type="button" onClick={() => void retry(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Retry (max 2)</button>}
                     {task.status === "running" && <button type="button" onClick={() => executionController.current?.abort()} disabled={!executionController.current} className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/5 disabled:opacity-50">Cancel execution</button>}
+                    {task.status === "running" && !executionController.current && Date.now() - Date.parse(task.updatedAt) > 5 * 60 * 1000 && <button type="button" onClick={() => void recover(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Recover stalled task</button>}
                     {(task.status === "queued" || task.status === "needs_approval") && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel task</button>}
                   </div>
                 </div>
