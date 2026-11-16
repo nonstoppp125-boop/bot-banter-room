@@ -54,6 +54,7 @@ it("hashes OAuth state and stores a one-time encrypted PKCE transaction",async()
   await store.create(record);
   expect(await store.consume(stateHash,"2026-11-16T10:30:00.000Z")).toMatchObject({provider:"instagram",userId:"user-1"});
   expect(await store.consume(stateHash,"2026-11-16T10:31:00.000Z")).toBeNull();
+});
 
 it("encrypts OAuth PKCE verifiers with AES-256-GCM and binds them to user/provider",async()=>{const pair=await generateOAuthPkcePair(),key=crypto.getRandomValues(new Uint8Array(32)),blob=await encryptOAuthVerifier({verifier:pair.verifier,key,provider:"instagram",userId:"user-1"});expect(blob.byteLength).toBeGreaterThan(40);expect(await decryptOAuthVerifier({blob,key,provider:"instagram",userId:"user-1"})).toBe(pair.verifier);await expect(decryptOAuthVerifier({blob,key,provider:"facebook",userId:"user-1"})).rejects.toThrow();await expect(decryptOAuthVerifier({blob,key:crypto.getRandomValues(new Uint8Array(32)),provider:"instagram",userId:"user-1"})).rejects.toThrow();});
 
