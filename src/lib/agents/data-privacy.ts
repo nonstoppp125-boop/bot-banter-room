@@ -46,3 +46,22 @@ export function buildAccountDeletionPlan(userId:string,workspaceDisposition?:{ki
  statements.push({sql:"DELETE FROM users WHERE id = ?",parameters:[userId]});
  return{userId,statements,blockers,preserveAuditTrail:true,executionAllowed:false};
 }
+
+
+export interface AccountDeletionStore{
+ create(request:AccountDeletionRequest):Promise<void>;
+ cancel(input:{id:string;userId:string;now:string}):Promise<boolean>;
+ listDue(now:string,limit?:number):Promise<AccountDeletionRequest[]>;
+ markCompleted(input:{id:string;now:string}):Promise<boolean>;
+}
+export type D1DeletionDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;all:<T=Record<string,unknown>>()=>Promise<{success?:boolean;results?:T[]}>}}};
+export function createD1AccountDeletionStore(database:D1DeletionDatabase):AccountDeletionStore{
+ if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 deletion database is required.");
+ const map=(row:{id:string;user_id:string;confirmed_by_user_id:string;confirmed_at:string;requested_at:string;scheduled_for:string;status:"pending"|"cancelled"|"completed"}):AccountDeletionRequest=>({id:row.id,userId:row.user_id,confirmedByUserId:row.confirmed_by_user_id,confirmedAt:row.confirmed_at,requestedAt:row.requested_at,scheduledFor:row.scheduled_for,status:row.status});
+ return{
+  create:async(request)=>{if(!/^[A-Za-z0-9._:-]{1,120}$/.test(request.id)||!/^[A-Za-z0-9._:-]{1,120}$/.test(request.userId)||request.status!=="pending"||request.userId!==request.confirmedByUserId||!Number.isFinite(Date.parse(request.confirmedAt))||!Number.isFinite(Date.parse(request.scheduledFor))||Date.parse(request.scheduledFor)<=Date.parse(request.requestedAt))throw new Error("Invalid account deletion request.");const result=await database.prepare("INSERT INTO account_deletion_requests (id,user_id,confirmed_by_user_id,confirmed_at,requested_at,scheduled_for,status) VALUES (?,?,?,?,?,?, 'pending')").bind(request.id,request.userId,request.confirmedByUserId,request.confirmedAt,request.requestedAt,request.scheduledFor).run();if(result.success===false||result.meta?.changes!==1)throw new Error("D1 deletion request creation failed.");},
+  cancel:async(input)=>{if(!input.id||!input.userId||!Number.isFinite(Date.parse(input.now)))throw new Error("Invalid deletion cancellation.");const result=await database.prepare("UPDATE account_deletion_requests SET status='cancelled' WHERE id=? AND user_id=? AND status='pending' AND scheduled_for>?").bind(input.id,input.userId,input.now).run();if(result.success===false)throw new Error("D1 deletion cancellation failed.");return result.meta?.changes===1;},
+  listDue:async(now,limit=50)=>{if(!Number.isFinite(Date.parse(now))||!Number.isInteger(limit)||limit<1||limit>100)throw new Error("Invalid due-deletion query.");const result=await database.prepare("SELECT id,user_id,confirmed_by_user_id,confirmed_at,requested_at,scheduled_for,status FROM account_deletion_requests WHERE status='pending' AND scheduled_for<=? ORDER BY scheduled_for ASC LIMIT ?").bind(now,limit).all<Parameters<typeof map>[0]>();if(result.success===false)throw new Error("D1 due-deletion query failed.");return(result.results??[]).map(map);},
+  markCompleted:async(input)=>{if(!input.id||!Number.isFinite(Date.parse(input.now)))throw new Error("Invalid deletion completion.");const result=await database.prepare("UPDATE account_deletion_requests SET status='completed',completed_at=? WHERE id=? AND status='pending' AND scheduled_for<=?").bind(input.now,input.id,input.now).run();if(result.success===false)throw new Error("D1 deletion completion failed.");return result.meta?.changes===1;},
+ };
+}
