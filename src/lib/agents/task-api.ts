@@ -149,12 +149,16 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
           inputSummary: task.inputSummary, plan: task.plan, now: new Date().toISOString(),
         });
         if (!verification.allowed) return json({ error: verification.reason }, 409);
+        const metadata = (task.plan as Record<string, unknown>)["approval"] as Record<string, unknown>;
         const unlockedAt = new Date().toISOString();
-        const unlocked = await store.update({
+        const unlocked = await store.unlockApproved({
           id: task.id, workspaceId: session.workspaceId, userId: session.userId,
-          expectedStatus: "needs_approval", status: "queued", plan: task.plan, updatedAt: unlockedAt,
+          approvalId: metadata["approvalId"] as string,
+          actionType: metadata["actionType"] as string,
+          payloadHash: metadata["payloadHash"] as string,
+          updatedAt: unlockedAt,
         });
-        if (!unlocked) return json({ error: "Task state changed; refresh and verify approval again." }, 409);
+        if (!unlocked) return json({ error: "Task or persisted approval state changed; refresh and verify approval again." }, 409);
         return json({ task: { ...task, status: "queued", updatedAt: unlockedAt } });
       }
       if (body["action"] === "retry") {
