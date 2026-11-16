@@ -46,7 +46,7 @@ describe("unified analytics",()=>{
         }),
       }),
     };
-    const store = createD1AnalyticsStore(database);
+    const store = createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0]);
     await store.append(row());
     const restored = await store.list({ platform: "linkedin" });
     expect(restored).toHaveLength(1);

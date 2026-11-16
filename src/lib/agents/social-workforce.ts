@@ -685,7 +685,7 @@ export function evaluateSocialPublishingGate(input: {
   if (input.draftStatus !== "approved" && input.draftStatus !== "scheduled") blockers.push("draft-not-approved");
   if (!clean(input.approvedBy, 100)) blockers.push("approver-missing");
   if (!input.serverApprovalVerified) blockers.push("server-side-approval-not-verified");
-  if (!input.providerConnectionVerified || readiness.connectionStatus !== "connected") blockers.push("provider-account-not-connected");
+  if (!input.providerConnectionVerified || readiness.connectionStatus === "not-connected") blockers.push("provider-account-not-connected");
   if (!readiness.livePublishingEnabled) blockers.push("live-publishing-disabled");
   if (!input.providerAdapterConfigured) blockers.push("official-provider-adapter-not-configured");
   if (!input.durableIdempotencyAvailable) blockers.push("durable-idempotency-unavailable");

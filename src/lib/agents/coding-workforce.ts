@@ -88,10 +88,10 @@ export function inspectDependencyManifest(packageJson:string,lockfilePresent:boo
  if(!parsed||typeof parsed!=="object")throw new Error("Package manifest must be a JSON object.");
  const data=parsed as Record<string,unknown>;
  const collect=(value:unknown)=>Object.entries(value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{})
-  .filter(([name,version])=>Boolean(cleanText(name,200))&&typeof version==="string")
-  .map(([name,version])=>({name:cleanText(name,200),version:cleanText(version,100),pinned:/^\d+\.\d+\.\d+(?:[-+].*)?$/.test(String(version))}));
- const production=collect(data.dependencies),development=collect(data.devDependencies);
- const scripts=data.scripts&&typeof data.scripts==="object"?data.scripts as Record<string,unknown>:{};
+  .filter((entry):entry is [string,string]=>Boolean(cleanText(entry[0],200))&&typeof entry[1]==="string")
+  .map(([name,version])=>({name:cleanText(name,200),version:cleanText(version,100),pinned:/^\d+\.\d+\.\d+(?:[-+].*)?$/.test(version)}));
+ const production=collect(data["dependencies"]),development=collect(data["devDependencies"]);
+ const scripts=data["scripts"]&&typeof data["scripts"]==="object"?data["scripts"] as Record<string,unknown>:{};
  const lifecycle=["preinstall","install","postinstall","prepare"].filter(name=>typeof scripts[name]==="string");
  const findings:string[]=[];
  if(!lockfilePresent)findings.push("No lockfile was reported; reproducible dependency installation is not verified.");
