@@ -150,6 +150,7 @@ describe("Telegram link and webhook API", () => {
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ status: "needs_approval" });
+    expect(state.queries.some((query) => query.startsWith("INSERT INTO approvals"))).toBe(true);
     expect(sentBody).toContain("Approval request created");
     expect(sentBody).toContain("will not execute from Telegram");
   });
