@@ -45,6 +45,8 @@ jobs:
           NODE
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Audit production dependencies
+        run: npm run security:audit
       - name: Verify TypeScript
         run: npm run typecheck
       - name: Run all tests
