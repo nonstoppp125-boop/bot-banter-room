@@ -75,6 +75,7 @@ function PrivacySettingsPage() {
         <header className="mb-8 mt-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Account settings</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Privacy & data</h1>
+          <a href="/settings/memory" className="mt-3 inline-block text-sm underline">Manage saved memories</a>
           <p className="mt-2 text-sm text-muted-foreground">Export your data or schedule account deletion. Credentials and provider tokens are excluded from exports.</p>
         </header>
         {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">{error} <a href="/api/auth/session" className="underline">Sign in</a></p>}
