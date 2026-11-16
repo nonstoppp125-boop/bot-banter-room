@@ -90,7 +90,7 @@ describe("authorized research tool contract", () => {
         {
           id: "same-b", title: "B", publisher: "Publisher Two",
           publishedAt: "2026-11-01", retrievedAt: "2026-11-02",
-          content: "Evidence B", url: "https://example.com/b",
+          content: "Evidence B", url: "https://example.net/b",
         },
       ],
       Date.parse("2026-11-03"),
