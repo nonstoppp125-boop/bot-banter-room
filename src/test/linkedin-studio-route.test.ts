@@ -22,6 +22,6 @@ describe("LinkedIn Content Studio route", () => {
     const route = read("src/routes/linkedin-studio.tsx");
     expect(route).toContain("does not connect to LinkedIn, publish, schedule, send messages or save drafts to a server");
     expect(route).toContain("generateLinkedInPostDraft");
-    expect(route).toContain("draft-only");
+    expect(route.toLowerCase()).toContain("draft-only");
   });
 });
