@@ -40,7 +40,7 @@ GitHub Actions run `43798378327`: SUCCESS.
 
 ## Remaining requirements
 
-- G06.08 — Pricing-based execution cost estimate. Current character-based token estimate is approximate; USD cost is explicitly unavailable without provider pricing and complete usage telemetry.
+- G06.08 — Provider-reported specialist/planner token usage plus character-based fallback and a bounded final-synthesis allowance; estimates USD cost only for models with verified published Groq rates. Final synthesis and unreported usage remain approximate.
 - G06.13 — Durable task-state persistence across requests/restarts.
 - G06.18 — User-facing approval request, persisted decision and fail-closed enforcement for consequential actions.
 

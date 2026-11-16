@@ -30,6 +30,11 @@ export type SpecialistInput = {
   signal: AbortSignal;
 };
 
+export type SpecialistGenerationResult = {
+  text: string;
+  usage: { inputTokens?: number; outputTokens?: number };
+};
+
 /** A mountable agent. Chat agents stream via `run`; specialists return text via `generate`. */
 export type AgentPermission = "llm:inference";
 
@@ -76,6 +81,7 @@ export type BaseAgent = {
   role: "chat" | "specialist";
   run?: (input: AgentRunInput) => Promise<Response> | Response;
   generate?: (input: SpecialistInput) => Promise<string>;
+  generateWithUsage?: (input: SpecialistInput) => Promise<SpecialistGenerationResult>;
 };
 
 /** Backward-compatible name for existing agent integrations. */

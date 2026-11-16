@@ -58,6 +58,28 @@ function specialist(
   description: string,
   system: string,
 ): AgentDefinition {
+  const generateWithUsage = async ({
+    apiKey,
+    model,
+    messages,
+    signal,
+  }: SpecialistInput) => {
+    const result = await generateText({
+      ...PROVIDER_REQUEST_OPTIONS,
+      model: groqModel(apiKey, model?.trim() || undefined),
+      instructions: system,
+      messages,
+      abortSignal: signal,
+    });
+    return {
+      text: result.text,
+      usage: {
+        inputTokens: result.usage.inputTokens ?? undefined,
+        outputTokens: result.usage.outputTokens ?? undefined,
+      },
+    };
+  };
+
   return {
     id,
     name,
@@ -65,16 +87,8 @@ function specialist(
     role: "specialist",
     capabilities: SPECIALIST_CAPABILITIES[id as keyof typeof SPECIALIST_CAPABILITIES],
     permissions: ["llm:inference"],
-    generate: async ({ apiKey, model, messages, signal }: SpecialistInput) => {
-      const { text } = await generateText({
-        ...PROVIDER_REQUEST_OPTIONS,
-        model: groqModel(apiKey, model?.trim() || undefined),
-        instructions: system,
-        messages,
-        abortSignal: signal,
-      });
-      return text;
-    },
+    generate: async (input: SpecialistInput) => (await generateWithUsage(input)).text,
+    generateWithUsage,
   };
 }
 
