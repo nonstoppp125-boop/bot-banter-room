@@ -23,7 +23,7 @@ import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/we
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
-import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks.execute'
+import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks/execute'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
 import { Route as ApiAccountDeletionRouteImport } from './routes/api/account/deletion'
