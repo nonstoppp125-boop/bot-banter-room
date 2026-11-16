@@ -47,3 +47,9 @@ No merge to main; no production deployment.
 - GitHub Actions run `43877244027`, exact code commit `0ac038a9dac7556edd2afccd3f867d85338df328`: production dependency audit found 0 vulnerabilities; TypeScript PASS; 52 test files / 407 tests PASS; production build PASS; generated Wrangler Worker config PASS.
 - The added accessibility contract tests and current persisted task execution/recovery regression suite are included in this run.
 - This does not replace Cloudflare D1/Access live migration tests, real Telegram/OAuth/provider smoke tests, physical-device testing, backup/restore or release approval.
+
+
+## 2026-11-16 — LinkedIn Content Studio CI verification
+
+- GitHub Actions run `43878285889`, exact code commit `be8dca681998c0c1a618b1af858a6866de63b739`: production dependency audit 0 vulnerabilities; TypeScript PASS; 53 test files / 410 tests PASS; production build PASS; generated Wrangler Worker config PASS.
+- This includes the new LinkedIn Content Studio route and route-registration safety tests. Live D1/provider/device acceptance remains blocked.
