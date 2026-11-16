@@ -80,3 +80,48 @@ export function createIntegrationAuditEvent(event:IntegrationAuditEvent):Integra
  const details=Object.fromEntries(Object.entries(event.details).slice(0,20).map(([k,v])=>[k.slice(0,80),v.slice(0,300)]));
  return{...event,details};
 }
+
+
+export interface WebhookReplayStore { claim(provider:IntegrationProviderId,eventId:string,expiresAt:string):Promise<boolean>; }
+export async function verifyWebhookHmacSha256(input:{secret:string;rawBody:string;signature:string}):Promise<boolean>{
+ if(input.secret.length<32||input.rawBody.length>1_000_000)return false;
+ const supplied=input.signature.replace(/^sha256=/i,"").toLowerCase();
+ if(!/^[a-f0-9]{64}$/.test(supplied))return false;
+ const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(input.secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const digest=new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(input.rawBody)));
+ const expected=Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
+ let mismatch=0;for(let i=0;i<expected.length;i++)mismatch|=expected.charCodeAt(i)^supplied.charCodeAt(i);
+ return mismatch===0;
+}
+export async function authorizeWebhookDelivery(input:{
+ provider:IntegrationProviderId;eventId:string;rawBody:string;signature:string;secret:string;
+ timestamp:string;now:string;replayStore:WebhookReplayStore|null;
+}):Promise<{allowed:boolean;reason:"authorized"|"invalid-event"|"stale-timestamp"|"invalid-signature"|"replay-store-unavailable"|"duplicate-event"}>{
+ if(!/^[A-Za-z0-9._:-]{1,200}$/.test(input.eventId)||input.rawBody.length>1_000_000)return{allowed:false,reason:"invalid-event"};
+ const timestamp=Date.parse(input.timestamp),now=Date.parse(input.now);
+ if(!Number.isFinite(timestamp)||!Number.isFinite(now)||Math.abs(now-timestamp)>300_000)return{allowed:false,reason:"stale-timestamp"};
+ if(!await verifyWebhookHmacSha256({secret:input.secret,rawBody:input.rawBody,signature:input.signature}))return{allowed:false,reason:"invalid-signature"};
+ if(!input.replayStore)return{allowed:false,reason:"replay-store-unavailable"};
+ const expiresAt=new Date(Math.max(now,timestamp)+86_400_000).toISOString();
+ const claimed=await input.replayStore.claim(input.provider,input.eventId,expiresAt);
+ return claimed?{allowed:true,reason:"authorized"}:{allowed:false,reason:"duplicate-event"};
+}
+export type D1WebhookReplayDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>}}};
+export function createD1WebhookReplayStore(database:D1WebhookReplayDatabase):WebhookReplayStore{
+ if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 webhook database is required.");
+ return{claim:async(provider,eventId,expiresAt)=>{
+  if(!/^[A-Za-z0-9._:-]{1,200}$/.test(eventId)||!Number.isFinite(Date.parse(expiresAt)))throw new Error("Invalid webhook replay claim.");
+  const result=await database.prepare("INSERT OR IGNORE INTO webhook_event_claims (provider, event_id, expires_at) VALUES (?, ?, ?)").bind(provider,eventId,expiresAt).run();
+  if(result.success===false)throw new Error("D1 webhook replay claim failed.");
+  if(result.meta?.changes===1)return true;
+  if(result.meta?.changes===0)return false;
+  throw new Error("D1 did not return webhook claim change count.");
+ }};
+}
+export function calculateProviderRetryDelay(attempt:number,retryAfterSeconds?:number|null):number{
+ if(!Number.isInteger(attempt)||attempt<1||attempt>5)throw new Error("Retry attempt must be between 1 and 5.");
+ const fallback=Math.min(30_000,500*2**(attempt-1));
+ if(retryAfterSeconds===undefined||retryAfterSeconds===null)return fallback;
+ if(!Number.isFinite(retryAfterSeconds)||retryAfterSeconds<0)return fallback;
+ return Math.min(30_000,Math.max(fallback,retryAfterSeconds*1000));
+}
