@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 export const Route = createFileRoute("/tasks")({
@@ -32,6 +32,7 @@ function TasksPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const executionController = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +83,8 @@ function TasksPage() {
   };
 
   const execute = async (taskId: string) => {
+    const controller = new AbortController();
+    executionController.current = controller;
     setSubmitting(true);
     setError(null);
     setNotice(null);
@@ -91,15 +94,21 @@ function TasksPage() {
         credentials: "same-origin",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ taskId }),
+        signal: controller.signal,
       });
       const data = await response.json() as { error?: string; detail?: string; task?: { status?: string } };
       if (!response.ok) throw new Error(data.detail || data.error || "Task execution failed.");
       setNotice("Manager specialists completed the task and saved the result.");
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Task execution failed.");
+      if (controller.signal.aborted) {
+        setNotice("Cancellation requested. The Worker will stop the specialist workflow and mark the task cancelled when the request disconnect is observed.");
+      } else {
+        setError(cause instanceof Error ? cause.message : "Task execution failed.");
+      }
       await load();
     } finally {
+      if (executionController.current === controller) executionController.current = null;
       setSubmitting(false);
     }
   };
@@ -202,6 +211,7 @@ function TasksPage() {
                     {task.status === "queued" && <button type="button" onClick={() => void execute(task.id)} disabled={submitting} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">{submitting ? "Running…" : "Run with Manager"}</button>}
                     {task.status === "needs_approval" && <button type="button" onClick={() => void unlock(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Verify approval & unlock</button>}
                     {task.status === "failed" && <button type="button" onClick={() => void retry(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Retry (max 2)</button>}
+                    {task.status === "running" && <button type="button" onClick={() => executionController.current?.abort()} disabled={!executionController.current} className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/5 disabled:opacity-50">Cancel execution</button>}
                     {task.status === "queued" && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel queued task</button>}
                   </div>
                 </div>
