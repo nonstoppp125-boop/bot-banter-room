@@ -118,3 +118,14 @@ Append new evidence below; never rewrite historical results.\n\n
 - Group 07 registry and specialist runtime tests verified; G07.22 tools remain blocked.
 - Group 08 coordination primitives verified in CI; external-action execution remains fail-closed pending provisioned durable storage and approval.
 - Group 09 research primitives verified; semantic claim verification is not claimed.
+
+
+## 2026-11-16 — Group 09 Tavily extraction verification
+- Branch: `work/group06-manager-planner`
+- Commit: `9764b45d16f921f67e144a6c4efb27243701ed23`
+- GitHub Actions run: `43799513815` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 178 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Verified bounded selected-page extraction, same-origin result validation, extraction failure fallback to search content, HTTPS validation and cancellation.

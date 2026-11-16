@@ -132,3 +132,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Group 08 coordination primitives are substantially implemented; durable external-action idempotency remains unconfigured.
 - Group 09 research primitives are partially implemented; semantic claim verification/full-page inspection remain open.
 - Group 10 remains offline LinkedIn intelligence; OAuth/account access is not claimed.
+
+
+## 2026-11-16 — Group 08/09 progress
+- Group 08 coordination primitives are implemented and CI-verified; durable external-action idempotency remains partial until D1 provisioning and an approved executor.
+- Group 09 now includes selected-page extraction through Tavily Extract in addition to search; source content is retained as untrusted evidence and extraction failures preserve search snippets.
+- CI run `43799513815`: SUCCESS — TypeScript, 16 test files / 178 tests, production build and Wrangler validation.
+- Semantic claim verification remains an explicit limitation.

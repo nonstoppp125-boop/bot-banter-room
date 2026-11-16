@@ -118,3 +118,10 @@ No commit, push, deployment or backup modification was performed by this batch.
 - Orchestrator retains search snippets when extraction fails; it never claims page extraction succeeded unless the provider returns matching content.
 - Official provider contract: Tavily Extract API supports one or more URLs and returns extracted raw content (https://help.tavily.com/articles/8721959612-what-is-the-tavily-extract-api).
 - Verification pending CI.
+
+
+## 2026-11-16 — Group 08 coordination and Group 09 source extraction refresh
+- Added detailed status documents: `PART09_GROUP08_STATUS.md` and `PART10_GROUP09_STATUS.md`.
+- Group 08 coordination runtime verification: CI run `43798972433` SUCCESS (175 tests); G08.17 remains partial pending provisioned D1 and approved external-action execution.
+- Group 09 added Tavily Extract for selected pages. CI run `43799513815` SUCCESS (178 tests), TypeScript, build and Wrangler validation all PASS.
+- Semantic claim verification remains unimplemented; citation diversity/freshness are not truth verification.
