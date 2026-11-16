@@ -7,10 +7,10 @@ const token = "A".repeat(43);
 const cookie = "__Host-liza_session=" + token;
 const url = "https://liza.example/api/tasks/execute";
 
-function makeDatabase(status: "queued" | "needs_approval" = "queued", claimAllowed = true) {
+function makeDatabase(status: "queued" | "needs_approval" = "queued", claimAllowed = true, inputSummary = "Prepare a research brief") {
   const rows: Record<string, unknown>[] = [{
     id: "task-1", workspace_id: "workspace-1", user_id: "user-1", status,
-    input_summary: "Prepare a research brief", plan_json: JSON.stringify(buildManagerPlan("Prepare a research brief", listAgents())), result_json: null,
+    input_summary: inputSummary, plan_json: JSON.stringify(buildManagerPlan(inputSummary, listAgents())), result_json: null,
     created_at: "2026-11-16T00:00:00.000Z", updated_at: "2026-11-16T00:00:00.000Z",
   }];
   const queries: string[] = [];
@@ -107,6 +107,31 @@ describe("authenticated Manager task execution", () => {
     });
     expect(response.status).toBe(409);
     expect(invoked).toBe(false);
+  });
+
+  it("recomputes risk from the saved task text and blocks a stale queued high-risk record", async () => {
+    const { database, rows } = makeDatabase("queued", true, "Publish this LinkedIn post");
+    let invoked = false;
+    const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }), env(database), async () => {
+      invoked = true;
+      return new Response();
+    });
+    expect(response.status).toBe(409);
+    expect(invoked).toBe(false);
+    expect(rows[0]?.["status"]).toBe("queued");
+  });
+
+  it("rejects a persisted plan whose task summary no longer matches before claiming", async () => {
+    const { database, rows } = makeDatabase();
+    rows[0]!["plan_json"] = JSON.stringify(buildManagerPlan("Different task text", listAgents()));
+    let invoked = false;
+    const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }), env(database), async () => {
+      invoked = true;
+      return new Response();
+    });
+    expect(response.status).toBe(409);
+    expect(invoked).toBe(false);
+    expect(rows[0]?.["status"]).toBe("queued");
   });
 
   it("returns conflict when another worker already claimed the task", async () => {
