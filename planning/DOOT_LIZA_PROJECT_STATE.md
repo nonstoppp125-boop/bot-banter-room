@@ -107,3 +107,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Final synthesis is instructed not to claim acceptance unless the acceptance result is `accepted`.
 - Verified commit: `e43c2885e6a2251583bac5c7030071c045fe8407`; GitHub Actions run `43798378327` SUCCESS — TypeScript, 15 test files / 172 tests, production build and Wrangler validation.
 - Group 06 remains IN PROGRESS; no merge to `main`, no production deployment.
+
+
+## 2026-11-16 — Group 06 execution cost estimation
+- Added specialist generation usage reporting and aggregation for provider-reported input/output tokens; missing usage falls back to explicitly estimated character-based tokens.
+- Added Groq published per-token pricing for GPT OSS 20B and 120B; unknown model IDs return no estimate rather than using invented rates.
+- Final streamed synthesis uses an explicit 800-output-token allowance and character-based input estimate, so total cost remains an estimate rather than an invoice-equivalent amount.
+- Verified commit: `fd7dafb684783ed9a46c6a1da2fa36516636485c`; GitHub Actions run `43798972433` SUCCESS — TypeScript, 16 test files / 175 tests, production build and Wrangler validation.
+- G06.08 implementation is complete with documented estimation limitations; G06.13 and G06.18 remain blocked on durable infrastructure and approval persistence.
