@@ -23,3 +23,9 @@ No merge to main; no production deployment.
 
 - Added `planning/PRODUCTION_ENVIRONMENT_CHECKLIST.md` with the required D1 binding/migrations, Access configuration, provider credentials, Telegram webhook, deployment secrets and final acceptance evidence.
 - Release remains blocked until real production configuration, backups/restore, rollback rehearsal, smoke tests and user sign-off exist.
+
+
+## 2026-11-16 — Security review added to release evidence
+
+- Dependency audit results and remediation are recorded in `planning/SECURITY_DEPENDENCY_AUDIT.md`.
+- Production release remains blocked by high-severity dependency findings in addition to unprovisioned runtime and manual acceptance evidence.
