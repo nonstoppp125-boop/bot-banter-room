@@ -29,3 +29,10 @@ No merge to main; no production deployment.
 
 - Dependency audit results and remediation are recorded in `planning/SECURITY_DEPENDENCY_AUDIT.md`.
 - Production release remains blocked by high-severity dependency findings in addition to unprovisioned runtime and manual acceptance evidence.
+
+
+## 2026-11-16 — Dependency release gate cleared
+
+- High-severity Vite and Zod findings have been remediated and verified on the active work branch; npm audit now reports 7 low, 0 high and 0 critical.
+- Latest CI run `43875777984` passed TypeScript, 51 test files / 401 tests, production build, Wrangler validation and the high-threshold dependency audit.
+- Production release is still blocked by missing live D1/Access/Telegram/provider configuration, background worker, external-action executors, production smoke/backup/rollback evidence and manual acceptance.
