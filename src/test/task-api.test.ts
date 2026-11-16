@@ -5,7 +5,7 @@ const token = "A".repeat(43);
 const cookie = "__Host-liza_session=" + token;
 const url = "https://liza.example/api/tasks";
 
-function makeDatabase() {
+function makeDatabase(membership: "owner" | "member" | null = "owner") {
   const queries: string[] = [];
   const bindings: unknown[][] = [];
   const rows: Record<string, unknown>[] = [];
@@ -18,7 +18,7 @@ function makeDatabase() {
           return {
             first: async <T = Record<string, unknown>>() => {
               if (query.includes("FROM workspace_members")) {
-                return { workspace_id: "workspace-1", user_id: "user-1", role: "owner" } as T;
+                return membership ? { workspace_id: "workspace-1", user_id: "user-1", role: membership } as T : null;
               }
               if (query.includes("FROM sessions")) {
                 return {
@@ -81,6 +81,12 @@ describe("authenticated Manager task API", () => {
     expect(rows[0]).toMatchObject({ workspace_id: "workspace-1", user_id: "user-1", status: "needs_approval" });
     expect(queries.some((query) => query.startsWith("INSERT INTO agent_tasks"))).toBe(true);
     expect(queries.some((query) => query.includes("UPDATE agent_tasks"))).toBe(false);
+  });
+
+  it("blocks a session whose workspace membership has been revoked", async () => {
+    const { database } = makeDatabase(null);
+    const response = await handleTaskRequest(new Request(url, { headers: { cookie } }), { ACTION_DB: database });
+    expect(response.status).toBe(403);
   });
 
   it("lists only tasks scoped to the authenticated workspace and user", async () => {
