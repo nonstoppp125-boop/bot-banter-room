@@ -173,15 +173,15 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
         if (!retried) return json({ error: "Retry budget is exhausted or task status changed." }, 409);
         return json({ task: { ...task, status: "queued", updatedAt: retriedAt }, retryLimit: 2 });
       }
-      if (task.status !== "queued") {
-        return json({ error: "Only queued tasks can be cancelled." }, 409);
+      if (task.status !== "queued" && task.status !== "needs_approval") {
+        return json({ error: "Only queued or approval-gated tasks can be cancelled." }, 409);
       }
       const cancelledAt = new Date().toISOString();
       const cancelled = await store.update({
         id: task.id,
         workspaceId: session.workspaceId,
         userId: session.userId,
-        expectedStatus: "queued",
+        expectedStatus: task.status,
         status: "cancelled",
         updatedAt: cancelledAt,
       });
