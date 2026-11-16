@@ -31,3 +31,15 @@ Append new evidence below; never rewrite historical results.\n\n
 - Termux runtime: not run; previous environment-specific exit 132 remains a separate limitation.
 - Scope: deterministic Manager planning, capability-based specialist selection, permission filtering, risk/approval flags, bounded specialist fan-out.
 - Group 06 remains PARTIAL; no production deployment or merge to main.
+
+
+## 2026-11-16 — Group 06 dependency-aware execution verification
+- Branch: `work/group06-manager-planner`
+- Commit: `d2907df00fa772296538068a785564a567b1f249`
+- GitHub Actions run: `43796215581` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS (14 test files; latest total count not separately captured)
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Changes verified: dependency-aware Manager subtasks, downstream evidence handoff, per-task timeout correction and explicit external-message risk detection.
+- Group 06 remains partial; no merge to main and no production deployment.
