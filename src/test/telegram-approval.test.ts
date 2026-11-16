@@ -7,7 +7,7 @@ describe("Telegram approval callback signatures",()=>{
   expect(new TextEncoder().encode(data).byteLength).toBeLessThanOrEqual(64);
   expect(await verifyTelegramApprovalCallbackData({data,telegramUserId:input.telegramUserId,workspaceId:input.workspaceId,secret:input.secret})).toEqual({valid:true,approvalId:"approval_123",decision:"approved"});
   expect(await verifyTelegramApprovalCallbackData({data,telegramUserId:"654321",workspaceId:input.workspaceId,secret:input.secret})).toEqual({valid:false,approvalId:null,decision:null});
-  expect(await verifyTelegramApprovalCallbackData({data,telegramUserId:input.telegramUserId,workspaceId:"other",secret:input.secret})).toEqual({valid:false,approvalId:null});
+  expect(await verifyTelegramApprovalCallbackData({data,telegramUserId:input.telegramUserId,workspaceId:"other",secret:input.secret})).toEqual({valid:false,approvalId:null,decision:null});
  });
  it("rejects tampered, oversized and malformed callback data",async()=>{
   const input={approvalId:"a1",telegramUserId:"123",workspaceId:"ws1",decision:"rejected" as const,secret:"s".repeat(40)};
