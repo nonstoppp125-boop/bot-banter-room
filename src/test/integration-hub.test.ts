@@ -30,9 +30,9 @@ it("hashes OAuth state and stores a one-time encrypted PKCE transaction",async()
     prepare:(query:string)=>({bind:(...values:unknown[])=>({
       run:async()=>{
         if(query.startsWith("INSERT")){
-          const [hash,provider,userId,redirectUri,blob,scopes,expiresAt,createdAt]=values;
+          const [hash,provider,userId,workspaceId,redirectUri,blob,scopes,expiresAt,createdAt]=values;
           if(rows.has(String(hash)))return{success:true,meta:{changes:0}};
-          rows.set(String(hash),{state_hash:hash,provider,user_id:userId,redirect_uri:redirectUri,encrypted_verifier_blob:blob,scopes_json:scopes,expires_at:expiresAt,created_at:createdAt,consumed_at:null});
+          rows.set(String(hash),{state_hash:hash,provider,user_id:userId,workspace_id:workspaceId,redirect_uri:redirectUri,encrypted_verifier_blob:blob,scopes_json:scopes,expires_at:expiresAt,created_at:createdAt,consumed_at:null});
           return{success:true,meta:{changes:1}};
         }
         return{success:false};
@@ -48,9 +48,9 @@ it("hashes OAuth state and stores a one-time encrypted PKCE transaction",async()
     })}),
   };
   const store=createD1OAuthTransactionStore(database);
-  const record={stateHash,provider:"instagram" as const,userId:"user-1",redirectUri:"https://app.example/callback",encryptedVerifierBlob:new Uint8Array(48).fill(7),scopes:["instagram_business_basic"],expiresAt:"2026-11-16T11:00:00.000Z",createdAt:"2026-11-16T10:00:00.000Z"};
+  const record={stateHash,provider:"instagram" as const,userId:"user-1",workspaceId:"workspace-1",redirectUri:"https://app.example/callback",encryptedVerifierBlob:new Uint8Array(48).fill(7),scopes:["instagram_business_basic"],expiresAt:"2026-11-16T11:00:00.000Z",createdAt:"2026-11-16T10:00:00.000Z"};
   await store.create(record);
-  expect(await store.consume(stateHash,"2026-11-16T10:30:00.000Z")).toMatchObject({provider:"instagram",userId:"user-1"});
+  expect(await store.consume(stateHash,"2026-11-16T10:30:00.000Z")).toMatchObject({provider:"instagram",userId:"user-1",workspaceId:"workspace-1"});
   expect(await store.consume(stateHash,"2026-11-16T10:31:00.000Z")).toBeNull();
 });
 

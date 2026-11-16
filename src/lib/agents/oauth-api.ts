@@ -97,7 +97,7 @@ export async function handleOAuthStartRequest(request: Request, env: OAuthApiEnv
 
     const now = new Date().toISOString();
     const session = await createD1SessionStore(database).getActive(token, now);
-    if (!session) return json({ error: "Active session required." }, 401);
+    if (!session || !session.workspaceId) return json({ error: "Active workspace session required." }, 401);
     const key = decodeEncryptionKey(encryptionKey);
     if (key.byteLength !== 32) return json({ error: "OAuth encryption key must be 256 bits." }, 503);
 
@@ -119,6 +119,7 @@ export async function handleOAuthStartRequest(request: Request, env: OAuthApiEnv
       stateHash: await hashOAuthState(state),
       provider,
       userId: session.userId,
+      workspaceId: session.workspaceId,
       redirectUri,
       encryptedVerifierBlob,
       scopes: [...definition.allowedScopes],

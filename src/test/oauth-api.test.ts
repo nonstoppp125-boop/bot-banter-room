@@ -13,7 +13,7 @@ function makeDatabase() {
           return {
             first: async <T = Record<string, unknown>>() => query.includes("FROM sessions")
               ? {
-                  id: "session-1", user_id: "user-1", workspace_id: null,
+                  id: "session-1", user_id: "user-1", workspace_id: "workspace-1",
                   expires_at: "2026-11-17T00:00:00.000Z",
                   created_at: "2026-11-16T00:00:00.000Z",
                 } as T

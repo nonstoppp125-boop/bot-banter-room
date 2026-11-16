@@ -156,6 +156,7 @@ export interface OAuthTransactionRecord {
   stateHash: string;
   provider: IntegrationProviderId;
   userId: string;
+  workspaceId: string;
   redirectUri: string;
   encryptedVerifierBlob: Uint8Array;
   scopes: string[];
@@ -182,6 +183,7 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
     create: async (record) => {
       if (!/^[a-f0-9]{64}$/.test(record.stateHash) ||
           !/^[A-Za-z0-9._:-]{1,120}$/.test(record.userId) ||
+          !/^[A-Za-z0-9._:-]{1,120}$/.test(record.workspaceId) ||
           !INTEGRATION_PROVIDERS[record.provider] ||
           !record.redirectUri.startsWith("https://") ||
           !(record.encryptedVerifierBlob instanceof Uint8Array) ||
@@ -193,8 +195,8 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
         throw new Error("Invalid OAuth transaction record.");
       }
       const result = await database.prepare(
-        "INSERT OR IGNORE INTO oauth_transactions (state_hash, provider, user_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ).bind(record.stateHash, record.provider, record.userId, record.redirectUri,
+        "INSERT OR IGNORE INTO oauth_transactions (state_hash, provider, user_id, workspace_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ).bind(record.stateHash, record.provider, record.userId, record.workspaceId, record.redirectUri,
         record.encryptedVerifierBlob, JSON.stringify([...new Set(record.scopes)]), record.expiresAt, record.createdAt).run();
       if (result.success === false) throw new Error("D1 OAuth transaction write failed.");
       if (result.meta?.changes !== 1) throw new Error("OAuth state hash already exists or D1 did not confirm the insert.");
@@ -202,17 +204,17 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
     consume: async (stateHash, now) => {
       if (!/^[a-f0-9]{64}$/.test(stateHash) || new Date(now).toISOString() !== now) return null;
       const row = await database.prepare(
-        "UPDATE oauth_transactions SET consumed_at = ? WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ? RETURNING state_hash, provider, user_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at",
+        "UPDATE oauth_transactions SET consumed_at = ? WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ? RETURNING state_hash, provider, user_id, workspace_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at",
       ).bind(now, stateHash, now).first<{
-        state_hash: string; provider: IntegrationProviderId; user_id: string; redirect_uri: string;
+        state_hash: string; provider: IntegrationProviderId; user_id: string; workspace_id: string | null; redirect_uri: string;
         encrypted_verifier_blob: Uint8Array; scopes_json: string; expires_at: string; created_at: string;
       }>();
-      if (!row) return null;
+      if (!row || !row.workspace_id) return null;
       let scopes: unknown;
       try { scopes = JSON.parse(row.scopes_json); } catch { throw new Error("Stored OAuth scopes are invalid JSON."); }
       if (!Array.isArray(scopes) || !scopes.every(scope => typeof scope === "string")) throw new Error("Stored OAuth scopes are invalid.");
       return {
-        stateHash: row.state_hash, provider: row.provider, userId: row.user_id,
+        stateHash: row.state_hash, provider: row.provider, userId: row.user_id, workspaceId: row.workspace_id,
         redirectUri: row.redirect_uri, encryptedVerifierBlob: row.encrypted_verifier_blob,
         scopes, expiresAt: row.expires_at, createdAt: row.created_at,
       };
