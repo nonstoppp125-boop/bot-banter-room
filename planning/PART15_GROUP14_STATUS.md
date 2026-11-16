@@ -59,3 +59,15 @@ No merge to main; no production deployment.
 - Added campaign, audience and content-pillar impression report panels to the analytics dashboard. Reports explicitly show empty states when dimensions are not supplied; no dimension is inferred.
 - GitHub Actions run `43828820245`: TypeScript, unit/integration tests, production build and generated Wrangler configuration validation all completed successfully.
 - Group 14 remains IN PROGRESS: official platform ingestion, retention/deletion controls, pagination, complete dimension-aware CSV workflow, and live D1 migration/runtime verification are still open.
+
+
+## 2026-11-16 — Analytics pagination, deletion and dimension CSV
+
+- Added migration `0014_analytics_retention_controls.sql` with workspace-indexed soft-delete metadata.
+- D1 analytics store now supports stable keyset pagination (bounded 1–500 page size), opaque validated cursors, active-record filtering and workspace-scoped soft deletion.
+- `GET /api/analytics` returns `records`, `nextCursor` and `hasMore`; `DELETE /api/analytics` is same-origin, session-authenticated and workspace-admin-only, with a 100-ID ceiling.
+- Analytics UI now loads 200 records per page, supports Load more and per-record deletion. “Clear view” remains local-only and does not imply server deletion.
+- Canonical CSV export/import now round-trips campaign, audience and content-pillar dimensions while retaining compatibility with the earlier 11-column CSV format.
+- Regression coverage includes cursor pagination, malformed cursor rejection, admin-only deletion, cross-origin protection, workspace scoping and dimension/legacy CSV round-trips.
+- GitHub Actions run `43868496941`: SUCCESS — TypeScript, 51 test files / 387 tests, production build and generated Wrangler Worker config validation.
+- Still open: official platform analytics ingestion, live D1 migration/runtime verification, and additional report/retention policy decisions. Migration 0014 has not been applied to a live database.
