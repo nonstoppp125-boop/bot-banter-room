@@ -9,15 +9,23 @@ Branch: work/group06-manager-planner
 - G06.09–G06.12 — Risk classification, capability/permission checks and delegated execution.
 - G06.13 — D1 durable task-store adapter added for create/get/list and optimistic status updates, scoped by workspace and user; live D1 binding/runtime remains unprovisioned.
 - G06.14–G06.17 — Failure tracking, bounded retry/replanning, dependency skips, max fan-out, timeouts and execution budget.
-- G06.18 — D1 approval request/decision adapter and exact action-payload verifier added; decisions require pending state, expiry and owner/admin membership. External-action wrapper verifies workspace, action type, payload hash and expiry before atomic idempotency claim. Approval UI/API and runtime integration remain open.
+- G06.18 — D1 approval request/decision adapter and exact action-payload verifier added; decisions require pending state, expiry and owner/admin membership. External-action wrapper verifies workspace, action type, payload hash and expiry before atomic idempotency claim. A session-authenticated API now creates requests with a human-readable summary and payload hash, lists pending approvals for workspace admins/owners, and atomically records approve/reject decisions with same-origin protection. Approval center UI and runtime integration remain open.
 - G06.19 — Formal acceptance criteria and schema-checked reviewer results; malformed/missing results fail closed to needs-review.
 - G06.20 — Final synthesis receives execution summary, review status and cost-estimate limitations.
 
 ## Remaining / blocked
 - D1 database provisioning and ACTION_DB binding are not configured; adapters are not live.
-- Approval request/decision routes and user-facing approval center are not wired.
+- Request, inbox and decision API routes are wired; user-facing approval center UI and authentication/login flow remain open.
 - No external publishing, messaging, destructive action or deployment executor is enabled.
 - Provider usage and final synthesis cost remain approximate where provider telemetry is unavailable.
 
-GROUP 06: IN PROGRESS — planner, replan, cost and persistence/approval adapters implemented; live D1 and user approval workflow remain blocked.
+GROUP 06: IN PROGRESS — planner, replan, cost and approval API foundations implemented; live D1 provisioning, login and UI integration remain blocked.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Approval API integration
+- Added `/api/approvals` for authenticated workspace members to submit a request with a bounded review summary and SHA-256 payload hash; raw action payload is not persisted.
+- GET returns pending requests only to workspace owners/admins. POST approve/reject requires owner/admin membership, a valid session, same-origin Origin and JSON content type.
+- Added migration `0010_approval_summary.sql` so reviewers see a summary rather than approving an opaque hash alone.
+- GitHub Actions run `43809230814`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+- D1 binding, session issuance/login, approval center UI and external executor remain unconfigured; no external action is enabled.

@@ -27,7 +27,7 @@ Branch: `work/group06-manager-planner`
 
 ## Partial / infrastructure-dependent
 
-- G08.17 — A fail-closed durable action-claim contract and Cloudflare D1 adapter exist. No production D1 binding is provisioned, and no approved external-action executor is wired. Duplicate external actions are not claimed to be prevented end-to-end until the store and executor are connected and runtime-verified.
+- G08.17 — A fail-closed durable action-claim contract, Cloudflare D1 adapter, exact persisted-approval verifier and approved-action wrapper exist. The approval request/inbox/decision API is now wired. No production D1 binding or real external-action publisher is provisioned; duplicate external actions are not claimed to be prevented end-to-end until runtime integration is verified.
 
 ## Verification
 
@@ -39,3 +39,9 @@ Branch: `work/group06-manager-planner`
 
 GROUP 08: PARTIALLY IMPLEMENTED — all coordination primitives are implemented; G08.17 awaits provisioned durable storage and an approved external-action executor.
 No merge to `main`; no production deployment.
+
+
+## 2026-11-16 — Persisted approval and execution boundary
+- Exact workspace/action/payload/expiry approval verification is enforced before an atomic D1 idempotency claim.
+- Authenticated approval request and decision API is wired; external action adapters remain disabled and require a live D1 binding plus platform credentials.
+- CI run `43809230814`: SUCCESS.
