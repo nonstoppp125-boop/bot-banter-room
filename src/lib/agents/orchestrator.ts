@@ -472,7 +472,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
         reviewEvidence.join("\\n\\n") +
         "\\n\\nACCEPTANCE REVIEW JSON CONTRACT:\\n" +
         "Evaluate every criterion below against the supplied execution evidence. " +
-        "Return JSON only: {\\"summary\\":string,\\"findings\\":string[],\\"criteria\\":[{\\"id\\":string,\\"status\\":\\"pass\\"|\\"fail\\"|\\"unknown\\",\\"evidence\\":string}]}. " +
+        "Return JSON only with keys summary (string), findings (string array), and criteria (array of objects with id, status, evidence). Each status must be pass, fail, or unknown. " +
         "Include every criterion exactly once. Evidence must point to concrete supplied output or execution status; never invent evidence. " +
         "Use unknown when evidence is insufficient.\\n" +
         JSON.stringify(acceptanceCriteria),
