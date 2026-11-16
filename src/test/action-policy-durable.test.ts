@@ -127,13 +127,17 @@ describe("durable external action boundary", () => {
     };
     const execute = vi.fn(async () => "published");
     const store = { claim: vi.fn(async () => true) };
-    const input = { approval, workspaceId: "ws1", actionType: "social.publish" as const,
+    const approvalStore = { get: vi.fn(async () => approval) };
+    const input = { approvalStore, approvalId: "approval-1", actorUserId: "admin1", workspaceId: "ws1", actionType: "social.publish" as const,
       payloadHash: "a".repeat(64), now: "2026-11-16T11:00:00.000Z",
       idempotencyKey: "publish-1", store, execute };
     await expect(executeVerifiedApprovedAction(input)).resolves.toMatchObject({ executed: true, result: "published" });
+    expect(approvalStore.get).toHaveBeenCalledWith({ id: "approval-1", workspaceId: "ws1", actorUserId: "admin1" });
     expect(store.claim).toHaveBeenCalledTimes(1);
     await expect(executeVerifiedApprovedAction({ ...input, payloadHash: "b".repeat(64) })).rejects.toThrow(/approval/i);
     expect(execute).toHaveBeenCalledTimes(1);
+    await expect(executeVerifiedApprovedAction({ ...input, actorUserId: "other-user" })).rejects.toThrow(/approving user/i);
+    await expect(executeVerifiedApprovedAction({ ...input, approvalStore: null })).rejects.toThrow(/storage/i);
   });
 
 });
