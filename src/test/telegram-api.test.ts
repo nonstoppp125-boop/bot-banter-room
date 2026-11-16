@@ -150,7 +150,8 @@ describe("Telegram link and webhook API", () => {
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ status: "needs_approval" });
-    expect(sentBody).toContain("approval-gated");
+    expect(sentBody).toContain("Approval request created");
+    expect(sentBody).toContain("will not execute from Telegram");
   });
 
   it("lists recent shared Manager tasks from Telegram", async () => {
