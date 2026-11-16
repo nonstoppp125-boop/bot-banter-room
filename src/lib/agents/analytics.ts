@@ -136,8 +136,10 @@ export interface DurableAnalyticsSnapshotStore {
 }
 
 /** D1 adapter. It is usable only after the analytics migration and ACTION_DB binding are provisioned. */
-export function createD1AnalyticsStore(database: D1AnalyticsDatabase): DurableAnalyticsSnapshotStore {
+export function createD1AnalyticsStore(database: D1AnalyticsDatabase, workspaceId: string): DurableAnalyticsSnapshotStore {
   if (!database || typeof database.prepare !== "function") throw new Error("A valid D1 analytics database is required");
+  const workspace = clean(workspaceId, 120);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(workspace)) throw new Error("A valid analytics workspace is required");
   const restore = (json: string): AnalyticsSnapshot => {
     let value: unknown;
     try { value = JSON.parse(json); } catch { throw new Error("Stored analytics snapshot is invalid JSON"); }
@@ -155,10 +157,10 @@ export function createD1AnalyticsStore(database: D1AnalyticsDatabase): DurableAn
       const normalized = restore(JSON.stringify(snapshot));
       const payload = JSON.stringify(normalized);
       const result = await database.prepare(
-        "INSERT OR IGNORE INTO analytics_snapshots (id, platform, account_id, entity_id, entity_type, metric, period_start, period_end, captured_at, source, value, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO analytics_snapshots (id, platform, account_id, entity_id, entity_type, metric, period_start, period_end, captured_at, source, value, payload_json, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       ).bind(normalized.id, normalized.platform, normalized.accountId, normalized.entityId,
         normalized.entityType, normalized.metric, normalized.periodStart, normalized.periodEnd,
-        normalized.capturedAt, normalized.source, normalized.value, payload).run();
+        normalized.capturedAt, normalized.source, normalized.value, payload, workspace).run();
       if (result.success === false) throw new Error("D1 analytics snapshot write failed");
       if (result.meta?.changes === 1) return;
       if (result.meta?.changes !== 0) throw new Error("D1 did not return an analytics write change count");
@@ -168,8 +170,8 @@ export function createD1AnalyticsStore(database: D1AnalyticsDatabase): DurableAn
       if (!existing || existing.payload_json !== payload) throw new Error("Analytics snapshot ID already exists with different data.");
     },
     list: async (filters = {}) => {
-      const clauses: string[] = [];
-      const values: unknown[] = [];
+      const clauses: string[] = ["workspace_id = ?"];
+      const values: unknown[] = [workspace];
       if (filters.platform !== undefined) { clauses.push("platform = ?"); values.push(filters.platform); }
       if (filters.accountId !== undefined) { clauses.push("account_id = ?"); values.push(filters.accountId); }
       if (filters.entityId !== undefined) { clauses.push("entity_id = ?"); values.push(filters.entityId); }
