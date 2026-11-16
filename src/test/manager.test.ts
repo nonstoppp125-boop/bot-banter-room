@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan } from "@/lib/agents/manager";
+import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan, restoreManagerPlan } from "@/lib/agents/manager";
 import { routeTaskToAgents } from "@/lib/agents/coordination";
 import { listAgents } from "@/lib/agents/registry";
 import type { AgentDefinition } from "@/lib/agents/types";
@@ -32,6 +32,44 @@ const agents: AgentDefinition[] = [
     generate: async () => "ok",
   })),
 ];
+
+
+describe("persisted Manager plan restoration", () => {
+  it("restores objectives and dependencies while recomputing risk and authority fields", () => {
+    const task = "Research the API first, then implement the integration";
+    const original = buildManagerPlan(task, agents);
+    const restored = restoreManagerPlan(task, {
+      ...original,
+      subtasks: original.subtasks.map((item) => ({ ...item, objective: "Persisted objective" })),
+      risk: "low",
+      approvalRequired: false,
+      agentIds: ["shell-executor"],
+      executionBudget: { maxSpecialists: 999 },
+    }, agents);
+    expect(restored?.subtasks.every((item) => item.objective === "Persisted objective")).toBe(true);
+    expect(restored?.agentIds).toEqual(original.agentIds);
+    expect(restored?.risk).toBe(original.risk);
+    expect(restored?.approvalRequired).toBe(original.approvalRequired);
+    expect(restored?.executionBudget).toEqual(original.executionBudget);
+  });
+
+  it("rejects stale, unknown-agent, and cyclic persisted plans", () => {
+    const task = "Research the API first, then implement the integration";
+    const original = buildManagerPlan(task, agents);
+    expect(restoreManagerPlan(task + " changed", original, agents)).toBeNull();
+    expect(restoreManagerPlan(task, {
+      ...original,
+      subtasks: [{ id: "shell-executor", agentId: "shell-executor", objective: "Run shell", dependsOn: [] }],
+    }, agents)).toBeNull();
+    expect(restoreManagerPlan(task, {
+      ...original,
+      subtasks: [
+        { id: "research", agentId: "research", objective: "Research", dependsOn: ["coding"] },
+        { id: "coding", agentId: "coding", objective: "Code", dependsOn: ["research"] },
+      ],
+    }, agents)).toBeNull();
+  });
+});
 
 describe("deterministic Manager planning", () => {
   it("selects a registered specialist for a matching task", () => {
