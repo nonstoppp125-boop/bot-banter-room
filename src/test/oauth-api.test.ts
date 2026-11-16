@@ -75,8 +75,8 @@ describe("OAuth authorization start API", () => {
     const insert = queries.findIndex((query) => query.includes("INSERT OR IGNORE INTO oauth_transactions"));
     expect(insert).toBeGreaterThanOrEqual(0);
     expect(bindings[insert]?.[0]).toMatch(/^[a-f0-9]{64}$/);
-    expect(bindings[insert]?.[4]).toBeInstanceOf(Uint8Array);
-    expect((bindings[insert]?.[4] as Uint8Array).byteLength).toBeGreaterThan(32);
+    expect(bindings[insert]?.[5]).toBeInstanceOf(Uint8Array);
+    expect((bindings[insert]?.[5] as Uint8Array).byteLength).toBeGreaterThan(32);
   });
 
   it("fails closed when provider configuration is missing", async () => {
