@@ -1,4 +1,6 @@
 import type { ModelMessage, UIMessage } from "ai";
+import type { D1MemoryDatabase } from "./memory-store";
+import type { D1SessionDatabase } from "./session-auth";
 
 /** Cloudflare Workers Rate Limiting binding. */
 export type ChatRateLimiter = {
@@ -7,6 +9,8 @@ export type ChatRateLimiter = {
 
 /** Worker bindings this app reads. Names must match the Cloudflare config. */
 export type AgentEnv = {
+  /** Optional D1 binding used only for authenticated, user-scoped memory retrieval. */
+  ACTION_DB?: D1MemoryDatabase & D1SessionDatabase;
   CHAT_RATE_LIMITER?: ChatRateLimiter | undefined;
   GROQ_API_KEY?: string | undefined;
   /** Optional server-side Tavily key; research falls back safely when absent. */
@@ -23,6 +27,8 @@ export type AgentRunInput = {
   signal: AbortSignal;
   /** Optional server-restored durable Manager plan; validated again by the orchestrator. */
   managerPlan?: unknown;
+  /** Bounded, user-authored memory context loaded from the active session. */
+  memoryContext?: string;
 };
 
 export type SpecialistInput = {
