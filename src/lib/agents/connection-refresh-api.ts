@@ -115,7 +115,7 @@ export async function handleConnectionRefreshRequest(
     const timeout = setTimeout(() => controller.abort(), 15_000);
     let response: Response;
     try {
-      response = await fetcher(endpoint.toString(), { method: "POST", headers, body: form.toString(), signal: controller.signal });
+      response = await fetcher(endpoint.toString(), { method: "POST", headers, body: form.toString(), signal: controller.signal, redirect: "error" });
     } finally { clearTimeout(timeout); }
     const raw = await response.text();
     if (!response.ok || raw.length > 16_384) return json({ error: "Provider token refresh failed." }, 502);

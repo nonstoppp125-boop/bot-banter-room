@@ -73,8 +73,10 @@ describe("OAuth callback exchange and credential persistence", () => {
   it("exchanges a valid one-time code and stores credentials only as encrypted bytes", async () => {
     const stateData = await setup();
     let sentBody = "";
+    let redirectMode = "";
     const fetcher: typeof fetch = async (_input, init) => {
       sentBody = String(init?.body ?? "");
+      redirectMode = String(init?.redirect ?? "");
       return new Response(JSON.stringify({
         access_token: "access-token-secret",
         refresh_token: "refresh-token-secret",
@@ -91,6 +93,7 @@ describe("OAuth callback exchange and credential persistence", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toContain("connected=instagram");
     expect(sentBody).toContain("code_verifier=");
+    expect(redirectMode).toBe("error");
     const insert = stateData.queries.findIndex((query) => query.includes("INSERT INTO app_connections"));
     expect(insert).toBeGreaterThanOrEqual(0);
     expect(stateData.bindings[insert]?.[5]).toBeInstanceOf(Uint8Array);

@@ -62,8 +62,10 @@ describe("owned integration token refresh", () => {
   it("refreshes only the active user's workspace connection and stores the new token encrypted", async () => {
     const state = await setup();
     let body = "";
+    let redirectMode = "";
     const fetcher: typeof fetch = async (_input, init) => {
       body = String(init?.body ?? "");
+      redirectMode = String(init?.redirect ?? "");
       return new Response(JSON.stringify({
         access_token: "new-access-secret", refresh_token: "new-refresh-secret",
         token_type: "Bearer", expires_in: 3600,
@@ -73,6 +75,7 @@ describe("owned integration token refresh", () => {
     const response = await handleConnectionRefreshRequest(post(), { ...env, ACTION_DB: state.database }, fetcher);
     expect(response.status).toBe(200);
     expect(body).toContain("refresh-secret");
+    expect(redirectMode).toBe("error");
     expect(await response.json()).toMatchObject({ refreshed: true });
     const update = state.queries.findIndex((query) => query.includes("UPDATE app_connections"));
     expect(update).toBeGreaterThanOrEqual(0);

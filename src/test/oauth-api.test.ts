@@ -65,7 +65,7 @@ describe("OAuth authorization start API", () => {
       OAUTH_INSTAGRAM_CLIENT_ID: "client-123",
       OAUTH_INSTAGRAM_AUTHORIZATION_ENDPOINT: "https://www.facebook.com/v22.0/dialog/oauth",
       OAUTH_INSTAGRAM_REDIRECT_URI: "https://app.example/api/integrations/oauth/callback",
-      OAUTH_INSTAGRAM_REGISTERED_REDIRECT_URI: "https://app.example/api/integrations/oauth/callback/instagram",
+      OAUTH_INSTAGRAM_REGISTERED_REDIRECT_URI: "https://app.example/api/integrations/oauth/callback",
     });
     expect(response.status).toBe(200);
     const payload = await response.json() as { authorizationUrl: string };

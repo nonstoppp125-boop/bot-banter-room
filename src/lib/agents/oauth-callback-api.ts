@@ -142,6 +142,7 @@ export async function handleOAuthCallbackRequest(
         headers,
         body: form.toString(),
         signal: controller.signal,
+        redirect: "error",
       });
     } finally {
       clearTimeout(timeout);
