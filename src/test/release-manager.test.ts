@@ -1,6 +1,6 @@
 import {describe,expect,it} from "vitest";
 import {buildReleaseManifest,evaluateReleaseCandidate} from "@/lib/agents/release-manager";
-const base={version:"1.0.0-rc.1",commitSha:"abcdef123456789",branch:"release/candidate",changeSummary:"Release candidate",artifactSha256:"a".repeat(64),qualityStatus:"passed" as const,rollbackPlan:"Restore the previous worker version and verify health.",backupEvidence:"D1 snapshot and restore drill evidence recorded.",now:"2026-11-16T10:00:00Z"};
+const base={version:"1.0.0-rc.1",commitSha:"abcdef123456789",branch:"release/candidate",changeSummary:"Release candidate",artifactSha256:"a".repeat(64),qualityStatus:"passed" as const,rollbackPlan:"Restore the previous worker version and verify health.",backupEvidence:"D1 snapshot and restore drill evidence recorded.",now:"2026-11-16T10:00:00Z",approval:null};
 describe("final release manager",()=>{
 it("blocks release when quality or rollback evidence is missing",()=>{expect(evaluateReleaseCandidate({...base,qualityStatus:"blocked"}).status).toBe("blocked");expect(evaluateReleaseCandidate({...base,backupEvidence:""}).deploymentAllowed).toBe(false);});
 it("requires explicit human approval after technical gates pass",()=>{expect(evaluateReleaseCandidate({...base,approval:null}).status).toBe("ready-for-human-approval");});
