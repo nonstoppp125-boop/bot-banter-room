@@ -37,17 +37,19 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/analytics': typeof AnalyticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat'
+  fullPaths: '/' | '/api/chat' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat'
+  to: '/' | '/api/chat' | '/analytics'
   id: '__root__' | '/' | '/api/chat' | '/analytics'
   fileRoutesById: FileRoutesById
 }
