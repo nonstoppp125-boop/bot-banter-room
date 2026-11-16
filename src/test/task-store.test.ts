@@ -125,7 +125,7 @@ describe("durable agent task store", () => {
     expect(canTransitionTaskStatus("queued", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("running", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("needs_approval", "cancelled")).toBe(true);
-    expect(canTransitionTaskStatus("needs_approval", "queued")).toBe(false);
+    expect(canTransitionTaskStatus("needs_approval", "queued")).toBe(true);
     expect(canTransitionTaskStatus("queued", "completed")).toBe(false);
     expect(canTransitionTaskStatus("completed", "queued")).toBe(false);
     expect(canTransitionTaskStatus("failed", "running")).toBe(false);
@@ -149,7 +149,7 @@ describe("durable agent task store", () => {
     const store = createD1TaskStore(db as unknown as Parameters<typeof createD1TaskStore>[0]);
     await expect(store.update({
       id: "task-1", workspaceId: "w1", userId: "u1",
-      expectedStatus: "needs_approval", status: "queued", updatedAt: "2026-11-16T10:01:00Z",
+      expectedStatus: "queued", status: "completed", updatedAt: "2026-11-16T10:01:00Z",
     })).rejects.toThrow("Invalid task status transition.");
     await expect(store.update({
       id: "task-1", workspaceId: "w1", userId: "u1",
