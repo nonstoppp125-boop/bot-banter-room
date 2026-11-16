@@ -1,0 +1,65 @@
+name: Isolated dependency security remediation
+
+on:
+  push:
+    branches: [work/security-dependency-remediation]
+    paths:
+      - .github/workflows/security-dependency-remediation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: security-dependency-remediation
+  cancel-in-progress: false
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install current lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Upgrade Vite to the audited patched release
+        run: npm install --save-dev vite@8.3.8 --no-audit --no-fund
+      - name: Upgrade Zod to the audited patched release
+        run: npm install zod@4.6.7 --save --no-audit --no-fund
+      - name: Verify compatibility before committing
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Report remaining production advisories
+        run: |
+          npm audit --omit=dev --json > /tmp/npm-audit.json || true
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const report = JSON.parse(fs.readFileSync("/tmp/npm-audit.json", "utf8"));
+          console.log("Remaining vulnerability counts:", JSON.stringify(report.metadata?.vulnerabilities ?? {}));
+          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
+            if (item.severity === "high" || item.severity === "critical") {
+              console.log("HIGH/CRITICAL:", name, item.severity, "direct:", item.isDirect, "fix:", JSON.stringify(item.fixAvailable));
+            }
+          }
+          NODE
+      - name: Commit only verified dependency files
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- . ':!package.json' ':!package-lock.json'
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency changes were produced."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "fix(deps): remediate audited Vite and Zod advisories"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
