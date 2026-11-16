@@ -276,6 +276,11 @@ describe("POST /api/chat orchestrator", () => {
       "business-analyst",
       "linkedin",
       "social-media",
+      "instagram",
+      "facebook",
+      "youtube",
+      "x-platform",
+      "tiktok",
       "content-writer",
       "content-reviewer",
       "seo",
@@ -385,7 +390,7 @@ describe("POST /api/chat orchestrator", () => {
 
   it("validates every registered specialist capability", async () => {
     const specialists = listAgents().filter((agent) => agent.role === "specialist");
-    expect(specialists.length).toBe(17);
+    expect(specialists.length).toBe(22);
     expect(specialists.every((agent) => agent.capabilities.length > 0)).toBe(true);
     expect(
       specialists.every(
