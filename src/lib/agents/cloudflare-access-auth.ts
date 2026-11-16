@@ -28,6 +28,7 @@ export type CloudflareAccessIdentity = {
   name: string;
 };
 type JwtHeader = { alg?: unknown; kid?: unknown; typ?: unknown };
+type AccessJwk = JsonWebKey & { kid?: string; use?: string; alg?: string };
 type JwtClaims = { iss?: unknown; aud?: unknown; sub?: unknown; email?: unknown; name?: unknown; exp?: unknown; nbf?: unknown; iat?: unknown };
 
 const json = (body: unknown, status = 200) =>
@@ -38,6 +39,11 @@ function decodeBase64Url(value: string): Uint8Array {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const binary = atob(normalized + "=".repeat((4 - normalized.length % 4) % 4));
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
 }
 function parseJsonPart<T>(part: string): T {
   return JSON.parse(new TextDecoder().decode(decodeBase64Url(part))) as T;
@@ -80,16 +86,16 @@ export async function verifyCloudflareAccessAssertion(input: {
     clearTimeout(timeout);
   }
   if (!response.ok) throw new Error("Cloudflare Access signing keys are unavailable.");
-  const jwks = await response.json() as { keys?: JsonWebKey[] };
+  const jwks = await response.json() as { keys?: AccessJwk[] };
   if (!Array.isArray(jwks.keys) || jwks.keys.length > 50) throw new Error("Cloudflare Access key set is invalid.");
-  const jwk = jwks.keys.find((key) => key.kid === header.kid && key.kty === "RSA" && key.use === "sig");
+  const jwk = jwks.keys.find((key) => key.kid === header.kid && key.kty === "RSA" && key.use === "sig" && key.alg === "RS256");
   if (!jwk) throw new Error("Cloudflare Access signing key was not found.");
   const publicKey = await crypto.subtle.importKey(
     "jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"],
   );
   const signed = new TextEncoder().encode(parts[0] + "." + parts[1]);
   const validSignature = await crypto.subtle.verify(
-    "RSASSA-PKCS1-v1_5", publicKey, decodeBase64Url(parts[2]!), signed,
+    "RSASSA-PKCS1-v1_5", publicKey, toArrayBuffer(decodeBase64Url(parts[2]!)), signed,
   );
   if (!validSignature) throw new Error("Cloudflare Access assertion signature is invalid.");
 
