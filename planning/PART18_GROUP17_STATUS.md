@@ -52,3 +52,14 @@ No merge to main; no production deployment.
 - The page explicitly states that no scheduled deletion worker or destructive execution is enabled. GitHub Actions run 43815989375: SUCCESS — TypeScript, 45 test files / 324 tests, production build and Nitro-generated Wrangler validation.
 
 - Account deletion status lookup and request-ID response are covered by regression tests; UI does not claim deletion execution.
+
+
+## 2026-11-16 — Durable user memory foundation
+
+- The existing workspace schema already includes the `memories` table; no duplicate migration was added.
+- Added `createD1MemoryStore` with workspace/user scoping, membership checks, expiry/deletion filtering, bounded lexical retrieval, optimistic-concurrency updates and soft deletion.
+- Store accepts only explicitly user-entered memory and rejects common password, API-key, token and private-key patterns.
+- Added authenticated `/api/memories` GET/POST/PATCH/DELETE endpoint with same-origin write protection, bounded streamed JSON, session validation and workspace membership checks.
+- Added regression tests for workspace scoping, secret rejection, updates, deletion and request limits.
+- CI run `43867055849`: SUCCESS — TypeScript, 51 test files / 381 tests, production build and generated Wrangler Worker config validation.
+- Live D1 binding, migration/runtime smoke tests and production backup/restore remain unverified.
