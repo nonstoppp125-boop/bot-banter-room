@@ -44,3 +44,13 @@ No merge to `main`; no production deployment.
 - Added a chat-navigation Sign out action; it calls the same-origin logout route, revokes the current session and clears the host cookie. Regression tests cover logout revocation and cross-origin rejection. Verification pending.
 
 - Logout UI and session revocation regression tests verified in GitHub Actions run 43815548281: SUCCESS — 45 test files / 322 tests, TypeScript, production build and Wrangler validation.
+
+
+## 2026-11-16 — Memory management and chat retrieval
+
+- Added `/settings/memory` UI for explicit add/edit/delete and listing; linked it from Privacy & Data settings.
+- Authenticated chat now loads up to six relevant memories from the active session's own workspace. Preference memories receive a small retrieval priority because language/style preferences can matter across unrelated tasks.
+- Memory is passed as bounded, clearly labelled untrusted reference data to both default Liza and multi-agent execution; instructions embedded inside saved memory must not override system policy.
+- Memory retrieval is optional and fail-soft: missing D1/session or lookup errors do not prevent normal chat. No automatic memory extraction or hidden writes were introduced.
+- CI run `43867055849`: SUCCESS — TypeScript, 51 test files / 381 tests, production build and generated Wrangler Worker config validation.
+- Runtime memory availability still depends on a live `ACTION_DB` binding and authenticated Cloudflare session, which are not provisioned/verified in production.
