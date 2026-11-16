@@ -19,12 +19,12 @@ Branch: work/group06-manager-planner
 - APP04–APP05 — OAuth callback consumes state once, verifies user/workspace/redirect binding, enforces provider token-host allowlists, exchanges the code with PKCE and persists access/refresh credentials only as AES-256-GCM encrypted D1 blobs.
 - APP06 — User-triggered `POST /api/integrations/refresh` loads only the active user's workspace connection, decrypts its refresh token server-side, enforces provider token-host/scope allowlists and re-encrypts rotated credentials.
 - APP07 — `POST /api/integrations/disconnect` clears the locally stored encrypted token and marks the owned connection revoked. Provider-side token revocation is not yet called; the API states that explicitly.
-- APP08–APP11 — Connection listing/connect/manual-refresh/disconnect UI is now added; background refresh scheduling, remote provider revocation, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
+- APP08–APP11 — Connection listing/connect/manual-refresh/disconnect UI is implemented. Background refresh scheduling, remote provider revocation, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.
 
-GROUP 16: IN PROGRESS — secure OAuth start/callback, encrypted credential persistence, user-triggered refresh and local disconnect APIs are implemented; remote revocation, UI and live account verification remain.
+GROUP 16: IN PROGRESS — secure OAuth start/callback, encrypted credential persistence, user-triggered refresh, local disconnect APIs and integration management UI are implemented; remote revocation and live account verification remain.
 No merge to main; no production deployment.
 
 
@@ -86,3 +86,7 @@ No merge to main; no production deployment.
 - Verification pending.
 
 - Manual refresh UI verification: run `43814055257` passed TypeScript, 43 test files / 311 tests, production build and Wrangler validation. Background refresh remains disabled.
+
+
+## 2026-11-16 — Current CI evidence refresh
+- GitHub Actions run `43874290438` passed TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config for the current source head. This is offline test/build evidence only; no provider credentials, live D1 or real account authorization are claimed.
