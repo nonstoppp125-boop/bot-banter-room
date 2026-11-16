@@ -68,10 +68,10 @@ export function evaluateDeliverableAcceptance(
   if (typeof parsed !== "object" || parsed === null) return fallback("Invalid review structure.");
   const value = parsed as Record<string, unknown>;
   if (
-    typeof value.summary !== "string" ||
-    !Array.isArray(value.findings) ||
-    value.findings.some((finding) => typeof finding !== "string") ||
-    !Array.isArray(value.criteria)
+    typeof value["summary"] !== "string" ||
+    !Array.isArray(value["findings"]) ||
+    value["findings"].some((finding) => typeof finding !== "string") ||
+    !Array.isArray(value["criteria"])
   ) {
     return fallback("Reviewer output did not match the acceptance schema.");
   }
@@ -79,23 +79,23 @@ export function evaluateDeliverableAcceptance(
   const expectedIds = new Set(expected.map((criterion) => criterion.id));
   const seen = new Set<string>();
   const reviewed: DeliverableAcceptanceReview["criteria"] = [];
-  for (const item of value.criteria) {
+  for (const item of value["criteria"]) {
     if (typeof item !== "object" || item === null) return fallback("Invalid criterion result.");
     const entry = item as Record<string, unknown>;
     if (
-      typeof entry.id !== "string" ||
-      !expectedIds.has(entry.id) ||
-      seen.has(entry.id) ||
-      (entry.status !== "pass" && entry.status !== "fail" && entry.status !== "unknown") ||
-      typeof entry.evidence !== "string"
+      typeof entry["id"] !== "string" ||
+      !expectedIds.has(entry["id"]) ||
+      seen.has(entry["id"]) ||
+      (entry["status"] !== "pass" && entry["status"] !== "fail" && entry["status"] !== "unknown") ||
+      typeof entry["evidence"] !== "string"
     ) {
       return fallback("Unknown, duplicate or malformed criterion result.");
     }
-    seen.add(entry.id);
+    seen.add(entry["id"]);
     reviewed.push({
-      id: entry.id,
-      status: entry.status,
-      evidence: entry.evidence.trim().slice(0, 1_000),
+      id: entry["id"],
+      status: entry["status"],
+      evidence: entry["evidence"].trim().slice(0, 1_000),
     });
   }
 
@@ -103,8 +103,8 @@ export function evaluateDeliverableAcceptance(
   if (reviewed.some((item) => item.status === "unknown" || item.evidence.length < 8)) {
     return {
       status: "needs-review",
-      summary: value.summary.slice(0, 1_000),
-      findings: (value.findings as string[]).slice(0, 20).map((finding) => finding.slice(0, 500)),
+      summary: value["summary"].slice(0, 1_000),
+      findings: (value["findings"] as string[]).slice(0, 20).map((finding) => finding.slice(0, 500)),
       criteria: reviewed,
       reason: "At least one criterion is unknown or lacks adequate evidence.",
     };
@@ -112,8 +112,8 @@ export function evaluateDeliverableAcceptance(
   const failed = reviewed.some((item) => item.status === "fail");
   return {
     status: failed ? "rejected" : "accepted",
-    summary: value.summary.slice(0, 1_000),
-    findings: (value.findings as string[]).slice(0, 20).map((finding) => finding.slice(0, 500)),
+    summary: value["summary"].slice(0, 1_000),
+    findings: (value["findings"] as string[]).slice(0, 20).map((finding) => finding.slice(0, 500)),
     criteria: reviewed,
   };
 }
