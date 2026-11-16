@@ -28,4 +28,11 @@ No merge to main; no production deployment.
 ## 2026-11-16 — Accessibility and shared Telegram conversation
 - Added a keyboard-visible skip-to-main-content link and an alert role for chat errors; both empty and active chat states now expose a main landmark.
 - Telegram messages can be normalized into the same workspace-scoped D1 conversation message shape after identity and conversation mapping checks.
-- Verification pending.
+- GitHub Actions run `43877244027` passed 52 test files / 407 tests, TypeScript, production build, generated Wrangler config and production dependency audit. This verifies source contracts only, not physical-device or screen-reader behavior.
+
+
+## 2026-11-16 — Core route accessibility regression checks
+
+- Added automated source-contract tests for the chat keyboard skip link, named primary navigation, main landmark, live error/status announcements, analytics CSV label/import and approval inbox announcements.
+- GitHub Actions run `43877244027`, exact code commit `0ac038a9dac7556edd2afccd3f867d85338df328`: 52 test files / 407 tests PASS; TypeScript, production build, generated Wrangler config and production dependency audit also PASS.
+- Remaining PWA09 attachment/media handling, PWA17 complete dashboard audit, PWA19 physical-device/browser/low-bandwidth checks and PWA03–PWA04 real installation/icon rendering remain open.
