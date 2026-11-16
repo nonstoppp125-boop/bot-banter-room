@@ -41,7 +41,7 @@ function readyDraft(store: InMemoryLinkedInGrowthStore, id = "draft-1") {
 async function approvalContext(store:InMemoryLinkedInGrowthStore,draftId="draft-1"){
  const draft=store.getDraft(draftId)!;
  const payloadHash=await hashApprovalPayload({platform:"linkedin",draftId:draft.id,content:draft.content});
- const approval={id:"approval-"+draftId,workspaceId:"ws1",userId:"author",actionType:"social.publish" as const,payloadHash,status:"approved" as const,decidedByUserId:"owner",decisionReason:"approved",expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-14T09:00:00.000Z",decidedAt:"2026-11-14T10:00:00.000Z"};
+ const approval={id:"approval-"+draftId,workspaceId:"ws1",userId:"author",actionType:"social.publish" as const,payloadHash,summary:"Publish LinkedIn draft",status:"approved" as const,decidedByUserId:"owner",decisionReason:"approved",expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-14T09:00:00.000Z",decidedAt:"2026-11-14T10:00:00.000Z"};
  return {approvalStore:{get:async(input:{id:string;workspaceId:string;actorUserId:string})=>input.id===approval.id&&input.workspaceId==="ws1"&&input.actorUserId==="owner"?approval:null},approvalId:approval.id,workspaceId:"ws1",approverUserId:"owner"};
 }
 
