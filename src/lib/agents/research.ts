@@ -530,3 +530,127 @@ export function evaluateResearchQuality(report: ResearchReport): ResearchQuality
     flags,
   };
 }
+
+
+export type ResearchExtractionResult = {
+  sources: ResearchSource[];
+  extractedSourceIds: string[];
+  failedSourceIds: string[];
+};
+
+/**
+ * Extracts full page content for a small, preselected set of search results
+ * through Tavily's fixed HTTPS Extract endpoint. It never fetches arbitrary
+ * URLs directly from the Worker and rejects cross-origin provider results.
+ */
+export async function extractTavilyResearchSources(
+  sources: readonly ResearchSource[],
+  apiKey: string,
+  signal: AbortSignal,
+  fetcher: typeof fetch = fetch,
+): Promise<ResearchExtractionResult> {
+  if (
+    !Array.isArray(sources) ||
+    sources.length < 1 ||
+    sources.length > 5 ||
+    typeof apiKey !== "string" ||
+    !apiKey.trim()
+  ) {
+    throw new Error("Invalid Tavily extraction request");
+  }
+  if (signal.aborted) throw new Error("Research extraction cancelled");
+
+  const seen = new Set<string>();
+  const urls = sources.map((source) => {
+    if (!source || typeof source.url !== "string") {
+      throw new Error("Research extraction source URL is required");
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(source.url);
+    } catch {
+      throw new Error("Invalid research extraction URL");
+    }
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) {
+      throw new Error("Research extraction sources must use credential-free HTTPS");
+    }
+    const normalized = parsed.toString();
+    if (seen.has(normalized)) throw new Error("Duplicate research extraction URL");
+    seen.add(normalized);
+    return normalized;
+  });
+
+  const controller = new AbortController();
+  const abortFromCaller = () => controller.abort(signal.reason);
+  signal.addEventListener("abort", abortFromCaller, { once: true });
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const response = await fetcher("https://api.tavily.com/extract", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        urls,
+        extract_depth: "basic",
+        format: "markdown",
+        include_images: false,
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error("Tavily extraction provider request failed");
+
+    const payload: unknown = await response.json();
+    if (typeof payload !== "object" || payload === null || !("results" in payload) || !Array.isArray(payload.results)) {
+      throw new Error("Tavily returned an invalid extraction response");
+    }
+
+    const byUrl = new Map<string, { rawContent: string; finalUrl: string }>();
+    for (const item of payload.results) {
+      if (typeof item !== "object" || item === null) continue;
+      const result = item as Record<string, unknown>;
+      if (typeof result["url"] !== "string" || typeof result["raw_content"] !== "string" || !result["raw_content"].trim()) continue;
+      let finalUrl: URL;
+      try {
+        finalUrl = new URL(result["url"]);
+      } catch {
+        continue;
+      }
+      if (finalUrl.protocol !== "https:" || finalUrl.username || finalUrl.password) continue;
+      byUrl.set(finalUrl.toString(), {
+        rawContent: result["raw_content"].trim().slice(0, MAX_CONTENT_CHARS),
+        finalUrl: finalUrl.toString(),
+      });
+    }
+
+    const extractedSourceIds: string[] = [];
+    const failedSourceIds: string[] = [];
+    const updatedSources = sources.map((source, index) => {
+      const extracted = byUrl.get(urls[index]!);
+      if (!extracted) {
+        failedSourceIds.push(source.id);
+        return { ...source };
+      }
+      const originalUrl = new URL(urls[index]!);
+      const finalUrl = new URL(extracted.finalUrl);
+      if (finalUrl.origin !== originalUrl.origin) {
+        failedSourceIds.push(source.id);
+        return { ...source };
+      }
+      extractedSourceIds.push(source.id);
+      return {
+        ...source,
+        url: finalUrl.toString(),
+        content: extracted.rawContent,
+      };
+    });
+
+    return { sources: updatedSources, extractedSourceIds, failedSourceIds };
+  } finally {
+    clearTimeout(timeout);
+    signal.removeEventListener("abort", abortFromCaller);
+  }
+}

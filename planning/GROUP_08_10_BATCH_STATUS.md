@@ -110,3 +110,11 @@ No commit, push, deployment or backup modification was performed by this batch.
 - G08.17 remains partial: durable idempotency claim infrastructure exists, but no approved external-action executor is wired and no live D1 binding is provisioned.
 - Group 09 research primitives and tests are implemented; semantic verification of claims and full-page inspection remain incomplete. Search results and metadata-quality checks are not proof of truth.
 - Group 10 remains an offline LinkedIn profile/content intelligence foundation. OAuth, account access and official API actions remain blocked pending developer approval, granted scopes, secure token storage and integration verification.
+
+
+## 2026-11-16 — Group 09 source extraction implementation
+- Added a fixed-endpoint Tavily Extract adapter for up to three selected search results per research request.
+- Uses credential-free HTTPS source URLs, bounded extraction, a 15-second timeout, same-origin response validation and explicit per-source success/failure reporting.
+- Orchestrator retains search snippets when extraction fails; it never claims page extraction succeeded unless the provider returns matching content.
+- Official provider contract: Tavily Extract API supports one or more URLs and returns extracted raw content (https://help.tavily.com/articles/8721959612-what-is-the-tavily-extract-api).
+- Verification pending CI.

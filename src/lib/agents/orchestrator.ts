@@ -15,6 +15,7 @@ import {
   RESEARCH_SOURCE_SAFETY_RULE,
   buildResearchReport,
   evaluateResearchQuality,
+  extractTavilyResearchSources,
   prepareResearchSources,
   searchTavilyResearch,
 } from "./research";
@@ -279,9 +280,26 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
       researchStatus = "LIVE WEB RESEARCH SKIPPED: no research query was available.";
     } else {
       try {
-        const sources = await searchTavilyResearch(taskText, env.TAVILY_API_KEY, signal);
+        const searchSources = await searchTavilyResearch(taskText, env.TAVILY_API_KEY, signal);
 
-        if (sources.length > 0) {
+        if (searchSources.length > 0) {
+          let extractionStatus = "Page extraction was not run.";
+          let sourceSet = searchSources;
+          try {
+            const extraction = await extractTavilyResearchSources(
+              searchSources.slice(0, 3),
+              env.TAVILY_API_KEY,
+              signal,
+            );
+            const extractedById = new Map(extraction.sources.map((source) => [source.id, source]));
+            sourceSet = searchSources.map((source) => extractedById.get(source.id) ?? source);
+            extractionStatus =
+              `Page extraction: ${extraction.extractedSourceIds.length} succeeded; ${extraction.failedSourceIds.length} failed.`;
+          } catch {
+            if (signal.aborted) return new Response(null, { status: 499 });
+            extractionStatus = "Page extraction failed; search-result content is retained.";
+          }
+          const sources = sourceSet;
           const preparedSources = prepareResearchSources(sources);
           const researchReport = buildResearchReport([], preparedSources);
           const quality = evaluateResearchQuality(researchReport);
@@ -316,7 +334,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
               evidence,
           });
 
-          researchStatus = `LIVE WEB SEARCH COMPLETED: ${sources.length} source(s) supplied.`;
+          researchStatus = `LIVE WEB SEARCH COMPLETED: ${sources.length} source(s) supplied. ${extractionStatus}`;
         } else {
           researchStatus =
             "LIVE WEB SEARCH RETURNED NO SOURCES. Do not imply that evidence was retrieved.";
