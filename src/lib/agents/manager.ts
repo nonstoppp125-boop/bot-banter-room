@@ -229,11 +229,13 @@ export async function buildLLMAssistedManagerPlan(
         throw new Error("Manager plan contains an invalid subtask");
       }
       seen.add(agentId);
+      const requiredDependencies = basePlan.subtasks.find((task) => task.agentId === agentId)?.dependsOn ?? [];
       return {
         id: agentId,
         agentId,
         objective: objective.trim(),
-        dependsOn: [...new Set(dependsOn as string[])],
+        // LLM output may add dependencies but cannot remove deterministic ordering constraints.
+        dependsOn: [...new Set([...requiredDependencies, ...(dependsOn as string[])])],
       };
     });
 
@@ -244,7 +246,7 @@ export async function buildLLMAssistedManagerPlan(
       }
     }
 
-    const byId = new Map(subtasks.map((task) => [task.id, task]));
+    const byId = new Map<string, ManagerSubtask>(subtasks.map((task) => [task.id, task] as const));
     const visiting = new Set<string>();
     const visited = new Set<string>();
     const visit = (id: string): void => {
