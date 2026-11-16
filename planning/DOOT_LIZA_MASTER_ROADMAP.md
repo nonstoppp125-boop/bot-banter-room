@@ -1045,3 +1045,9 @@ requirements have implementation evidence, successful
 verification, documented permissions and known limitations.
 
 END OF COMPLETE MASTER ROADMAP
+
+
+## 2026-11-16 — Runtime execution clarification
+
+- The Group 06 implementation includes authenticated synchronous execution of persisted Manager tasks, approval-bound unlock and a manual retry control. These are not background queue processing.
+- See `planning/PART06_GROUP06_STATUS.md` for exact security and runtime boundaries.
