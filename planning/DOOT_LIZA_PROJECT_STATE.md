@@ -435,3 +435,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - GitHub Actions run `43878285889`, exact code commit `be8dca681998c0c1a618b1af858a6866de63b739`: production dependency audit 0 vulnerabilities; TypeScript PASS; 53 test files / 410 tests PASS; production build PASS; generated Wrangler Worker config PASS.
 - Groups 11 and 21 remain partial; server-side draft persistence, completed AI writing workflow, authorized LinkedIn provider access, mobile/device and screen-reader validation remain open.
 - No production deployment or merge to `main`.
+
+
+## 2026-11-16 — LinkedIn Studio and remote inventory refresh
+
+- Latest code verification: GitHub Actions run `43878285889`, commit `be8dca681998c0c1a618b1af858a6866de63b739`: production dependency audit 0 vulnerabilities; TypeScript PASS; 53 test files / 410 tests PASS; production build PASS; generated Wrangler Worker config PASS.
+- Current remote tracked snapshot: 311 files, 201 under `src/`, 53 test/spec files, 30 route files, 15 SQL migrations and 5 image/icon assets.
+- Added interactive `/linkedin-studio` strategy/calendar/post-outline UI. It is draft-only and page-state-only; no server persistence, LinkedIn OAuth or publishing is enabled.
+- Local Termux state, Cloudflare D1/Access provisioning, Telegram/OAuth credentials, always-on queue worker, real external-action executors and production acceptance remain unverified or blocked.
+- No merge to `main` and no production deployment.
