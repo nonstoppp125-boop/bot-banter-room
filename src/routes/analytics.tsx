@@ -78,7 +78,7 @@ function AnalyticsPage() {
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <span>Source file: {fileName} · {records.length} metric records</span>
           <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent" onClick={()=>{const blob=new Blob([exportAnalyticsCsv(records)],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="liza-analytics.csv";link.click();URL.revokeObjectURL(url);}}><Download className="size-3.5"/> Export CSV</button>
-          <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent" onClick={()=>{setRecords([]);setFileName("");setError(null);}}><RefreshCw className="size-3.5"/> Clear session</button>
+          <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent" onClick={()=>{setRecords([]);setFileName("");setError(null);}}><RefreshCw className="size-3.5"/> Clear view</button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard label="Impressions" value={summary.totals['impressions']?.toLocaleString()??"—"} detail="Imported snapshots"/>
