@@ -83,3 +83,9 @@ No merge to `main`; no production deployment.
 - Running tasks can be cancelled from the web Tasks page by aborting the request. Telegram still does not run tasks or execute external actions.
 - Verification: GitHub Actions run `43872990333` SUCCESS — TypeScript, 51 test files / 399 tests, production build and generated Wrangler Worker config validation.
 - Live Telegram credentials, webhook registration, D1 provisioning and end-to-end runtime smoke tests remain unverified.
+
+
+## 2026-11-16 — Pending approval cancellation
+
+- The web Tasks page now allows the task owner to cancel a pending approval-gated task; the D1 state transition remains owner/workspace-scoped and atomic.
+- Latest GitHub Actions run `43873475716`: SUCCESS — TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation.
