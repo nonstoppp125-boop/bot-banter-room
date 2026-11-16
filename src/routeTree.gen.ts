@@ -16,6 +16,8 @@ import { Route as SettingsApprovalsRouteImport } from './routes/settings.approva
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiTelegramLinkTokenRouteImport } from './routes/api/telegram/link-token'
+import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/webhook'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
@@ -59,6 +61,16 @@ const ApiAuthSessionRoute = ApiAuthSessionRouteImport.update({
 const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   id: '/api/auth/logout',
   path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTelegramLinkTokenRoute = ApiTelegramLinkTokenRouteImport.update({
+  id: '/api/telegram/link-token',
+  path: '/api/telegram/link-token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
+  id: '/api/telegram/webhook',
+  path: '/api/telegram/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -112,6 +124,8 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/telegram/link-token': typeof ApiTelegramLinkTokenRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/api/health': typeof ApiHealthRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/account/export': typeof ApiAccountExportRoute
@@ -130,6 +144,8 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/telegram/link-token': typeof ApiTelegramLinkTokenRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
@@ -148,6 +164,8 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/telegram/link-token': typeof ApiTelegramLinkTokenRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
@@ -162,10 +180,10 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  fullPaths: '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
-  id: '__root__' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  to: '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  id: '__root__' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -173,6 +191,8 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiAuthSessionRoute: typeof ApiAuthSessionRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiTelegramLinkTokenRoute: typeof ApiTelegramLinkTokenRoute
+  ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
@@ -207,6 +227,20 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/logout'
       fullPath: '/api/auth/logout'
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/telegram/link-token': {
+      id: '/api/telegram/link-token'
+      path: '/api/telegram/link-token'
+      fullPath: '/api/telegram/link-token'
+      preLoaderRoute: typeof ApiTelegramLinkTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/telegram/webhook': {
+      id: '/api/telegram/webhook'
+      path: '/api/telegram/webhook'
+      fullPath: '/api/telegram/webhook'
+      preLoaderRoute: typeof ApiTelegramWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -301,6 +335,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiAuthSessionRoute: ApiAuthSessionRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiTelegramLinkTokenRoute: ApiTelegramLinkTokenRoute,
+  ApiTelegramWebhookRoute: ApiTelegramWebhookRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiApprovalsRoute: ApiApprovalsRoute,
   ApiAccountExportRoute: ApiAccountExportRoute,

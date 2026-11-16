@@ -15,11 +15,12 @@ Branch: `work/group06-manager-planner`
 
 ## Remaining / blocked
 - No bot token, webhook secret or verified Telegram owner mapping is configured.
-- No webhook HTTP route, Telegram sendMessage client, command registry or live bot hosting exists in this repository.
-- TG10, TG12–TG20 require a provisioned D1 database, authorized user linking, route/runtime integration and Telegram Bot API configuration.
+- A secret-authenticated webhook route and bounded Telegram sendMessage client are now implemented. `/start`, `/help`, `/link CODE` and private-chat Liza messaging are handled; no live bot hosting or webhook registration is configured.
+- A five-minute, one-time link-code API now binds the Telegram user to the signed-in user's workspace. The webhook stores private-chat messages in the shared D1 conversation store and generates default-Liza Groq replies with Unicode-safe 4096-code-point chunking.
+- Telegram runtime still requires D1 migration 0012, TELEGRAM_BOT_ID, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, GROQ_API_KEY and a manually registered Telegram webhook. Manager/specialist delegation and approval callback handling are not wired into Telegram.
 - Approval notifications/callbacks must be bound to persisted approval IDs and owner identity before activation.
 
-GROUP 19: IN PROGRESS — security and identity bridge foundations implemented; no live Telegram bot connection or message delivery is enabled.
+GROUP 19: IN PROGRESS — webhook, one-time identity linking, shared conversation persistence and default-Liza reply path implemented; live Telegram credentials, webhook registration and runtime smoke remain blocked.
 No merge to `main`; no production deployment.
 
 
@@ -33,3 +34,13 @@ No merge to `main`; no production deployment.
 - Added compact HMAC-SHA256 callback data (under Telegram's 64-byte limit) bound to approval ID, Telegram user ID and workspace ID.
 - Tampering, wrong user/workspace, malformed and oversized callback payloads fail closed. This is a signing primitive only; approval state is still checked against D1 by a future callback route.
 - CI verification pending.
+
+
+## 2026-11-16 — Telegram webhook, identity linking and chat runtime
+- Added migration 0012 for hashed, five-minute, one-time Telegram link tokens.
+- Added session-authenticated POST /api/telegram/link-token; raw link code is returned once to the signed-in user while only its SHA-256 hash is stored.
+- Added POST /api/telegram/webhook with Telegram secret-token header verification, strict private-human message normalization, bounded JSON body, update replay claims and private-chat-only processing.
+- /link CODE consumes the token once and binds the Telegram identity to the user's active workspace membership. Unlinked users receive linking instructions.
+- Linked messages are stored in the shared D1 conversation model and answered by the default Liza Groq model; replies are chunked safely at 4096 Unicode code points. No Telegram message can trigger publishing, deployment or destructive actions.
+- Settings → Integrations now includes a one-time Telegram link-code generator.
+- Verification pending. Live bot token, webhook secret, bot ID, D1 binding/migration and Telegram setWebhook registration are not provisioned.

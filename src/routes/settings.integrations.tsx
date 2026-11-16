@@ -31,6 +31,9 @@ function IntegrationsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [telegramCode, setTelegramCode] = useState<string | null>(null);
+  const [telegramExpiresAt, setTelegramExpiresAt] = useState<string | null>(null);
+  const [telegramBusy, setTelegramBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,6 +62,22 @@ function IntegrationsPage() {
       void load();
     }
   }, [load]);
+
+  const createTelegramLinkCode = async () => {
+    setTelegramBusy(true); setError(null); setNotice(null); setTelegramCode(null);
+    try {
+      const response = await fetch("/api/telegram/link-token", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: "{}",
+      });
+      const data = await response.json() as { code?: string; expiresAt?: string; error?: string };
+      if (!response.ok || !data.code || !data.expiresAt) throw new Error(data.error || "Telegram link code could not be created.");
+      setTelegramCode(data.code); setTelegramExpiresAt(data.expiresAt);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Telegram link code could not be created.");
+    } finally { setTelegramBusy(false); }
+  };
 
   const connect = async (provider: Provider) => {
     setBusy(provider.id); setError(null); setNotice(null);
@@ -130,6 +149,16 @@ function IntegrationsPage() {
         </header>
         {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">{error}</p>}
         {notice && <p role="status" className="mb-4 rounded-xl border border-border bg-muted p-3 text-sm">{notice}</p>}
+        <section aria-labelledby="telegram-link-title" className="mb-10 rounded-xl border border-border bg-card p-4">
+          <h2 id="telegram-link-title" className="text-lg font-semibold">Telegram bot</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Generate a one-time code, then send <span className="font-mono">/link CODE</span> to your Liza Telegram bot in a private chat. The code expires after five minutes.</p>
+          <button onClick={() => void createTelegramLinkCode()} disabled={telegramBusy} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">{telegramBusy ? "Generating…" : "Generate link code"}</button>
+          {telegramCode && <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3">
+            <p className="break-all font-mono text-sm">{telegramCode}</p>
+            <p className="mt-2 text-xs text-muted-foreground">Expires: {telegramExpiresAt ? new Date(telegramExpiresAt).toLocaleString() : "in five minutes"}</p>
+            <button onClick={() => void navigator.clipboard.writeText("/link " + telegramCode)} className="mt-3 rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent">Copy /link command</button>
+          </div>}
+        </section>
         <section aria-labelledby="connected-title" className="mb-10">
           <div className="mb-3 flex items-center justify-between">
             <h2 id="connected-title" className="text-lg font-semibold">Connected accounts</h2>

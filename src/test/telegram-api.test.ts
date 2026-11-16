@@ -1,0 +1,120 @@
+import { describe, expect, it } from "vitest";
+import { handleTelegramLinkTokenRequest, handleTelegramWebhookRequest } from "@/lib/agents/telegram-api";
+
+const webhookSecret = "x".repeat(40);
+const botToken = "test-token";
+const token = "A".repeat(43);
+const linkUrl = "https://liza.example/api/telegram/link-token";
+const webhookUrl = "https://liza.example/api/telegram/webhook";
+const sessionCookie = "__Host-liza_session=" + token;
+
+function databaseMock(mode: "session" | "link" = "session") {
+  const queries: string[] = [];
+  const bindings: unknown[][] = [];
+  const database = {
+    prepare(query: string) {
+      queries.push(query);
+      return {
+        bind(...values: unknown[]) {
+          bindings.push(values);
+          return {
+            run: async () => ({ success: true, meta: { changes: 1 } }),
+            all: async <T = Record<string, unknown>>() => ({ success: true, results: [] as T[] }),
+            first: async <T = Record<string, unknown>>() => {
+              if (query.includes("FROM sessions")) return {
+                id: "session-1", user_id: "user-1", workspace_id: "workspace-1",
+                expires_at: "2026-11-17T00:00:00.000Z", created_at: "2026-11-16T00:00:00.000Z",
+              } as T;
+              if (mode === "link" && query.startsWith("UPDATE telegram_link_tokens")) {
+                return { user_id: "user-1", workspace_id: "workspace-1" } as T;
+              }
+              return null;
+            },
+          };
+        },
+      };
+    },
+  };
+  return { database, queries, bindings };
+}
+
+function webhookRequest(text: string) {
+  return new Request(webhookUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-telegram-bot-api-secret-token": webhookSecret },
+    body: JSON.stringify({
+      update_id: 987654,
+      message: {
+        message_id: 44, date: Math.floor(Date.now() / 1000),
+        from: { id: 123456789, is_bot: false, language_code: "en" },
+        chat: { id: 123456789, type: "private" },
+        text,
+      },
+    }),
+  });
+}
+
+describe("Telegram link and webhook API", () => {
+  it("creates a short-lived one-time code for the active workspace session", async () => {
+    const state = databaseMock();
+    const response = await handleTelegramLinkTokenRequest(new Request(linkUrl, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie: sessionCookie },
+      body: "{}",
+    }), { ACTION_DB: state.database });
+    expect(response.status).toBe(201);
+    const data = await response.json() as { code: string; expiresAt: string };
+    expect(data.code).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(Date.parse(data.expiresAt)).toBeGreaterThan(Date.now());
+    expect(state.queries.some((query) => query.includes("INSERT INTO telegram_link_tokens"))).toBe(true);
+    expect(state.bindings.some((values) => values.includes(data.code))).toBe(false);
+    expect(state.bindings.some((values) => values.some((value) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value)))).toBe(true);
+  });
+
+  it("rejects cross-origin link-code creation", async () => {
+    const response = await handleTelegramLinkTokenRequest(new Request(linkUrl, {
+      method: "POST", headers: { origin: "https://evil.example", "content-type": "application/json" }, body: "{}",
+    }), {});
+    expect(response.status).toBe(403);
+  });
+
+  it("rejects webhook requests with an invalid secret before touching storage", async () => {
+    const response = await handleTelegramWebhookRequest(new Request(webhookUrl, {
+      method: "POST", headers: { "x-telegram-bot-api-secret-token": "wrong" }, body: "{}",
+    }), {});
+    expect(response.status).toBe(403);
+  });
+
+  it("consumes a one-time code and links only the private Telegram identity", async () => {
+    const state = databaseMock("link");
+    let sent = "";
+    const response = await handleTelegramWebhookRequest(webhookRequest("/link " + token), {
+      ACTION_DB: state.database, TELEGRAM_BOT_ID: "123456", TELEGRAM_BOT_TOKEN: botToken,
+      TELEGRAM_WEBHOOK_SECRET: webhookSecret,
+    }, async (input, init) => {
+      sent = String(input);
+      expect(init?.redirect).toBe("error");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ linked: true });
+    expect(sent).toContain("sendMessage");
+    expect(state.queries.some((query) => query.startsWith("UPDATE telegram_link_tokens"))).toBe(true);
+    expect(state.queries.some((query) => query.startsWith("INSERT INTO telegram_user_links"))).toBe(true);
+  });
+  it("responds with account-link instructions to an unlinked private user", async () => {
+    const state = databaseMock();
+    let sentBody = "";
+    const response = await handleTelegramWebhookRequest(webhookRequest("Hello Liza"), {
+      ACTION_DB: state.database, TELEGRAM_BOT_ID: "123456", TELEGRAM_BOT_TOKEN: botToken,
+      TELEGRAM_WEBHOOK_SECRET: webhookSecret,
+    }, async (_input, init) => {
+      sentBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ linked: false });
+    expect(sentBody).toContain("link code");
+  });
+
+});
