@@ -13,7 +13,7 @@ export const lizaDefaultAgent: AgentDefinition = {
   role: "chat",
   capabilities: ["chat"],
   permissions: ["llm:inference"],
-  run: async ({ messages, env, signal }) => {
+  run: async ({ messages, env, signal, memoryContext }) => {
     const apiKey = env.GROQ_API_KEY;
     if (!apiKey) {
       return Response.json(
@@ -25,7 +25,9 @@ export const lizaDefaultAgent: AgentDefinition = {
     const result = streamText({
       ...PROVIDER_REQUEST_OPTIONS,
       model: groqModel(apiKey, env.GROQ_MODEL?.trim() || undefined),
-      instructions: buildLizaSystem(messages),
+      instructions: memoryContext
+        ? `${buildLizaSystem(messages)}\\n\\n${memoryContext}`
+        : buildLizaSystem(messages),
       messages: await convertToModelMessages(messages),
       abortSignal: signal,
     });
