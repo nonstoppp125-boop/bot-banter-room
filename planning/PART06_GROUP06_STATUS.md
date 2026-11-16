@@ -7,7 +7,7 @@ Branch: work/group06-manager-planner
 - G06.01–G06.07 — Typed planning, capability routing, complexity, bounded LLM decomposition, dependency graph, specialist selection and structured execution plan.
 - G06.08 — Provider-reported Groq usage plus bounded estimates; known published rates only, unknown model rates return unavailable.
 - G06.09–G06.12 — Risk classification, capability/permission checks and delegated execution.
-- G06.13 — D1 durable task-store adapter added for create/get/list and optimistic status updates, scoped by workspace and user; live D1 binding/runtime remains unprovisioned.
+- G06.13 — D1 durable task-store adapter supports create/get/list, workspace/user scoping, optimistic updates and a fail-closed forward-only task state machine; `needs_approval` cannot be promoted to `queued` through the generic update method.
 - G06.14–G06.17 — Failure tracking, bounded retry/replanning, dependency skips, max fan-out, timeouts and execution budget.
 - G06.18 — D1 approval request/decision adapter and exact action-payload verifier added; decisions require pending state, expiry and owner/admin membership. External-action wrapper verifies workspace, action type, payload hash and expiry before atomic idempotency claim. A session-authenticated API now creates requests with a human-readable summary and payload hash, lists pending approvals for workspace admins/owners, and atomically records approve/reject decisions with same-origin protection. Approval center UI and runtime integration remain open.
 - G06.19 — Formal acceptance criteria and schema-checked reviewer results; malformed/missing results fail closed to needs-review.
@@ -54,3 +54,10 @@ No merge to main; no production deployment.
 - Added `GET /api/tasks` scoped to the authenticated user's workspace and identity. Client input cannot set task status, plan, result, owner, or workspace.
 - Added focused API tests for cross-origin rejection, missing configuration/session, scoped persistence/listing, high-risk gating and malformed payloads.
 - Task intake is not a worker: no task is automatically executed and no external side effect is enabled. Live D1/Access runtime remains unverified.
+
+
+## 2026-11-16 — Durable task transition hardening
+- Added an explicit forward-only state transition policy to the D1 task store. Queued tasks may start or cancel; running tasks may complete, fail or cancel; approval-gated tasks cannot be promoted by the generic store update; terminal states cannot be reopened.
+- Added tests for allowed transitions and rejection before any database update.
+- This does not add a worker or approval-to-execution bridge; high-risk tasks remain blocked pending a separately verified approval execution path.
+- GitHub Actions run for the previous task API commit: `43820226995` — SUCCESS (TypeScript, tests, production build and generated Wrangler config validation). This new change requires its own CI run.
