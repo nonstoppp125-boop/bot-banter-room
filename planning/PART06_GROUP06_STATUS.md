@@ -142,3 +142,11 @@ No merge to main; no production deployment.
 - Added `/tasks` retry control and regression tests for retry budget, plan integrity and high-risk refusal.
 - GitHub Actions run `43869406584`: SUCCESS — TypeScript, 51 test files / 390 tests, production build and generated Wrangler Worker config validation.
 - Remaining: actual queue consumer/background worker, crash recovery, live D1/Access provisioning and external action executors.
+
+
+## 2026-11-16 — Telegram task bridge
+
+- Telegram now supports `/task DESCRIPTION` and `/tasks`, storing and listing plans in the same authenticated workspace task store as the web UI.
+- Telegram uses the linked workspace's saved-memory search for personalized replies; high-risk plans remain approval-gated and cannot execute through Telegram.
+- No background task worker or Telegram task execution was added. On-demand execution remains available only from the web Tasks UI.
+- Verification: GitHub Actions run `43870462130` SUCCESS — TypeScript, 51 test files / 395 tests, production build and generated Wrangler Worker config validation.
