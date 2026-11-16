@@ -307,7 +307,7 @@ export interface D1ConnectionRecord {
  id:string;workspaceId:string;userId:string;provider:IntegrationProviderId;scopes:string[];
  encryptedTokenBlob:Uint8Array;tokenExpiresAt:string|null;createdAt:string;updatedAt:string;
 }
-export type D1ConnectionDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;first:<T=Record<string,unknown>>()=>Promise<T|null>}}};
+export type D1ConnectionDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;first:<T=Record<string,unknown>>()=>Promise<T|null>;all?:<T=Record<string,unknown>>()=>Promise<{success?:boolean;results?:T[]}>}}};
 export function createD1ConnectionStore(database:D1ConnectionDatabase){
  if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 connection database is required.");
  return{
@@ -321,6 +321,20 @@ export function createD1ConnectionStore(database:D1ConnectionDatabase){
    const result=await database.prepare("INSERT INTO app_connections (id,workspace_id,user_id,provider,provider_account_id,scopes_json,encrypted_token_blob,token_expires_at,status,created_at,updated_at) VALUES (?,?,?,?,NULL,?,?,?,'connected',?,?)")
     .bind(record.id,record.workspaceId,record.userId,record.provider,JSON.stringify([...new Set(record.scopes)]),record.encryptedTokenBlob,record.tokenExpiresAt,record.createdAt,record.updatedAt).run();
    if(result.success===false||result.meta?.changes!==1)throw new Error("D1 connection persistence failed.");
+  },
+  listOwned:async(input:{workspaceId:string;userId:string;limit?:number})=>{
+   const limit=input.limit??50;
+   if(!/^[A-Za-z0-9._:-]{1,120}$/.test(input.workspaceId)||!/^[A-Za-z0-9._:-]{1,120}$/.test(input.userId)||!Number.isInteger(limit)||limit<1||limit>100)throw new Error("Invalid connection list scope.");
+   const statement=database.prepare("SELECT id,provider,scopes_json,token_expires_at,created_at,updated_at FROM app_connections WHERE workspace_id=? AND user_id=? AND status='connected' ORDER BY updated_at DESC LIMIT ?").bind(input.workspaceId,input.userId,limit);
+   if(typeof statement.all!=="function")throw new Error("D1 connection list operation is unavailable.");
+   const result=await statement.all<{id:string;provider:IntegrationProviderId;scopes_json:string;token_expires_at:string|null;created_at:string;updated_at:string}>();
+   if(result.success===false)throw new Error("D1 connection list failed.");
+   return(result.results??[]).map(row=>{
+    let scopes:unknown;try{scopes=JSON.parse(row.scopes_json);}catch{throw new Error("Stored connection scopes are invalid JSON.");}
+    if(!Array.isArray(scopes)||!scopes.every(scope=>typeof scope==="string")||!INTEGRATION_PROVIDERS[row.provider]||
+       scopes.some(scope=>!INTEGRATION_PROVIDERS[row.provider].allowedScopes.includes(scope)))throw new Error("Stored connection metadata is invalid.");
+    return{id:row.id,provider:row.provider,scopes:scopes as string[],tokenExpiresAt:row.token_expires_at,createdAt:row.created_at,updatedAt:row.updated_at};
+   });
   },
   getOwned:async(input:{id:string;workspaceId:string;userId:string})=>{
    const row=await database.prepare("SELECT id,provider,scopes_json,encrypted_token_blob,token_expires_at FROM app_connections WHERE id=? AND workspace_id=? AND user_id=? AND status='connected'")
