@@ -1,0 +1,73 @@
+export type CodingRisk = "low" | "medium" | "high";
+export type RepositoryFileStatus = "tracked" | "modified" | "untracked";
+export interface RepositoryFileInput { path:string; sha?:string; size:number; status:RepositoryFileStatus; }
+export interface RepositoryInventory { repository:string; branch:string; headSha:string; files:RepositoryFileInput[]; skippedPaths:string[]; totalBytes:number; createdAt:string; }
+const MAX_FILES=5000,MAX_FILE_BYTES=1_000_000,MAX_INVENTORY_BYTES=20_000_000,MAX_PROPOSAL_FILES=8,MAX_PATCH_BYTES=500_000;
+const SECRET_PATH=/(^|\/)(\.env(?!\.example$)(?:\.[^/]*)?|id_rsa|id_ed25519|[^/]+\.(?:pem|key|p12|pfx))$/i;
+const PROTECTED_SEGMENTS=new Set([".git","node_modules",".wrangler",".output","dist","coverage"]);
+function safePath(path:string):boolean{
+ if(!path||path.length>500||path.startsWith("/")||path.includes("\\")||path.split("/").some(p=>!p||p==="."||p===".."||PROTECTED_SEGMENTS.has(p)))return false;
+ return !SECRET_PATH.test(path);
+}
+function cleanText(v:string,max:number){return v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,max);}
+export function buildRepositoryInventory(input:{repository:string;branch:string;headSha:string;files:readonly RepositoryFileInput[];now?:string}):RepositoryInventory{
+ if(!cleanText(input.repository,200)||!cleanText(input.branch,120)||!/^[a-f0-9]{7,64}$/i.test(input.headSha))throw new Error("Repository identity, branch and head SHA are required.");
+ if(input.files.length>MAX_FILES)throw new Error("Repository inventory exceeds the file-count limit.");
+ const files:RepositoryFileInput[]=[],skippedPaths:string[]=[];let totalBytes=0;const seen=new Set<string>();
+ for(const file of input.files){
+  if(!safePath(file.path)||seen.has(file.path)||!Number.isSafeInteger(file.size)||file.size<0||file.size>MAX_FILE_BYTES||!["tracked","modified","untracked"].includes(file.status)){skippedPaths.push(cleanText(file.path,500));continue;}
+  seen.add(file.path);totalBytes+=file.size;if(totalBytes>MAX_INVENTORY_BYTES)throw new Error("Repository inventory exceeds the 20 MB metadata budget.");
+  files.push({path:file.path,...(file.sha?{sha:file.sha}:{}),size:file.size,status:file.status});
+ }
+ return{repository:cleanText(input.repository,200),branch:cleanText(input.branch,120),headSha:input.headSha,files,skippedPaths,totalBytes,createdAt:input.now??new Date().toISOString()};
+}
+export interface CodingPlan { task:string; baseSha:string; targetBranch:string; complexity:"simple"|"moderate"|"complex"; risk:CodingRisk; filesToInspect:string[]; acceptanceCriteria:string[]; validationCommands:string[]; approvalRequired:boolean; limitations:string[]; }
+export function buildCodingPlan(task:string,inventory:RepositoryInventory):CodingPlan{
+ const objective=cleanText(task,4000);if(!objective)throw new Error("Coding task is required.");
+ const risk:CodingRisk=/\b(delete|drop|overwrite|deploy|release|production|secret|credential|permission|authentication)\b/i.test(objective)?"high":/\b(api|database|migration|auth|security|refactor)\b/i.test(objective)?"medium":"low";
+ const complexity=objective.length>1200||/\b(end[- ]to[- ]end|architecture|multiple modules|complete system)\b/i.test(objective)?"complex":objective.length>300?"moderate":"simple";
+ return{task:objective,baseSha:inventory.headSha,targetBranch:inventory.branch,complexity,risk,filesToInspect:inventory.files.slice(0,20).map(f=>f.path),acceptanceCriteria:["Requirements are mapped to observable behavior.","Existing behavior and unrelated changes are preserved.","Relevant tests cover success, failure and boundary cases.","Typecheck, tests and production build pass where configured.","Diff and security review are recorded."],validationCommands:["npm run typecheck","npm test","npm run build","git diff --check"],approvalRequired:risk==="high"||inventory.branch==="main",limitations:["Planning only: no repository files are changed or commands executed by this module.","Repository inventory contains metadata only; skipped secret/configuration paths are not inspected."]};
+}
+export interface ProposedFileChange { path:string; beforeSha:string|null; content:string; }
+export interface CodeChangeProposal { id:string; repository:string; baseSha:string; targetBranch:string; changes:ProposedFileChange[]; status:"pending-review"; }
+export function validateCodeChangeProposal(proposal:CodeChangeProposal,inventory:RepositoryInventory):{valid:boolean;errors:string[];totalBytes:number}{
+ const errors:string[]=[];let totalBytes=0;const known=new Map(inventory.files.map(f=>[f.path,f]));
+ if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(proposal.id))errors.push("Invalid proposal ID.");
+ if(proposal.repository!==inventory.repository)errors.push("Repository identity mismatch.");
+ if(proposal.baseSha!==inventory.headSha)errors.push("Stale base SHA; refresh inventory before proposing changes.");
+ if(proposal.targetBranch==="main"||proposal.targetBranch!==inventory.branch)errors.push("Changes must target the inspected non-main work branch.");
+ if(!proposal.changes.length||proposal.changes.length>MAX_PROPOSAL_FILES)errors.push("Proposal must contain between 1 and 8 files.");
+ const seen=new Set<string>();
+ for(const change of proposal.changes){
+  if(!safePath(change.path)||seen.has(change.path)){errors.push("Unsafe or duplicate target path: "+cleanText(change.path,200));continue;}
+  seen.add(change.path);const current=known.get(change.path);
+  if(current&&change.beforeSha!==current.sha)errors.push("File SHA mismatch: "+change.path);
+  if(!current&&change.beforeSha!==null)errors.push("New files must use a null beforeSha: "+change.path);
+  if(typeof change.content!=="string"||change.content.length>MAX_PATCH_BYTES){errors.push("File content exceeds the 500 KB limit: "+change.path);continue;}
+  totalBytes+=new TextEncoder().encode(change.content).byteLength;
+ }
+ if(totalBytes>2_000_000)errors.push("Proposal exceeds the 2 MB total content limit.");
+ return{valid:errors.length===0,errors,totalBytes};
+}
+const VALIDATION_COMMANDS=new Set(["npm run typecheck","npm test","npm run build","npm run lint","git status --short","git diff --check","git diff --stat"]);
+export function authorizeValidationCommand(command:string):{allowed:boolean;reason:string}{
+ const normalized=cleanText(command,300);
+ if(VALIDATION_COMMANDS.has(normalized))return{allowed:true,reason:"Exact allowlisted validation command."};
+ return{allowed:false,reason:"Command is not allowlisted; shell composition, arbitrary execution and destructive commands are denied."};
+}
+export interface DiffReviewInput { files:readonly {path:string;content:string}[]; testsChanged:boolean; }
+export function reviewCodeDiff(input:DiffReviewInput){
+ const findings:{severity:"critical"|"high"|"medium";code:string;message:string}[]=[];
+ for(const file of input.files){
+  if(SECRET_PATH.test(file.path))findings.push({severity:"critical",code:"secret-path",message:"Sensitive credential path must not be included: "+file.path});
+  if(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:api[_-]?key|access[_-]?token|client[_-]?secret)\s*[:=]\s*["'][^"']{12,}/i.test(file.content))findings.push({severity:"critical",code:"possible-secret",message:"Possible hard-coded credential detected in "+file.path});
+  if(/\beval\s*\(|new Function\s*\(|child_process|execSync\s*\(|dangerouslySetInnerHTML/.test(file.content))findings.push({severity:"high",code:"unsafe-primitive",message:"Review dynamic execution or unsafe rendering primitive in "+file.path});
+ }
+ if(input.files.some(f=>/\.(?:ts|tsx|js|jsx)$/.test(f.path))&&!input.testsChanged)findings.push({severity:"medium",code:"tests-not-updated",message:"Source changes were proposed without a corresponding test change."});
+ return{passed:findings.every(f=>f.severity!=="critical"&&f.severity!=="high"),findings,reviewScope:"Heuristic source review only; this is not a complete security audit or compiler result."};
+}
+export interface EngineeringEvent { id:string; taskId:string; type:"planned"|"proposal-created"|"reviewed"|"verified"|"blocked"; timestamp:string; summary:string; evidence:string[]; }
+export function createEngineeringEvent(input:EngineeringEvent):EngineeringEvent{
+ if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(input.id)||!cleanText(input.taskId,100)||!Number.isFinite(Date.parse(input.timestamp)))throw new Error("Invalid engineering event metadata.");
+ return{...input,summary:cleanText(input.summary,500),evidence:input.evidence.map(v=>cleanText(v,500)).filter(Boolean).slice(0,20)};
+}
