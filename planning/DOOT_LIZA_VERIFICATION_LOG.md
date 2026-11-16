@@ -302,3 +302,14 @@ Append new evidence below; never rewrite historical results.\n\n
 - Production build: PASS.
 - Nitro-generated Wrangler configuration validation: PASS.
 - Added forward-only durable task transitions; approval-gated and terminal tasks cannot be reopened through the generic update adapter.
+
+
+## 2026-11-16 — Group 06 bounded task API verification
+- Commit: `db87e47ca6e2ceac84635f5185a5d58d4aba3ccb`.
+- GitHub Actions run: `43822202298` — SUCCESS.
+- TypeScript: PASS.
+- Unit/integration tests: PASS — 46 test files, 336 tests.
+- Production build: PASS.
+- Nitro-generated Wrangler configuration validation: PASS.
+- Task request bodies are streamed and bounded to 24 KB; oversized requests are cancelled and return 413.
+- Cloudflare Workers build check remained in progress; this CI result is not a production deployment.
