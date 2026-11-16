@@ -102,6 +102,30 @@ describe("durable agent task store", () => {
     expect(values).toEqual(["2026-11-16T10:04:00Z", "task-1", "w1", "u1"]);
   });
 
+  it("unlocks approval-gated tasks only through a matching approved D1 record", async () => {
+    let statement = "";
+    let values: unknown[] = [];
+    const db = {
+      prepare: (query: string) => ({
+        bind: (...bound: unknown[]) => ({
+          first: async () => null,
+          all: async () => ({ success: true, results: [] }),
+          run: async () => { statement = query; values = bound; return { success: true, meta: { changes: 1 } }; },
+        }),
+      }),
+    };
+    const store = createD1TaskStore(db as unknown as Parameters<typeof createD1TaskStore>[0]);
+    expect(await store.unlockApproved({
+      id: "task-1", workspaceId: "w1", userId: "u1", approvalId: "approval-1",
+      actionType: "social.publish", payloadHash: "a".repeat(64), updatedAt: "2026-11-16T10:05:00Z",
+    })).toBe(true);
+    expect(statement).toContain("status = 'needs_approval'");
+    expect(statement).toContain("FROM approvals a");
+    expect(statement).toContain("a.status = 'approved'");
+    expect(statement).toContain("a.payload_hash = ?");
+    expect(values).toEqual(["2026-11-16T10:05:00Z", "task-1", "w1", "u1", "approval-1", "w1", "social.publish", "a".repeat(64), "2026-11-16T10:05:00Z"]);
+  });
+
   it("rejects malformed task claim identities before touching D1", async () => {
     let calls = 0;
     const db = {
@@ -125,7 +149,7 @@ describe("durable agent task store", () => {
     expect(canTransitionTaskStatus("queued", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("running", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("needs_approval", "cancelled")).toBe(true);
-    expect(canTransitionTaskStatus("needs_approval", "queued")).toBe(true);
+    expect(canTransitionTaskStatus("needs_approval", "queued")).toBe(false);
     expect(canTransitionTaskStatus("queued", "completed")).toBe(false);
     expect(canTransitionTaskStatus("completed", "queued")).toBe(false);
     expect(canTransitionTaskStatus("failed", "running")).toBe(false);
