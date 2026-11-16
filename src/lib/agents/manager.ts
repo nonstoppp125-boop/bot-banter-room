@@ -4,8 +4,16 @@ import type { AgentDefinition } from "./types";
 export type ManagerComplexity = "simple" | "moderate" | "complex";
 export type ManagerRisk = "low" | "medium" | "high";
 
+export type ManagerSubtask = {
+  id: string;
+  agentId: string;
+  objective: string;
+  dependsOn: string[];
+};
+
 export type ManagerPlan = {
   summary: string;
+  subtasks: ManagerSubtask[];
   agentIds: string[];
   capabilities: string[];
   complexity: ManagerComplexity;
@@ -101,9 +109,39 @@ export function buildManagerPlan(
         : "simple";
   const riskAssessment = assessRisk(normalizedTask);
   const estimatedInputTokens = Math.ceil(normalizedTask.length / 4);
+  const dependencies = new Map(agentIds.map((id) => [id, new Set<string>()]));
+  const addDependency = (agentId: string, dependencyId: string) => {
+    if (agentId !== dependencyId && dependencies.has(agentId) && dependencies.has(dependencyId)) {
+      dependencies.get(agentId)!.add(dependencyId);
+    }
+  };
+
+  // Add only explicit, predictable sequencing edges; otherwise tasks remain parallel.
+  if (/research[\\s\\S]*?(?:then|before|first)[\\s\\S]*?(?:implement|build|code)/i.test(normalizedTask)) {
+    addDependency("coding", "research");
+  }
+  if (/(?:implement|write|create|fix)[\\s\\S]*?(?:then|and then|after that)[\\s\\S]*?debug/i.test(normalizedTask)) {
+    addDependency("debugging", "coding");
+  }
+  if (dependencies.has("reporting") && dependencies.has("data-analyst")) {
+    addDependency("reporting", "data-analyst");
+  }
+  if (dependencies.has("content-reviewer") && dependencies.has("content-writer")) {
+    addDependency("content-reviewer", "content-writer");
+  }
+  const subtasks: ManagerSubtask[] = agentIds.map((agentId) => {
+    const agent = available.get(agentId)!;
+    return {
+      id: agentId,
+      agentId,
+      objective: `Provide a focused ${agent.name} analysis of the user's request.`,
+      dependsOn: [...dependencies.get(agentId)!],
+    };
+  });
 
   return {
     summary: normalizedTask.slice(0, 240),
+    subtasks,
     agentIds,
     capabilities,
     complexity,
