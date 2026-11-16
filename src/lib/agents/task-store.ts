@@ -33,6 +33,13 @@ export function createD1TaskStore(database:D1TaskDatabase){
    if(result.success===false)throw new Error("D1 task retry failed.");
    return result.meta?.changes===1;
   },
+  recoverStale:async(input:{id:string;workspaceId:string;userId:string;staleBefore:string;updatedAt:string})=>{
+   if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!Number.isFinite(Date.parse(input.staleBefore))||!Number.isFinite(Date.parse(input.updatedAt))||Date.parse(input.staleBefore)>=Date.parse(input.updatedAt))throw new Error("Invalid stale task recovery.");
+   const resultJson=serialize({error:"Task was manually recovered after its execution lease became stale; no background worker heartbeat is configured.",recoveredAt:input.updatedAt,recovery:"manual-stale-recovery"},2_000);
+   const result=await database.prepare("UPDATE agent_tasks SET status = 'failed', result_json = ?, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'running' AND updated_at < ?").bind(resultJson,input.updatedAt,input.id,input.workspaceId,input.userId,input.staleBefore).run();
+   if(result.success===false)throw new Error("D1 stale task recovery failed.");
+   return result.meta?.changes===1;
+  },
   unlockApproved:async(input:{id:string;workspaceId:string;userId:string;approvalId:string;actionType:string;payloadHash:string;updatedAt:string})=>{
    const actions=new Set(["social.publish","social.reply","external.message","account.change","destructive.delete","deployment","financial.action"]);
    if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!ID.test(input.approvalId)||!actions.has(input.actionType)||!/^[a-f0-9]{64}$/.test(input.payloadHash)||!Number.isFinite(Date.parse(input.updatedAt)))throw new Error("Invalid approved task unlock.");
