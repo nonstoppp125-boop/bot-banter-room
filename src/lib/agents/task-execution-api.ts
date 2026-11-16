@@ -8,7 +8,7 @@ import { restoreManagerPlan } from "./manager";
 import { listAgents } from "./registry";
 
 type ExecutionDatabase = D1TaskDatabase & D1SessionDatabase & Parameters<typeof createD1WorkspaceAccessStore>[0];
-export type TaskExecutionEnv = AgentEnv & { ACTION_DB?: ExecutionDatabase };
+export type TaskExecutionEnv = Omit<AgentEnv, "ACTION_DB"> & { ACTION_DB?: ExecutionDatabase | undefined };
 type Runner = (input: { messages: UIMessage[]; env: AgentEnv; signal: AbortSignal; managerPlan?: unknown }) => Promise<Response>;
 
 const MAX_REQUEST_BYTES = 2_048;
