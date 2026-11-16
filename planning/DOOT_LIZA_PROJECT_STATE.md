@@ -328,3 +328,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - This is not a background worker; stored plan JSON is not yet replayed as a fixed plan. High-risk approval-gated tasks and external side effects remain fail-closed.
 - Group 06 remains IN PROGRESS pending a real worker, persisted-plan execution, crash recovery/cooperative cancellation, live D1/Access setup and smoke tests, and separately authorized external-action executors.
 - No merge to `main`, production deployment, or external account action was performed.
+
+
+## 2026-11-16 — Durable memory feature batch
+
+- Added user-controlled durable memory D1 store and authenticated CRUD API; added `/settings/memory` page linked from privacy settings.
+- Authenticated chat retrieves bounded, relevant user-authored memories for the active workspace and provides them as untrusted reference data to the default and multi-agent paths.
+- Memory retrieval remains optional and fail-soft; no automatic extraction or secret storage is enabled.
+- Verification: GitHub Actions run `43867055849` SUCCESS — TypeScript, 51 test files / 381 tests, production build and generated Wrangler Worker config validation.
+- Live D1 binding, production authentication and runtime smoke tests remain unverified; this is source/CI completion, not a live deployment.
