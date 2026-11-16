@@ -32,6 +32,123 @@ Recursive Git tree inventory of tracked remote files only. It does not inspect t
 - `.github/dependabot.yml`, `.github/pull_request_template.md`
 - `.github/workflows/build.yml`, `.github/workflows/deploy.yml`
 
+## Component inventory
+
+49 UI component files:
+- `src/components/ui/accordion.tsx`
+- `src/components/ui/alert-dialog.tsx`
+- `src/components/ui/alert.tsx`
+- `src/components/ui/aspect-ratio.tsx`
+- `src/components/ui/avatar.tsx`
+- `src/components/ui/badge.tsx`
+- `src/components/ui/breadcrumb.tsx`
+- `src/components/ui/button-group.tsx`
+- `src/components/ui/button.tsx`
+- `src/components/ui/calendar.tsx`
+- `src/components/ui/card.tsx`
+- `src/components/ui/carousel.tsx`
+- `src/components/ui/chart.tsx`
+- `src/components/ui/checkbox.tsx`
+- `src/components/ui/collapsible.tsx`
+- `src/components/ui/command.tsx`
+- `src/components/ui/context-menu.tsx`
+- `src/components/ui/dialog.tsx`
+- `src/components/ui/drawer.tsx`
+- `src/components/ui/dropdown-menu.tsx`
+- `src/components/ui/form.tsx`
+- `src/components/ui/hover-card.tsx`
+- `src/components/ui/input-group.tsx`
+- `src/components/ui/input-otp.tsx`
+- `src/components/ui/input.tsx`
+- `src/components/ui/label.tsx`
+- `src/components/ui/menubar.tsx`
+- `src/components/ui/navigation-menu.tsx`
+- `src/components/ui/pagination.tsx`
+- `src/components/ui/popover.tsx`
+- `src/components/ui/progress.tsx`
+- `src/components/ui/radio-group.tsx`
+- `src/components/ui/resizable.tsx`
+- `src/components/ui/scroll-area.tsx`
+- `src/components/ui/select.tsx`
+- `src/components/ui/separator.tsx`
+- `src/components/ui/sheet.tsx`
+- `src/components/ui/sidebar.tsx`
+- `src/components/ui/skeleton.tsx`
+- `src/components/ui/slider.tsx`
+- `src/components/ui/sonner.tsx`
+- `src/components/ui/spinner.tsx`
+- `src/components/ui/switch.tsx`
+- `src/components/ui/table.tsx`
+- `src/components/ui/tabs.tsx`
+- `src/components/ui/textarea.tsx`
+- `src/components/ui/toggle-group.tsx`
+- `src/components/ui/toggle.tsx`
+- `src/components/ui/tooltip.tsx`
+
+4 AI presentation component files:
+- `src/components/ai-elements/conversation.tsx`
+- `src/components/ai-elements/message.tsx`
+- `src/components/ai-elements/prompt-input.tsx`
+- `src/components/ai-elements/shimmer.tsx`
+
+Total tracked component files: **53**.
+
+## Agent module inventory
+
+52 files under `src/lib/agents/`:
+- `src/lib/agents/acceptance.ts`
+- `src/lib/agents/account-deletion-api.ts`
+- `src/lib/agents/action-policy.ts`
+- `src/lib/agents/analytics-api.ts`
+- `src/lib/agents/analytics.ts`
+- `src/lib/agents/approval-api.ts`
+- `src/lib/agents/approval-store.ts`
+- `src/lib/agents/cloudflare-access-auth.ts`
+- `src/lib/agents/coding-workforce.ts`
+- `src/lib/agents/connection-refresh-api.ts`
+- `src/lib/agents/conversation-store.ts`
+- `src/lib/agents/coordination.ts`
+- `src/lib/agents/data-export-api.ts`
+- `src/lib/agents/data-privacy.ts`
+- `src/lib/agents/groq.ts`
+- `src/lib/agents/integration-disconnect-api.ts`
+- `src/lib/agents/integration-hub.ts`
+- `src/lib/agents/integration-list-api.ts`
+- `src/lib/agents/linkedin-content-studio.ts`
+- `src/lib/agents/linkedin-growth.ts`
+- `src/lib/agents/linkedin-intelligence.ts`
+- `src/lib/agents/liza-default.ts`
+- `src/lib/agents/liza-prompt.ts`
+- `src/lib/agents/manager.ts`
+- `src/lib/agents/memory-api.ts`
+- `src/lib/agents/memory-store.ts`
+- `src/lib/agents/oauth-api.ts`
+- `src/lib/agents/oauth-callback-api.ts`
+- `src/lib/agents/operations.ts`
+- `src/lib/agents/orchestrator.ts`
+- `src/lib/agents/pricing.ts`
+- `src/lib/agents/quality-gates.ts`
+- `src/lib/agents/registry.ts`
+- `src/lib/agents/release-manager.ts`
+- `src/lib/agents/request-policy.ts`
+- `src/lib/agents/research.ts`
+- `src/lib/agents/response-quality.ts`
+- `src/lib/agents/security-boundaries.ts`
+- `src/lib/agents/session-auth.ts`
+- `src/lib/agents/social-workforce.ts`
+- `src/lib/agents/specialist-tools.ts`
+- `src/lib/agents/specialists.ts`
+- `src/lib/agents/task-api.ts`
+- `src/lib/agents/task-approval.ts`
+- `src/lib/agents/task-execution-api.ts`
+- `src/lib/agents/task-store.ts`
+- `src/lib/agents/telegram-api.ts`
+- `src/lib/agents/telegram-approval.ts`
+- `src/lib/agents/telegram-bridge.ts`
+- `src/lib/agents/telegram-conversation-store.ts`
+- `src/lib/agents/types.ts`
+- `src/lib/agents/workspace-store.ts`
+
 ## Route inventory
 
 - `src/routes/README.md`
