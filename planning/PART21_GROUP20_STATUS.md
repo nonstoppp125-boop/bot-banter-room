@@ -44,3 +44,10 @@ No merge to main; no production deployment.
 - Tests cover invalid media types, oversized streams and malformed JSON.
 - GitHub Actions run `43822649828` — SUCCESS: TypeScript, 46 test files / 339 tests, production build and generated Wrangler validation.
 - Cloudflare Workers build check remained in progress at the time of this update; no deployment is claimed.
+
+
+## 2026-11-16 — Approved Manager task execution boundary
+
+- The Manager task execution API re-verifies payload-bound persisted approval for high-risk plans before running the specialist workflow.
+- This is not an external-action executor. Publishing, messaging, destructive actions, deployment and financial actions remain disconnected; each future executor must call the persisted approval and durable idempotency boundary.
+- GitHub Actions run `43872309252` SUCCESS — TypeScript, 51 test files / 397 tests, production build and generated Wrangler Worker config validation.
