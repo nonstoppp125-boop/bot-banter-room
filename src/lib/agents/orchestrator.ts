@@ -301,6 +301,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     agentId: subtask.agentId,
     dependsOn: subtask.dependsOn.map((dependency) => `specialist-${dependency}`),
     timeoutMs: managerPlan.executionBudget.perTaskTimeoutMs,
+    maxAttempts: managerPlan.executionBudget.maxAttempts,
     execute: async ({
       dependencyResults,
       signal: taskSignal,
@@ -438,6 +439,8 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     `Approval required before consequential external action: ${managerPlan.approvalRequired ? "yes" : "no"}` ,
     `Subtasks: ${specialistWorkflow.metrics.totalTasks} total; ${successfulTasks} successful; ${failedTasks} failed or skipped` ,
     `Execution duration: ${specialistWorkflow.metrics.durationMs} ms` ,
+    `Attempts used: ${specialistWorkflow.metrics.byAgent ? Object.values(specialistWorkflow.metrics.byAgent).reduce((sum, item) => sum + item.attempts, 0) : 0}` ,
+    `Independent quality review: ${review?.status ?? "missing"}` ,
     `Estimated input tokens: ${managerPlan.estimatedInputTokens} (rough character-based estimate)` ,
     "USD cost estimate: unavailable because provider pricing and complete token-usage telemetry are not configured.",
     ...(managerPlan.planningFallbackReason ? [`Planner fallback: ${managerPlan.planningFallbackReason}`] : []),
