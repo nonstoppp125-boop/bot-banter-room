@@ -475,6 +475,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsApprovalsRoute: SettingsApprovalsRoute,
   SettingsPrivacyRoute: SettingsPrivacyRoute,
+  SettingsMemoryRoute: SettingsMemoryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
