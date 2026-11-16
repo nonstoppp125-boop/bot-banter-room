@@ -30,3 +30,10 @@ No merge to main; no production deployment.
 
 - Added `planning/PRODUCTION_ENVIRONMENT_CHECKLIST.md` documenting exact D1, Cloudflare Access, AI/research provider, OAuth, Telegram and GitHub deployment prerequisites plus required live release evidence.
 - No production credentials, database ID or deployment was fabricated. Production remains blocked until account-side setup and smoke tests are completed.
+
+
+## 2026-11-16 — High-severity dependency gate restored
+
+- Vite/Zod upgrades were merged into the active work branch; the build and deploy workflows now both require `npm run security:audit` at high severity.
+- Latest CI run `43875777984`: SUCCESS — audit reported 7 low, 0 high; 51 test files / 401 tests, TypeScript, production build and Wrangler validation passed.
+- Production deploy remains blocked by missing real `ACTION_DB` binding, Cloudflare secrets, live smoke and rollback evidence.
