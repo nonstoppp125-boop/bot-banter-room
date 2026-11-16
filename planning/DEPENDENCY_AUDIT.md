@@ -29,6 +29,10 @@ All steps succeeded:
 
 The current package script is `npm audit --omit=dev --audit-level=high`. A successful run establishes that this configured production-only audit did not fail at the high threshold on that exact commit. It does **not** prove zero advisories, does not audit development dependencies, and does not establish current advisory status after later lockfile changes.
 
+## Lockfile duplication snapshot
+
+Parsed tracked lockfile v3: 837 package entries across 789 package names. 35 package names resolve to multiple versions in the dependency tree (including eslint-visitor-keys, globals, tslib, minimatch, semver, chalk, commander, d3-array, nanoid and react-is). These are transitive version multiplicities, not proof of duplicate direct dependencies or removable packages. Review dependency paths before attempting deduplication.
+
 ## Static usage review status
 
 **Not complete.** No import-graph-based unused dependency report has yet been generated. Do not remove packages based on name/version guesses or manifest presence. Packages may be referenced through config files, dynamic imports, generated tooling or type-only imports. Before changing dependencies, scan all source, test, config and build files and classify direct runtime, development/tooling, peer/transitive, dynamically loaded and genuinely unused packages.
