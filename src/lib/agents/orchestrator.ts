@@ -7,7 +7,8 @@ import {
 } from "./linkedin-content-studio";
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { LIZA_SYSTEM } from "./liza-default";
-import { runDelegatedAgentWorkflow, routeTaskToAgents } from "./coordination";
+import { runDelegatedAgentWorkflow } from "./coordination";
+import { buildManagerPlan } from "./manager";
 import {
   RESEARCH_SOURCE_SAFETY_RULE,
   buildResearchReport,
@@ -173,7 +174,8 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
       .join("\n") ?? "";
 
   const linkedinContentTask = isLinkedInContentRequest(taskText);
-  const routedAgentIds = [...new Set(routeTaskToAgents(taskText, listAgents()))];
+  const managerPlan = buildManagerPlan(taskText, listAgents());
+  const routedAgentIds = [...managerPlan.agentIds];
   if (linkedinContentTask && !routedAgentIds.includes("content-writer")) {
     routedAgentIds.push("content-writer");
   }
@@ -270,7 +272,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   // Phase 1: execute routed specialists concurrently.
   const specialistWorkflow = await runDelegatedAgentWorkflow([DEFAULT_AGENT_ID], specialistTasks, {
     signal,
-    concurrency: Math.min(specialistTasks.length, 4),
+    concurrency: Math.min(specialistTasks.length, managerPlan.executionBudget.maxParallelAgents),
   });
   if (signal.aborted) return new Response(null, { status: 499 });
 
