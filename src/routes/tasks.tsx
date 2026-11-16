@@ -224,6 +224,7 @@ function TasksPage() {
                   <span className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">{statusLabels[task.status] || task.status}</span>
                 </div>
                 {task.result?.output && <pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/60 p-3 text-sm">{task.result.output}</pre>}
+                {task.result?.error && <p role="alert" className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">{task.result.error}</p>}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">Created {new Date(task.createdAt).toLocaleString()}</p>
                   <div className="flex flex-wrap gap-2">
