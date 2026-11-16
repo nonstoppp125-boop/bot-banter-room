@@ -36,6 +36,8 @@ const suggestions = ["আমাকে একটা গল্প বলো", "Tel
 
 function Index() {
   const [error, setError] = useState<string | null>(null);
+  const [taskSaving, setTaskSaving] = useState<string | null>(null);
+  const [taskNotice, setTaskNotice] = useState<string | null>(null);
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     onError: (e) => setError(e.message || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।"),
@@ -46,6 +48,30 @@ function Index() {
     if (!text.trim() || busy) return;
     setError(null);
     sendMessage({ text });
+  };
+
+  const saveMessageAsTask = async (messageId: string, taskText: string) => {
+    if (!taskText.trim() || taskSaving) return;
+    setTaskSaving(messageId);
+    setTaskNotice(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ task: taskText }),
+      });
+      const data = await response.json() as { task?: { status?: string }; error?: string };
+      if (!response.ok) throw new Error(data.error || "Manager task could not be saved.");
+      setTaskNotice(data.task?.status === "needs_approval"
+        ? "Manager plan saved — approval required."
+        : "Manager plan saved to your task workspace. Background execution is not enabled yet.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Manager task could not be saved.");
+    } finally {
+      setTaskSaving(null);
+    }
   };
 
   const composer = (
@@ -107,6 +133,19 @@ function Index() {
                           <span key={i} className="whitespace-pre-wrap">{p.text}</span>
                         )
                       ) : null,
+                    )}
+                    {m.role === "user" && m.parts.some((part) => part.type === "text" && part.text.trim()) && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void saveMessageAsTask(m.id, m.parts.filter((part) => part.type === "text").map((part) => part.text).join("\n"))}
+                          disabled={taskSaving !== null}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent disabled:opacity-50"
+                        >
+                          {taskSaving === m.id ? "Saving plan…" : "Create Manager task"}
+                        </button>
+                        {taskNotice && taskSaving === null && <span role="status" className="text-xs text-muted-foreground">{taskNotice}</span>}
+                      </div>
                     )}
                   </MessageContent>
                 </Message>
