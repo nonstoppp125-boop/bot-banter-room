@@ -84,3 +84,11 @@ No merge to main; no production deployment.
 - The claim returns false when another worker already claimed the task (zero changed rows), preventing two workers from successfully claiming the same queued record.
 - Added tests for the exact owner/workspace/status predicate and invalid-identity rejection before database access.
 - This is a concurrency-safe worker building block, not a deployed background worker. No queue/cron binding or automatic specialist execution is claimed; those remain open pending runtime architecture and deployment configuration.
+
+
+## 2026-11-16 — Manager durable-task workspace UI
+
+- Added `/tasks`, a session-bound task planning page that submits bounded task descriptions to the existing authenticated `POST /api/tasks` endpoint and lists the current user's persisted tasks from `GET /api/tasks`.
+- Added explicit UI language distinguishing saved plans from actual background execution; queued tasks are not presented as running.
+- Registered the route in the generated TanStack route tree and added a Tasks link to the chat navigation.
+- This closes the basic user-facing task intake/listing gap, but does not implement chat-message auto-enqueue, queue consumption, specialist execution, retry/recovery, or live D1 verification.
