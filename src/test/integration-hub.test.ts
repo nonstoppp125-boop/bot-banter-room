@@ -43,7 +43,7 @@ it("hashes OAuth state and stores a one-time encrypted PKCE transaction",async()
         if(!query.startsWith("UPDATE"))return null;
         const [now,hash,notExpired]=values;
         const row=rows.get(String(hash));
-        if(!row||row.consumed_at!==null||String(row.expires_at)<=String(notExpired))return null;
+        if(!row||row["consumed_at"]!==null||String(row["expires_at"])<=String(notExpired))return null;
         row.consumed_at=now;
         return row as T;
       },
