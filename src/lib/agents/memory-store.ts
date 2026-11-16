@@ -92,8 +92,11 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
       const terms = [...new Set(query.split(/[^\p{L}\p{N}]+/u).filter((term) => term.length > 1))].slice(0, 12);
       return (records.results ?? []).map(restore).map((memory) => {
         const text = memory.content.toLocaleLowerCase();
+        // Preferences are broadly relevant across requests even when their wording
+        // does not overlap with the current task (e.g. reply language or brevity).
         const score = terms.reduce((total, term) => total + (text.includes(term) ? 1 : 0), 0) +
-          (text.includes(query) ? terms.length + 1 : 0);
+          (text.includes(query) ? terms.length + 1 : 0) +
+          (memory.category === "preference" ? 1 : 0);
         return { memory, score };
       }).filter((item) => item.score > 0)
         .sort((a, b) => b.score - a.score || b.memory.updatedAt.localeCompare(a.memory.updatedAt))
