@@ -51,3 +51,11 @@ No merge to main; no production deployment.
 - The Manager task execution API re-verifies payload-bound persisted approval for high-risk plans before running the specialist workflow.
 - This is not an external-action executor. Publishing, messaging, destructive actions, deployment and financial actions remain disconnected; each future executor must call the persisted approval and durable idempotency boundary.
 - GitHub Actions run `43872309252` SUCCESS — TypeScript, 51 test files / 397 tests, production build and generated Wrangler Worker config validation.
+
+
+## 2026-11-16 — Approval and cancellation safety regression coverage
+
+- Approved Manager task execution requires persisted payload-bound approval; generic task transitions cannot bypass the approval unlock or bounded retry paths.
+- User-triggered task execution supports request-abort cancellation and records the cancelled state; no background worker is implied.
+- External publishing, messaging, deletion, deployment and financial actions remain disconnected. Approval verification is not an external-action executor.
+- Verification: GitHub Actions run `43872990333` SUCCESS — 51 test files / 399 tests, TypeScript, production build and generated Wrangler Worker config validation.
