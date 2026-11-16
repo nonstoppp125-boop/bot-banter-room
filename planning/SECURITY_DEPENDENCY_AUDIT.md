@@ -14,8 +14,7 @@ Do not infer that the KaTeX advisory is one of the two high findings; the audit 
 
 ## Current CI/release policy
 
-- Build CI runs `npm audit --omit=dev --audit-level=critical`. It reports known high findings but blocks critical findings so ordinary source/test/build verification can continue.
-- The manual production deployment workflow still runs `npm run security:audit`, which uses `--audit-level=high`. Production deployment therefore remains blocked while high vulnerabilities exist.
+- Build CI and the manual production deployment workflow now both run `npm run security:audit` (`npm audit --omit=dev --audit-level=high`). High-severity findings block verification and production deployment.
 - GitHub Actions run `43874074750` passed the critical-threshold audit step, TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation. This is not evidence that high findings are fixed.
 
 ## Remediation required
@@ -26,3 +25,11 @@ Do not infer that the KaTeX advisory is one of the two high findings; the audit 
 4. Re-run the high-threshold audit and record a clean result before enabling production deployment.
 
 No dependency was force-upgraded in this batch because the Zod change is breaking and the repository lockfile must be regenerated and tested.
+
+
+## 2026-11-16 — Isolated remediation result
+
+- Updated direct Vite to `^8.3.8` and Zod to `^4.6.7`; npm regenerated the lockfile in an isolated branch.
+- GitHub Actions remediation run `43874594406`: TypeScript, 51 test files / 400 tests and production build all passed.
+- The post-upgrade npm audit reported 7 low, 0 moderate, 0 high and 0 critical vulnerabilities. KaTeX's advisory remains within the remaining low findings; no fixed release was reported.
+- These dependency changes are now being revalidated on the current working-branch base before integration.
