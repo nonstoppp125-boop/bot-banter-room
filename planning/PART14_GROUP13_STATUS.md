@@ -32,12 +32,12 @@ Branch: `work/group06-manager-planner`
 
 ## Status
 
-GROUP 13: PARTIALLY IMPLEMENTED — planning, specialist and draft/approval foundations exist; official platform feasibility, OAuth, publishing, analytics and durable storage remain open.
+GROUP 13: PARTIALLY IMPLEMENTED — offline planning, specialists, draft/approval, content adaptation, analytics normalization and fail-closed publication preflight are source- and CI-verified; provider OAuth, live publishing/analytics, durable storage and background scheduling remain open.
 No merge to `main`; no production deployment.
 
 
 ## CI verification
-- GitHub Actions verification is pending for the platform-specific specialist and social-workforce foundation.
+- Latest source verification: GitHub Actions run `43874290438` on code commit `5ee043fde774f32a4784ba51c07e12ab05bc46a0` passed TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config. This verifies offline source contracts only; no live provider connection or publication.
 
 
 ## Verification
@@ -52,7 +52,7 @@ No merge to `main`; no production deployment.
 - S01/S03/S05/S07/S09 feasibility findings documented for Instagram, Facebook Pages, YouTube, X and TikTok in `PART14_GROUP13_API_FEASIBILITY.md`.
 - Added a typed runtime readiness registry with account eligibility, authorization, publishing constraints, quota notes and official source URLs.
 - All five integrations remain `not-connected`; live publishing remains explicitly disabled. OAuth, provider approval, durable encrypted tokens and server-side approval enforcement are still blockers.
-- Feasibility tests added; CI verification pending.
+- Feasibility tests added; CI verification is recorded in run `43874290438`: 51 test files / 400 tests, TypeScript, production build and generated Wrangler Worker config PASS.
 
 
 ## 2026-11-16 — Group 13 caption and repurposing controls
