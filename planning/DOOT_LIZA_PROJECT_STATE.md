@@ -374,3 +374,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - High-risk Manager execution now re-verifies persisted approval before the synchronous specialist workflow. The workflow does not publish, message, delete, deploy or perform financial actions.
 - Verification: GitHub Actions run `43872309252` SUCCESS — 51 test files / 397 tests, TypeScript, production build and generated Wrangler Worker config validation.
 - Overall project remains in progress. Live D1/Access/Telegram/provider configuration, background queue worker, external-action executors, mobile-device verification and final release acceptance remain unverified or blocked.
+
+
+## 2026-11-16 — Group inventory and latest verified source checkpoint
+
+- Audited the 24-group roadmap against the available detailed status documents. Groups 06–24 (19 groups) are still marked in progress/partial; Groups 01–05 need a fresh evidence reconciliation before a defensible whole-project percentage can be published. Do not treat group count as completion percentage.
+- Latest verified source checkpoint: `work/group06-manager-planner`; GitHub Actions run `43872990333` SUCCESS — TypeScript, 51 test files / 399 tests, production build and generated Wrangler Worker config validation.
+- Implemented in this batch: payload-bound approved task unlock and execution verification, dedicated bounded retry and approval unlock D1 transitions, running-task request-abort UI and regression coverage.
+- Fixed literal escaped line breaks in `.env.example`.
+- Still unverified or blocked: live `ACTION_DB` D1 binding and migrations, Cloudflare Access production configuration, Telegram bot secrets/webhook, OAuth provider credentials/scopes, external-action executors, background queue worker, device/runtime testing, production smoke/rollback and final user acceptance.
+- No merge to `main`, no production deployment and no external side effect was performed.
