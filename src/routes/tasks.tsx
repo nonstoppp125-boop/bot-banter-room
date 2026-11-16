@@ -1,0 +1,124 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+
+export const Route = createFileRoute("/tasks")({
+  head: () => ({ meta: [{ title: "Manager Tasks — Liza" }, { name: "robots", content: "noindex,nofollow" }] }),
+  component: TasksPage,
+});
+
+type Task = {
+  id: string;
+  status: "queued" | "running" | "completed" | "failed" | "cancelled" | "needs_approval";
+  inputSummary: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const statusLabels: Record<Task["status"], string> = {
+  queued: "Queued",
+  running: "Running",
+  completed: "Completed",
+  failed: "Failed",
+  cancelled: "Cancelled",
+  needs_approval: "Needs approval",
+};
+
+function TasksPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskText, setTaskText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/tasks", {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+      const data = await response.json() as { tasks?: Task[]; error?: string };
+      if (!response.ok) throw new Error(data.error || "Tasks could not be loaded.");
+      setTasks(Array.isArray(data.tasks) ? data.tasks : []);
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Tasks could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const task = taskText.trim();
+    if (!task || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ task }),
+      });
+      const data = await response.json() as { task?: Task; error?: string };
+      if (!response.ok) throw new Error(data.error || "Task could not be submitted.");
+      setTaskText("");
+      setNotice(data.task?.status === "needs_approval"
+        ? "Task saved and is waiting for approval."
+        : "Task plan saved to the durable queue. Background execution is not enabled yet.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Task could not be submitted.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="min-h-dvh bg-background px-4 py-6 text-foreground sm:px-8">
+      <div className="mx-auto w-full max-w-4xl">
+        <a href="/" className="text-sm text-muted-foreground hover:text-foreground">← Back to chat</a>
+        <header className="mb-8 mt-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Manager workspace</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Durable tasks</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Submit a bounded task to Manager planning and review its saved status.</p>
+        </header>
+        <div className="mb-5 rounded-xl border border-border bg-muted/40 p-4 text-sm">
+          <strong>Execution status:</strong> This interface currently saves Manager plans to the durable task store. It does not claim that queued tasks are running in a background worker.
+        </div>
+        {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">{error}</p>}
+        {notice && <p role="status" className="mb-4 rounded-xl border border-border bg-muted p-3 text-sm">{notice}</p>}
+        <form onSubmit={submit} className="mb-8 rounded-xl border border-border bg-card p-4">
+          <label htmlFor="manager-task" className="block text-sm font-medium">New task</label>
+          <textarea id="manager-task" value={taskText} onChange={(event) => setTaskText(event.target.value)} maxLength={20000} required rows={4} placeholder="Describe the outcome you want Manager to plan…" className="mt-2 w-full resize-y rounded-lg border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <span className="text-xs text-muted-foreground">{taskText.length.toLocaleString()} / 20,000</span>
+            <button type="submit" disabled={submitting || !taskText.trim()} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{submitting ? "Saving…" : "Create task plan"}</button>
+          </div>
+        </form>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Your recent tasks</h2>
+          <button onClick={() => void load()} disabled={loading} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent disabled:opacity-50">{loading ? "Loading…" : "Refresh"}</button>
+        </div>
+        {loading ? <p className="text-sm text-muted-foreground">Loading tasks…</p> :
+          tasks.length === 0 ? <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">No tasks have been saved yet.</p> :
+          <div className="space-y-3">
+            {tasks.map((task) => (
+              <article key={task.id} className="rounded-xl border border-border bg-card p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{task.inputSummary}</p>
+                  <span className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">{statusLabels[task.status] || task.status}</span>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">Created {new Date(task.createdAt).toLocaleString()}</p>
+              </article>
+            ))}
+          </div>}
+      </div>
+    </main>
+  );
+}
