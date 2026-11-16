@@ -17,13 +17,14 @@ function AnalyticsPage() {
   const [records,setRecords]=useState<AnalyticsSnapshot[]>([]);
   const [error,setError]=useState<string|null>(null);
   const [fileName,setFileName]=useState("");
-  const [loading,setLoading]=useState(true);\n  const [nextCursor,setNextCursor]=useState<string|null>(null);\n  const [hasMore,setHasMore]=useState(false);\n  const [loadingMore,setLoadingMore]=useState(false);\n  const [notice,setNotice]=useState<string|null>(null);
+  const [loading,setLoading]=useState(true);
+  const [nextCursor,setNextCursor]=useState<string|null>(null);\n  const [hasMore,setHasMore]=useState(false);\n  const [loadingMore,setLoadingMore]=useState(false);\n  const [notice,setNotice]=useState<string|null>(null);
   useEffect(()=>{
     let active=true;
     void fetch("/api/analytics?limit=200",{credentials:"same-origin"}).then(async response=>{
       if(!response.ok) throw new Error(response.status===401?"Sign in to load saved workspace analytics.":"Could not load saved analytics.");
-      const payload=await response.json() as {records?:AnalyticsSnapshot[]};
-      if(active) setRecords(Array.isArray(payload.records)?payload.records:[]);
+      const payload=await response.json() as {records?:AnalyticsSnapshot[];nextCursor?:string|null;hasMore?:boolean};
+      if(active) { setRecords(Array.isArray(payload.records)?payload.records:[]); setNextCursor(payload.nextCursor??null); setHasMore(payload.hasMore===true); }
     }).catch(error=>{if(active)setError(error instanceof Error?error.message:"Could not load saved analytics.");})
       .finally(()=>{if(active)setLoading(false);});
     return ()=>{active=false;};
@@ -50,8 +51,8 @@ function AnalyticsPage() {
       if(!response.ok) throw new Error(payload.error??"Could not save analytics to this workspace.");
       const saved=await fetch("/api/analytics?limit=200",{credentials:"same-origin"});
       if(!saved.ok) throw new Error("Import saved, but analytics refresh failed.");
-      const savedPayload=await saved.json() as {records?:AnalyticsSnapshot[]};
-      setRecords(Array.isArray(savedPayload.records)?savedPayload.records:[]);
+      const savedPayload=await saved.json() as {records?:AnalyticsSnapshot[];nextCursor?:string|null;hasMore?:boolean};
+      setRecords(Array.isArray(savedPayload.records)?savedPayload.records:[]); setNextCursor(savedPayload.nextCursor??null); setHasMore(savedPayload.hasMore===true);
       setFileName(file.name);
     } catch(e) {
       setError(e instanceof Error?e.message:"Could not import analytics CSV.");
