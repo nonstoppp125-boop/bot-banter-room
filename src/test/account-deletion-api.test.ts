@@ -45,6 +45,17 @@ describe("account deletion request API", () => {
     expect((await handleAccountDeletionRequest(new Request(url, { method: "POST" }), { ACTION_DB: database })).status).toBe(403);
   });
 
+  it("rejects JSONP media types before reading account-change bodies", async () => {
+    const { database, queries } = makeDatabase();
+    const request = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/jsonp", cookie },
+      body: JSON.stringify({ operation: "request", confirmationPhrase: "DELETE MY ACCOUNT" }),
+    });
+    expect((await handleAccountDeletionRequest(request, { ACTION_DB: database })).status).toBe(415);
+    expect(queries).toEqual([]);
+  });
+
   it("requires the exact confirmation phrase before scheduling", async () => {
     const { database } = makeDatabase();
     const response = await handleAccountDeletionRequest(post({ operation: "request", confirmationPhrase: "delete account" }), { ACTION_DB: database });
