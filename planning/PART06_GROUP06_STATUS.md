@@ -100,3 +100,10 @@ No merge to main; no production deployment.
 - Cancellation is limited to the `queued → cancelled` transition and uses the task store's compare-and-swap update; a task claimed or changed by another worker returns conflict rather than being overwritten.
 - Added a Cancel control to the task workspace only for queued tasks, plus API tests for successful cancellation and cross-origin rejection.
 - Running tasks are deliberately not exposed as cancellable until a worker-side cooperative cancellation mechanism exists.
+
+
+## 2026-11-16 — Explicit chat-to-Manager task enqueue
+
+- Added a deliberate `Create Manager task` action to each non-empty user chat message. It sends only the selected message text to the authenticated task-intake API; ordinary chat messages are not silently duplicated into the task queue.
+- Shows message-scoped success feedback and clearly states that the saved plan is not yet background execution.
+- Together with `/tasks`, the authenticated API and queued-task cancellation, this provides a complete user-facing plan intake/list/cancel path. Actual worker consumption and specialist execution remain open.
