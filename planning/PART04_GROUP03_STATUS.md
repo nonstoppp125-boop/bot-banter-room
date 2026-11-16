@@ -90,3 +90,16 @@ These schemas cover later product capabilities and cannot be silently applied as
 Therefore the existing workflow is not yet safe to run for the approved Group-03-only scope. No PR merge, remote D1 migration, or production deployment was triggered. Next required engineering task: isolate a Group-03 release artifact with a migration allowlist and runtime dependency boundary, then run CI against that artifact. If Group 03 cannot operate independently of later-group code/schema, G03.20 must remain blocked rather than deploy unfinished groups.
 
 **Current status remains 19/20; production action is intentionally held at the verified scope boundary.**
+
+
+## Isolated production release PR — 2026-11-16
+
+- Created `release/group03-production-only` directly from `main`.
+- PR #4 contains exactly two files: `.github/workflows/deploy-group03.yml` and `scripts/configure-production-d1.mjs`. No later-group source code or migration files are included.
+- PR #4 was merged after the PR CI build passed. Merge commit: `39e3da0fe48033b3f12929a26aad72c8920908e4`.
+- Post-merge main CI run `43921561832` completed successfully: dependency install and production build both passed.
+- The new workflow is manual, main-only, and requires `confirm_deploy=true`. It injects the provisioned `ACTION_DB` binding and validates `CHAT_RATE_LIMITER`.
+- **No D1 migration is run.** Group 03's main-branch runtime does not currently consume D1-backed actions; applying the repository-wide migration set would create later-group schemas. This is an intentional safety boundary, not a completed migration.
+- Production Worker deployment has not yet been dispatched. It requires one manual GitHub Actions workflow dispatch; the available repository integration can merge and inspect workflows but cannot dispatch a workflow run.
+
+**Current Group 03 status: 19/20 — release pipeline merged and CI green; final live deployment/smoke verification pending. Do not start Group 04.**
