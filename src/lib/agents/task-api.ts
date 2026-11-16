@@ -1,5 +1,5 @@
 import { createD1SessionStore, readSessionCookie } from "./session-auth";
-import { buildManagerPlan } from "./manager";
+import { buildManagerPlan, restoreManagerPlan } from "./manager";
 import { listAgents } from "./registry";
 import { createD1TaskStore, type D1TaskDatabase } from "./task-store";
 import { createD1WorkspaceAccessStore } from "./workspace-store";
@@ -124,8 +124,8 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
     }
 
     if (request.method === "PATCH") {
-      if (!isRecord(body) || body["action"] !== "cancel" || typeof body["taskId"] !== "string") {
-        return json({ error: "A taskId and cancel action are required." }, 400);
+      if (!isRecord(body) || (body["action"] !== "cancel" && body["action"] !== "retry") || typeof body["taskId"] !== "string") {
+        return json({ error: "A taskId and supported cancel/retry action are required." }, 400);
       }
       const store = createD1TaskStore(database);
       const task = await store.get({
@@ -134,19 +134,32 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
         userId: session.userId,
       });
       if (!task) return json({ error: "Task not found." }, 404);
+      if (body["action"] === "retry") {
+        if (task.status !== "failed") return json({ error: "Only failed tasks can be retried." }, 409);
+        const plan = restoreManagerPlan(task.inputSummary, task.plan, listAgents());
+        if (!plan) return json({ error: "Saved Manager plan is stale or invalid. Create a new task instead." }, 409);
+        if (plan.approvalRequired) return json({ error: "High-risk tasks cannot be retried without a separate approval workflow." }, 409);
+        const retriedAt = new Date().toISOString();
+        const retried = await store.retry({
+          id: task.id, workspaceId: session.workspaceId, userId: session.userId, updatedAt: retriedAt,
+        });
+        if (!retried) return json({ error: "Retry budget is exhausted or task status changed." }, 409);
+        return json({ task: { ...task, status: "queued", updatedAt: retriedAt }, retryLimit: 2 });
+      }
       if (task.status !== "queued") {
         return json({ error: "Only queued tasks can be cancelled." }, 409);
       }
+      const cancelledAt = new Date().toISOString();
       const cancelled = await store.update({
         id: task.id,
         workspaceId: session.workspaceId,
         userId: session.userId,
         expectedStatus: "queued",
         status: "cancelled",
-        updatedAt: new Date().toISOString(),
+        updatedAt: cancelledAt,
       });
       if (!cancelled) return json({ error: "Task status changed; refresh and try again." }, 409);
-      return json({ task: { ...task, status: "cancelled", updatedAt: new Date().toISOString() } });
+      return json({ task: { ...task, status: "cancelled", updatedAt: cancelledAt } });
     }
 
     const tasks = await createD1TaskStore(database).list({
