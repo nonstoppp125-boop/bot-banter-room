@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Download, FileUp, RefreshCw, TrendingUp } from "lucide-react";
-import { buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, exportAnalyticsCsv, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
+import { buildAnalyticsDimensionReport, buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, exportAnalyticsCsv, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
 
 export const Route = createFileRoute("/analytics")({ component: AnalyticsPage });
 
@@ -33,6 +33,11 @@ function AnalyticsPage() {
   const freshness=getAnalyticsFreshness(records);
   const recommendations=generateAnalyticsRecommendations(records);
   const trends=buildAnalyticsTrendReport(records, "impressions");
+  const dimensionReports=[
+    {key:"campaign" as const,label:"Campaign"},
+    {key:"audience" as const,label:"Audience"},
+    {key:"contentPillar" as const,label:"Content pillar"},
+  ].map(item=>({...item,rows:buildAnalyticsDimensionReport(records,item.key,"impressions")}));
   async function importFile(file?:File) {
     if(!file)return;
     setError(null);
@@ -97,6 +102,16 @@ function AnalyticsPage() {
           {recommendations.length ? <ul className="mt-3 space-y-3">{recommendations.map(item=><li key={item.id} className="border-t border-border pt-3"><p className="text-sm font-medium">{item.title} <span className="ml-2 text-xs text-muted-foreground">{item.priority}</span></p><p className="mt-1 text-sm text-muted-foreground">{item.rationale}</p>{item.evidence.length>0&&<p className="mt-1 text-xs text-muted-foreground">Evidence: {item.evidence.join(" · ")}</p>}</li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">No additional recommendations from the supplied metrics.</p>}
           <h3 className="mt-5 font-medium">Impression trend</h3>
           {trends.length ? <div className="mt-2 space-y-2">{trends.slice(-12).map((item,i)=><div key={item.platform+item.periodStart+i} className="flex justify-between gap-3 text-sm"><span>{item.platform} · {item.periodStart}–{item.periodEnd}</span><span className="tabular-nums">{item.value.toLocaleString()}</span></div>)}</div> : <p className="mt-2 text-xs text-muted-foreground">No impression trend data supplied.</p>}
+        </section>
+        <section className="mt-6 rounded-xl border border-border bg-card p-4">
+          <h2 className="font-medium">Campaign, audience & content reports</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Grouped impression totals use only explicitly supplied dimensions; missing labels are not inferred.</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {dimensionReports.map(report=><div key={report.key}>
+              <h3 className="text-sm font-medium">{report.label}</h3>
+              {report.rows.length ? <ul className="mt-2 space-y-2">{report.rows.slice(0,8).map(item=><li key={item.dimension} className="flex justify-between gap-2 border-t border-border pt-2 text-xs"><span>{item.dimension}</span><span className="tabular-nums">{item.value.toLocaleString()} · {item.recordCount} records</span></li>)}</ul> : <p className="mt-2 text-xs text-muted-foreground">No {report.label.toLowerCase()} dimension supplied.</p>}
+            </div>)}
+          </div>
         </section>
         <section className="mt-6 overflow-hidden rounded-xl border border-border">
           <h2 className="border-b border-border p-4 font-medium">Imported metric records</h2>
