@@ -15,15 +15,47 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function readTaskBody(request: Request): Promise<unknown | null> {
+type TaskBodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 413 };
+
+async function readTaskBody(request: Request): Promise<TaskBodyResult> {
   const declared = request.headers.get("content-length");
-  if (declared && (!/^\d+$/.test(declared) || Number(declared) > 24_000)) return null;
+  if (declared !== null) {
+    if (!/^\d+$/.test(declared)) return { ok: false, status: 400 };
+    if (Number(declared) > 24_000) return { ok: false, status: 413 };
+  }
+  if (!request.body) return { ok: false, status: 400 };
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
   try {
-    const raw = await request.text();
-    if (!raw || new TextEncoder().encode(raw).byteLength > 24_000) return null;
-    return JSON.parse(raw);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      totalBytes += value.byteLength;
+      if (totalBytes > 24_000) {
+        void reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413 };
+      }
+      chunks.push(value);
+    }
+    if (totalBytes === 0) return { ok: false, status: 400 };
+    const bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    try {
+      return { ok: true, value: JSON.parse(new TextDecoder().decode(bytes)) };
+    } catch {
+      return { ok: false, status: 400 };
+    }
   } catch {
-    return null;
+    return { ok: false, status: 400 };
+  } finally {
+    reader.releaseLock();
   }
 }
 
@@ -56,7 +88,17 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
     if (!session?.workspaceId) return json({ error: "Active workspace session required." }, 401);
     const membership = await createD1WorkspaceAccessStore(database).getMembership(session.workspaceId, session.userId);
     if (!membership) return json({ error: "Workspace membership required." }, 403);
-    const body = request.method === "POST" ? await readTaskBody(request) : null;
+    let body: unknown = null;
+    if (request.method === "POST") {
+      const parsed = await readTaskBody(request);
+      if (!parsed.ok) {
+        return json(
+          { error: parsed.status === 413 ? "Task request body is too large." : "Invalid JSON task payload." },
+          parsed.status,
+        );
+      }
+      body = parsed.value;
+    }
 
     if (request.method === "POST") {
       if (!isRecord(body) || typeof body["task"] !== "string" ||
