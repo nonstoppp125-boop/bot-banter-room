@@ -313,3 +313,14 @@ Append new evidence below; never rewrite historical results.\n\n
 - Nitro-generated Wrangler configuration validation: PASS.
 - Task request bodies are streamed and bounded to 24 KB; oversized requests are cancelled and return 413.
 - Cloudflare Workers build check remained in progress; this CI result is not a production deployment.
+
+
+## 2026-11-16 — Group 20 approval/task API request hardening
+- Commit: `6ba2a36dc6e7c7888868dcbb6a9a8b7c7d996ddb`.
+- GitHub Actions run: `43822649828` — SUCCESS.
+- TypeScript: PASS.
+- Unit/integration tests: PASS — 46 test files, 339 tests.
+- Production build: PASS.
+- Nitro-generated Wrangler configuration validation: PASS.
+- Approval and task APIs enforce exact JSON media types and bounded streamed request bodies (8 KB and 24 KB respectively).
+- Cloudflare Workers build check was still in progress; this verification does not imply deployment readiness.
