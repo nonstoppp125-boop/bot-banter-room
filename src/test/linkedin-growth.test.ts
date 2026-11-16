@@ -143,6 +143,7 @@ describe("LinkedIn Growth workflow", () => {
     const store = new InMemoryLinkedInGrowthStore();
     readyDraft(store);
     const base = {
+      ...await approvalContext(store),
       store,
       draftId: "draft-1",
       actor: "owner",
