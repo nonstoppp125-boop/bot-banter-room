@@ -21,6 +21,8 @@ export type AgentRunInput = {
   messages: UIMessage[];
   env: AgentEnv;
   signal: AbortSignal;
+  /** Optional server-restored durable Manager plan; validated again by the orchestrator. */
+  managerPlan?: unknown;
 };
 
 export type SpecialistInput = {
