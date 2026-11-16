@@ -61,6 +61,27 @@ describe("durable agent task store", () => {
     expect(values).toEqual(["running", "2026-11-16T10:02:00Z", "task-1", "w1", "u1", "queued"]);
   });
 
+  it("returns false when a competing worker already claimed the queued task", async () => {
+    let values: unknown[] = [];
+    const db = {
+      prepare: (query: string) => ({
+        bind: (...bound: unknown[]) => ({
+          first: async () => null,
+          all: async () => ({ success: true, results: [] }),
+          run: async () => {
+            values = bound;
+            return { success: true, meta: { changes: 0 } };
+          },
+        }),
+      }),
+    };
+    const store = createD1TaskStore(db as unknown as Parameters<typeof createD1TaskStore>[0]);
+    expect(await store.claim({
+      id: "task-1", workspaceId: "w1", userId: "u1", updatedAt: "2026-11-16T10:03:00Z",
+    })).toBe(false);
+    expect(values.at(-1)).toBe("queued");
+  });
+
   it("rejects malformed task claim identities before touching D1", async () => {
     let calls = 0;
     const db = {
