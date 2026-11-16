@@ -11,7 +11,7 @@ export async function hashApprovalPayload(payload:unknown):Promise<string>{
  return Array.from(digest,byte=>byte.toString(16).padStart(2,"0")).join("");
 }
 export interface ApprovalStore { get(input:{id:string;workspaceId:string;actorUserId:string}):Promise<ApprovalRecord|null>; }
-export function createD1ApprovalStore(database:D1ApprovalDatabase):ApprovalStore{
+export function createD1ApprovalStore(database:D1ApprovalDatabase){
  if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 approval database is required.");
  const map=(row:{id:string;workspace_id:string;user_id:string;action_type:ApprovalAction;payload_hash:string;status:ApprovalStatus;decided_by_user_id:string|null;decision_reason:string|null;expires_at:string;created_at:string;decided_at:string|null}):ApprovalRecord=>({id:row.id,workspaceId:row.workspace_id,userId:row.user_id,actionType:row.action_type,payloadHash:row.payload_hash,status:row.status,decidedByUserId:row.decided_by_user_id,decisionReason:row.decision_reason,expiresAt:row.expires_at,createdAt:row.created_at,decidedAt:row.decided_at});
  return{
