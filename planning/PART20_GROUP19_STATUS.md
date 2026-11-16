@@ -21,3 +21,9 @@ Branch: `work/group06-manager-planner`
 
 GROUP 19: IN PROGRESS — security and identity bridge foundations implemented; no live Telegram bot connection or message delivery is enabled.
 No merge to `main`; no production deployment.
+
+
+## 2026-11-16 — Shared conversation continuity
+- Added D1 chat-to-conversation mapping with strict bot/chat/user/workspace ownership checks and active-link/member predicates.
+- Conversation links are created only for a non-deleted conversation owned by the mapped user in the linked workspace.
+- CI verification pending.

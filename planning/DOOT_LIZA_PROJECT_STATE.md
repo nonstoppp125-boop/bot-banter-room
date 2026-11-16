@@ -243,3 +243,8 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Repository audit found no Telegram bot runtime, command handlers, webhook route, bot token or hosting configuration; ownership/configuration remain unverified.
 - Added private-chat update normalization, webhook secret verification, D1 identity lookup, replay claim adapter and Unicode-safe 4096-code-point output chunking.
 - Added D1 Telegram identity and update-claim migration. No live bot token, webhook route or outbound Telegram API call is configured. CI verification pending.
+
+
+## 2026-11-16 — Telegram shared conversation mapping
+- Added D1 Telegram chat-to-conversation mapping contract and migration; creation/read paths verify active Telegram link, workspace membership and conversation ownership.
+- No Telegram bot token or webhook runtime is configured. CI verification pending.
