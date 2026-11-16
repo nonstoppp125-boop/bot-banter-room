@@ -28,7 +28,7 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
               }
               if (query.includes("FROM agent_tasks")) {
                 const [id, workspaceId, userId] = values;
-                return rows.find((row) => row.id === id && row.workspace_id === workspaceId && row.user_id === userId) as T ?? null;
+                return rows.find((row) => row["id"] === id && row["workspace_id"] === workspaceId && row["user_id"] === userId) as T ?? null;
               }
               return null;
             },
@@ -44,8 +44,8 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
               }
               if (query.startsWith("UPDATE agent_tasks")) {
                 const [status, , , updatedAt, id, workspaceId, userId, expectedStatus] = values;
-                const row = rows.find((item) => item.id === id && item.workspace_id === workspaceId && item.user_id === userId && item.status === expectedStatus);
-                if (row) { row.status = status; row.updated_at = updatedAt; return { success: true, meta: { changes: 1 } }; }
+                const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === expectedStatus);
+                if (row) { row["status"] = status; row["updated_at"] = updatedAt; return { success: true, meta: { changes: 1 } }; }
                 return { success: true, meta: { changes: 0 } };
               }
               return { success: true, meta: { changes: 1 } };
@@ -117,7 +117,7 @@ describe("authenticated Manager task API", () => {
     }), { ACTION_DB: database });
     expect(response.status).toBe(200);
     expect((await response.json() as { task: { status: string } }).task.status).toBe("cancelled");
-    expect(rows[0].status).toBe("cancelled");
+    expect(rows[0]?.["status"]).toBe("cancelled");
   });
 
   it("rejects cross-origin task cancellation before accessing D1", async () => {
