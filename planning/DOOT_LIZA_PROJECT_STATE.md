@@ -426,3 +426,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added `planning/SOURCE_AUDIT_REPORT.md`; remote inventory is 307 tracked files, 198 under `src/`, 51 test files, 29 route files, 15 SQL migrations and 5 tracked image/icon assets.
 - Local Termux checkout, ignored/untracked files, local secret state and backup disposition remain unverified. Do not infer local cleanliness from this remote audit.
 - No production deployment, merge to `main`, D1 provisioning or external provider action is claimed.
+
+
+## 2026-11-16 — LinkedIn Content Studio source checkpoint
+
+- Added interactive `/linkedin-studio` with strategy setup, 28-day content calendar, topic ideas and structured post-outline builder. Linked from main chat navigation.
+- The studio is draft-only and page-state-only. It does not save drafts to D1, connect to LinkedIn, publish, schedule or send messages.
+- GitHub Actions run `43878285889`, exact code commit `be8dca681998c0c1a618b1af858a6866de63b739`: production dependency audit 0 vulnerabilities; TypeScript PASS; 53 test files / 410 tests PASS; production build PASS; generated Wrangler Worker config PASS.
+- Groups 11 and 21 remain partial; server-side draft persistence, completed AI writing workflow, authorized LinkedIn provider access, mobile/device and screen-reader validation remain open.
+- No production deployment or merge to `main`.
