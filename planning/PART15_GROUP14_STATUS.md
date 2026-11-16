@@ -45,3 +45,9 @@ No merge to main; no production deployment.
 - Analytics page now loads saved workspace snapshots and persists CSV imports. “Clear view” only clears the current display, not durable records.
 - Added API tests for cross-origin rejection, authentication/configuration, workspace isolation, role gating, batch limits and invalid filters.
 - Remaining: provider OAuth/official API ingestion, delete/retention controls, pagination, larger safe import workflow, and live D1 migration/runtime verification.
+
+## 2026-11-16 — Analytics API CI verification
+
+- Corrected strict TypeScript issues in the authenticated analytics API request-filter construction and indexed JSON access.
+- GitHub Actions run `43827976993` passed: TypeScript, tests and production build (Nitro-generated Wrangler validation included in the workflow).
+- Group 14 remains IN PROGRESS: authenticated workspace persistence is implemented at source level, but live D1 migration/runtime verification and official platform ingestion are not complete. Campaign/audience/content/trend report views, retention/deletion controls and pagination also remain open.
