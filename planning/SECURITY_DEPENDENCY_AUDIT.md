@@ -26,3 +26,11 @@ Do not infer that the KaTeX advisory is one of the two high findings; the audit 
 4. Re-run the high-threshold audit and record a clean result before enabling production deployment.
 
 No dependency was force-upgraded in this batch because the Zod change is breaking and the repository lockfile must be regenerated and tested.
+
+
+## 2026-11-16 — Isolated remediation result
+
+- Updated direct Vite to `^8.3.8` and Zod to `^4.6.7`; npm regenerated the lockfile in an isolated branch.
+- GitHub Actions remediation run `43874594406`: TypeScript, 51 test files / 400 tests and production build all passed.
+- The post-upgrade npm audit reported 7 low, 0 moderate, 0 high and 0 critical vulnerabilities. KaTeX's advisory remains within the remaining low findings; no fixed release was reported.
+- These dependency changes are now being revalidated on the current working-branch base before integration.
