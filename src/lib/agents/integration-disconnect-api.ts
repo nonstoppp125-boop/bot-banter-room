@@ -52,11 +52,11 @@ export async function handleIntegrationDisconnectRequest(request: Request, env: 
     const session = await createD1SessionStore(database).getActive(token, now);
     if (!session?.workspaceId) return json({ error: "Active workspace session required." }, 401);
     const body = await readBody(request);
-    if (!body || typeof body !== "object" || Array.isArray(body) ||
-        typeof (body as Record<string, unknown>)["connectionId"] !== "string") {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
       return json({ error: "A valid connection ID is required." }, 400);
     }
-    const connectionId = (body as Record<string, string>)["connectionId"];
+    const connectionId = (body as Record<string, unknown>)["connectionId"];
+    if (typeof connectionId !== "string") return json({ error: "A valid connection ID is required." }, 400);
     const revoked = await createD1ConnectionStore(database).revokeOwned({
       id: connectionId,
       workspaceId: session.workspaceId,
