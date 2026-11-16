@@ -275,3 +275,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Group 16: provider registry, OAuth start/callback, AES-GCM encrypted credential persistence, refresh/disconnect APIs, integration listing/connect/refresh/disconnect UI implemented; live D1, provider secrets, remote token revocation and provider account smoke tests remain blocked.
 - Groups 17–24 retain their individual status documents; several runtime/manual release requirements remain open. No production deployment or merge to main.
 - Local Termux branch/worktree was not modified.
+
+
+## 2026-11-16 — Cloudflare Access authentication checkpoint
+- Latest verified commit: 14e1489ec84a994ed1214a4efd094f80aa639b64.
+- GitHub Actions run 43814615408: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+- Added Cloudflare Access RS256 assertion verification, user/workspace provisioning, 8-hour secure D1-backed session issuance, sign-in navigation and logout revocation.
+- Group 18 remains IN PROGRESS pending Access application/domain/audience setup, D1 binding, recovery and live authenticated smoke tests.
+- No production deployment or merge to main; local Termux worktree unchanged.

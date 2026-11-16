@@ -261,3 +261,13 @@ Append new evidence below; never rewrite historical results.\n\n
 - Nitro-generated Wrangler configuration validation: passed.
 - Earlier UI/route integration commit `29260724b6ca3dbd91146e44b289f75ee5c103f7` also passed in run `43813716174`.
 - Verification is CI-only; D1 provisioning, authenticated runtime smoke, physical mobile tests and production deployment are not claimed.
+
+
+## 2026-11-16 — Cloudflare Access session authentication verification
+- Commit: 14e1489ec84a994ed1214a4efd094f80aa639b64.
+- Run: 43814615408 — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: passed, including signed RS256 JWT validation, issuer/audience/expiry rejection and D1 user/workspace/session provisioning.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Runtime Access application, D1 migration apply/binding and authenticated browser smoke are not claimed.
