@@ -4,6 +4,8 @@ import { LIZA_SYSTEM } from "./liza-default";
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { createD1ConversationStore, type D1ConversationDatabase } from "./conversation-store";
 import { createD1SessionStore, readSessionCookie, type D1SessionDatabase } from "./session-auth";
+import { createD1ApprovalStore } from "./approval-store";
+import { createTelegramApprovalCallbackData, verifyTelegramApprovalCallbackData } from "./telegram-approval";
 import {
   createD1TelegramBridgeStore,
   normalizeTelegramPrivateMessage,
@@ -22,6 +24,7 @@ export type TelegramApiEnv = {
   TELEGRAM_WEBHOOK_SECRET?: string;
   GROQ_API_KEY?: string;
   GROQ_MODEL?: string;
+  TELEGRAM_APPROVAL_CALLBACK_SECRET?: string;
 };
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -83,7 +86,7 @@ export async function handleTelegramLinkTokenRequest(request: Request, env: Tele
 }
 
 async function sendTelegramText(input: {
-  token: string; chatId: string; text: string; fetcher: typeof fetch;
+  token: string; chatId: string; text: string; fetcher: typeof fetch; replyMarkup?: unknown;
 }): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -91,7 +94,7 @@ async function sendTelegramText(input: {
     const response = await input.fetcher("https://api.telegram.org/bot" + input.token + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ chat_id: input.chatId, text: input.text }),
+      body: JSON.stringify({ chat_id: input.chatId, text: input.text, ...(input.replyMarkup ? { reply_markup: input.replyMarkup } : {}) }),
       signal: controller.signal,
       redirect: "error",
     });
@@ -100,6 +103,42 @@ async function sendTelegramText(input: {
     return payload.ok === true;
   } catch { return false; }
   finally { clearTimeout(timeout); }
+}
+
+type TelegramCallback = { updateId: number; callbackId: string; chatId: string; telegramUserId: string; data: string };
+function parseTelegramCallback(body: unknown): TelegramCallback | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const update = body as Record<string, unknown>;
+  if (!Number.isSafeInteger(update["update_id"])) return null;
+  const callback = update["callback_query"];
+  if (!callback || typeof callback !== "object" || Array.isArray(callback)) return null;
+  const query = callback as Record<string, unknown>;
+  const from = query["from"];
+  const message = query["message"];
+  if (!from || typeof from !== "object" || Array.isArray(from) ||
+      !message || typeof message !== "object" || Array.isArray(message)) return null;
+  const sender = from as Record<string, unknown>;
+  const msg = message as Record<string, unknown>;
+  const chat = msg["chat"];
+  if (!chat || typeof chat !== "object" || Array.isArray(chat)) return null;
+  const chatRecord = chat as Record<string, unknown>;
+  const userId = sender["id"], chatId = chatRecord["id"];
+  if (sender["is_bot"] !== false || chatRecord["type"] !== "private" ||
+      !Number.isSafeInteger(userId) || Number(userId) <= 0 ||
+      !Number.isSafeInteger(chatId) || Number(chatId) <= 0 ||
+      typeof query["id"] !== "string" || query["id"].length > 256 ||
+      typeof query["data"] !== "string" || new TextEncoder().encode(query["data"]).byteLength > 64) return null;
+  return { updateId: Number(update["update_id"]), callbackId: query["id"], chatId: String(chatId), telegramUserId: String(userId), data: query["data"] };
+}
+async function answerTelegramCallback(input:{token:string;callbackId:string;text:string;fetcher:typeof fetch}):Promise<void>{
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),10_000);
+  try{
+    await input.fetcher("https://api.telegram.org/bot"+input.token+"/answerCallbackQuery",{
+      method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},
+      body:JSON.stringify({callback_query_id:input.callbackId,text:input.text.slice(0,200)}),
+      signal:controller.signal,redirect:"error",
+    });
+  }catch{}finally{clearTimeout(timeout);}
 }
 
 /** Telegram webhook: private chats only, secret authenticated, update-idempotent and workspace linked. */
@@ -123,10 +162,51 @@ export async function handleTelegramWebhookRequest(
   }
   const body = await readJson(request);
   const now = new Date().toISOString();
-  const message = normalizeTelegramPrivateMessage(body, now);
-  if (!message) return json({ ok: true, ignored: true });
   try {
     const bridge = createD1TelegramBridgeStore(database);
+    const callback = parseTelegramCallback(body);
+    if (callback) {
+      const claimed = await bridge.claimUpdate(botId, callback.updateId, now, new Date(Date.parse(now) + 86_400_000).toISOString());
+      if (!claimed) return json({ ok: true, duplicate: true });
+      const identity = await bridge.getIdentity(botId, callback.telegramUserId);
+      const callbackSecret = env.TELEGRAM_APPROVAL_CALLBACK_SECRET ?? "";
+      if (!identity || !callbackSecret) {
+        await answerTelegramCallback({ token: botToken, callbackId: callback.callbackId, text: "Approval access is not configured for this account.", fetcher });
+        return json({ ok: true });
+      }
+      const verified = await verifyTelegramApprovalCallbackData({
+        data: callback.data, telegramUserId: callback.telegramUserId,
+        workspaceId: identity.workspaceId, secret: callbackSecret,
+      });
+      if (!verified.valid || !verified.approvalId || !verified.decision) {
+        await answerTelegramCallback({ token: botToken, callbackId: callback.callbackId, text: "This approval button is invalid or expired.", fetcher });
+        return json({ ok: true });
+      }
+      const approvals = createD1ApprovalStore(database);
+      const approval = await approvals.get({
+        id: verified.approvalId, workspaceId: identity.workspaceId, actorUserId: identity.userId,
+      });
+      if (!approval) {
+        await answerTelegramCallback({ token: botToken, callbackId: callback.callbackId, text: "Only workspace owners/admins can decide approvals.", fetcher });
+        return json({ ok: true });
+      }
+      const decided = await approvals.decide({
+        id: approval.id, workspaceId: identity.workspaceId, actorUserId: identity.userId,
+        decision: verified.decision, reason: verified.decision === "approved" ? "Approved via Telegram." : "Rejected via Telegram.", now,
+      });
+      await answerTelegramCallback({
+        token: botToken, callbackId: callback.callbackId,
+        text: decided ? "Decision recorded." : "Request expired or already decided.", fetcher,
+      });
+      if (decided) await sendTelegramText({
+        token: botToken, chatId: callback.chatId, fetcher,
+        text: verified.decision === "approved" ? "Approval recorded: " + approval.actionType : "Request rejected: " + approval.actionType,
+      });
+      return json({ ok: true, decided });
+    }
+
+    const message = normalizeTelegramPrivateMessage(body, now);
+    if (!message) return json({ ok: true, ignored: true });
     const claimed = await bridge.claimUpdate(botId, message.updateId, now, new Date(Date.parse(now) + 86_400_000).toISOString());
     if (!claimed) return json({ ok: true, duplicate: true });
 
@@ -160,6 +240,38 @@ export async function handleTelegramWebhookRequest(
       return json({ ok: true, linked: true });
     }
 
+    if (/^\/approvals(?:@\w+)?$/i.test(command)) {
+      const identity = await bridge.getIdentity(botId, message.telegramUserId);
+      if (!identity || !env.TELEGRAM_APPROVAL_CALLBACK_SECRET) {
+        await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: "Approval inbox is unavailable for this account." });
+        return json({ ok: true });
+      }
+      const approvals = createD1ApprovalStore(database);
+      const pending = await approvals.listPending({ workspaceId: identity.workspaceId, actorUserId: identity.userId, now, limit: 10 });
+      if (pending.length === 0) {
+        await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: "No pending approvals, or this account is not a workspace owner/admin." });
+        return json({ ok: true });
+      }
+      for (const approval of pending) {
+        const approveData = await createTelegramApprovalCallbackData({
+          approvalId: approval.id, telegramUserId: message.telegramUserId,
+          workspaceId: identity.workspaceId, decision: "approved", secret: env.TELEGRAM_APPROVAL_CALLBACK_SECRET,
+        });
+        const rejectData = await createTelegramApprovalCallbackData({
+          approvalId: approval.id, telegramUserId: message.telegramUserId,
+          workspaceId: identity.workspaceId, decision: "rejected", secret: env.TELEGRAM_APPROVAL_CALLBACK_SECRET,
+        });
+        await sendTelegramText({
+          token: botToken, chatId: message.chatId, fetcher,
+          text: approval.actionType + "\n" + approval.summary + "\nExpires: " + approval.expiresAt,
+          replyMarkup: { inline_keyboard: [[
+            { text: "Approve", callback_data: approveData },
+            { text: "Reject", callback_data: rejectData },
+          ]] },
+        });
+      }
+      return json({ ok: true, count: pending.length });
+    }
     const identity = await bridge.getIdentity(botId, message.telegramUserId);
     if (!identity) {
       await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: "Your account is not linked yet. Open Liza Settings → Integrations, generate a Telegram link code, and send /link CODE here." });

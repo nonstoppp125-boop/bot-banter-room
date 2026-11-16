@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { handleTelegramLinkTokenRequest, handleTelegramWebhookRequest } from "@/lib/agents/telegram-api";
+import { createTelegramApprovalCallbackData } from "@/lib/agents/telegram-approval";
 
 const webhookSecret = "x".repeat(40);
 const botToken = "test-token";
@@ -115,6 +116,75 @@ describe("Telegram link and webhook API", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ linked: false });
     expect(sentBody).toContain("link code");
+  });
+
+  it("lists pending approvals with user-bound buttons and accepts a signed admin decision", async () => {
+    const workspaceId = "w_" + "a".repeat(64);
+    const approvalRow = {
+      id: "approval_123", workspace_id: workspaceId, user_id: "user-1",
+      action_type: "social.publish", payload_hash: "a".repeat(64), summary: "Publish approved draft",
+      status: "pending", decided_by_user_id: null, decision_reason: null,
+      expires_at: "2026-11-17T00:00:00.000Z", created_at: "2026-11-16T00:00:00.000Z", decided_at: null,
+    };
+    const queries: string[] = [];
+    const database = {
+      prepare(query: string) {
+        queries.push(query);
+        return {
+          bind: (..._values: unknown[]) => ({
+            run: async () => ({ success: true, meta: { changes: 1 } }),
+            first: async <T = Record<string, unknown>>() => {
+              if (query.includes("FROM telegram_user_links")) return {
+                bot_id: "123456", telegram_user_id: "123456789", user_id: "user-1", workspace_id: workspaceId,
+              } as T;
+              if (query.includes("FROM approvals a JOIN")) return approvalRow as T;
+              return null;
+            },
+            all: async <T = Record<string, unknown>>() => ({
+              success: true, results: query.includes("FROM approvals a JOIN") ? [approvalRow as T] : [],
+            }),
+          }),
+        };
+      },
+    };
+    const callbackSecret = "k".repeat(48);
+    let keyboardBody: Record<string, unknown> | null = null;
+    const listResponse = await handleTelegramWebhookRequest(webhookRequest("/approvals"), {
+      ACTION_DB: database, TELEGRAM_BOT_ID: "123456", TELEGRAM_BOT_TOKEN: botToken,
+      TELEGRAM_WEBHOOK_SECRET: webhookSecret, TELEGRAM_APPROVAL_CALLBACK_SECRET: callbackSecret,
+    }, async (_input, init) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      if (body["reply_markup"]) keyboardBody = body;
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    expect(listResponse.status).toBe(200);
+    expect(await listResponse.json()).toMatchObject({ count: 1 });
+    expect(keyboardBody).not.toBeNull();
+
+    const approveData = await createTelegramApprovalCallbackData({
+      approvalId: "approval_123", telegramUserId: "123456789", workspaceId,
+      decision: "approved", secret: callbackSecret,
+    });
+    const callbackRequest = new Request(webhookUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-telegram-bot-api-secret-token": webhookSecret },
+      body: JSON.stringify({
+        update_id: 987655,
+        callback_query: {
+          id: "callback-1",
+          from: { id: 123456789, is_bot: false },
+          message: { message_id: 45, chat: { id: 123456789, type: "private" } },
+          data: approveData,
+        },
+      }),
+    });
+    const decisionResponse = await handleTelegramWebhookRequest(callbackRequest, {
+      ACTION_DB: database, TELEGRAM_BOT_ID: "123456", TELEGRAM_BOT_TOKEN: botToken,
+      TELEGRAM_WEBHOOK_SECRET: webhookSecret, TELEGRAM_APPROVAL_CALLBACK_SECRET: callbackSecret,
+    }, async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    expect(decisionResponse.status).toBe(200);
+    expect(await decisionResponse.json()).toMatchObject({ decided: true });
+    expect(queries.some((query) => query.startsWith("UPDATE approvals SET status"))).toBe(true);
   });
 
 });

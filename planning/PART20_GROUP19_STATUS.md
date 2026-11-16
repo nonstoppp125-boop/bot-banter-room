@@ -18,7 +18,7 @@ Branch: `work/group06-manager-planner`
 - A secret-authenticated webhook route and bounded Telegram sendMessage client are now implemented. `/start`, `/help`, `/link CODE` and private-chat Liza messaging are handled; no live bot hosting or webhook registration is configured.
 - A five-minute, one-time link-code API now binds the Telegram user to the signed-in user's workspace. The webhook stores private-chat messages in the shared D1 conversation store and generates default-Liza Groq replies with Unicode-safe 4096-code-point chunking.
 - Telegram runtime still requires D1 migration 0012, TELEGRAM_BOT_ID, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, GROQ_API_KEY and a manually registered Telegram webhook. Manager/specialist delegation and approval callback handling are not wired into Telegram.
-- Approval notifications/callbacks must be bound to persisted approval IDs and owner identity before activation.
+- `/approvals` now lists pending requests for linked workspace owners/admins with signed Approve/Reject inline buttons. Callback HMAC binds approval ID, exact Telegram user, workspace and decision; D1 rechecks admin role, pending state and expiry before recording a decision. Proactive notifications and external action execution remain disabled.
 
 GROUP 19: IN PROGRESS — webhook, one-time identity linking, shared conversation persistence and default-Liza reply path implemented; live Telegram credentials, webhook registration and runtime smoke remain blocked.
 No merge to `main`; no production deployment.
@@ -46,3 +46,11 @@ No merge to `main`; no production deployment.
 - GitHub Actions run 43815548281: SUCCESS — TypeScript, 45 test files / 322 tests, production build and Nitro-generated Wrangler validation. Live bot token, webhook secret, bot ID, D1 binding/migration and Telegram setWebhook registration are not provisioned.
 
 - Telegram link-token and webhook regression tests cover hashed code persistence, same-origin enforcement, secret rejection, private identity linking and unlinked-user instructions.
+
+
+## 2026-11-16 — Telegram approval inbox and callbacks
+- Added `/approvals` command to list up to 10 pending requests for workspace owners/admins, with compact Telegram inline keyboards.
+- Approve/Reject callback data is HMAC-SHA256 signed, under Telegram's 64-byte limit, and bound to approval ID, Telegram user ID, workspace ID and decision. A different Telegram account or workspace cannot reuse the callback.
+- Webhook callback processing claims update IDs, verifies the signature, retrieves the persisted approval through the owner/admin-only store and uses the D1 pending/expiry-checked decision transition.
+- Decisions only record approval/rejection; they do not publish, message externally, deploy or delete. Proactive approval notifications remain disabled.
+- Requires TELEGRAM_APPROVAL_CALLBACK_SECRET in addition to the Telegram webhook and bot configuration. Verification pending.
