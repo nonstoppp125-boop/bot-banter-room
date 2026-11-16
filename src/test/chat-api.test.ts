@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const calls: { apiKey?: string; baseURL?: string; model?: string }[] = [];
+const calls: { apiKey?: string; baseURL?: string; model?: string; fetch?: unknown }[] = [];
 const state = {
   failSpecialists: false,
   failProblemSolver: false,
@@ -25,7 +25,7 @@ vi.mock("@ai-sdk/openai", async () => {
   const { MockLanguageModelV3 } = await import("ai/test");
   const { simulateReadableStream } = await import("ai");
   return {
-    createOpenAI: (opts: { apiKey: string; baseURL: string }) => ({
+    createOpenAI: (opts: { apiKey: string; baseURL: string; fetch?: unknown }) => ({
       responses: (model: string) => {
         calls.push({ ...opts, model });
         return new MockLanguageModelV3({
@@ -195,10 +195,11 @@ describe("POST /api/chat orchestrator", () => {
     expect(await res.text()).toContain("হ্যালো");
     expect(state.generateCalls).toBe(0);
     expect(state.streamSystems).toHaveLength(1);
-    expect(calls[0]).toEqual({
+    expect(calls[0]).toMatchObject({
       apiKey: "secret-k",
       baseURL: "https://api.groq.com/openai/v1",
       model: "openai/gpt-oss-20b",
+      fetch: expect.any(Function),
     });
   });
 
