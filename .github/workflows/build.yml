@@ -27,6 +27,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Audit production dependencies
+        run: npm run security:audit
       - name: TypeScript
         run: npm run typecheck
       - name: Unit and integration tests
