@@ -5,7 +5,7 @@ Branch: `work/group06-manager-planner`
 
 ## Implemented foundations
 
-- S11 — Platform-specific prompt-based specialists and capability routing for Instagram, Facebook, YouTube, X and TikTok.
+- S11 — Five platform-specific prompt-based specialists are registered with distinct capabilities and capability routing for Instagram, Facebook, YouTube, X and TikTok.
 - S12 — Unified cross-platform content calendar generator.
 - S13–S14 — Platform-specific adaptation briefs and format selection.
 - S15–S16 — Short-form video concepts and bounded scene/storyboard model.
@@ -38,3 +38,7 @@ No merge to `main`; no production deployment.
 
 ## CI verification
 - GitHub Actions verification is pending for the platform-specific specialist and social-workforce foundation.
+
+
+## Latest code verification
+- Platform specialists were added to the live registry; TikTok calendar defaults to a supported short-video format. CI verification pending.
