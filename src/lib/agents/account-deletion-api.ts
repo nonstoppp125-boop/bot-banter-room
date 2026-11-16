@@ -51,7 +51,7 @@ export async function handleAccountDeletionRequest(
   if (request.method === "POST") {
     const origin = request.headers.get("origin");
     if (!origin || origin !== new URL(request.url).origin) return json({ error: "Cross-origin account changes are blocked." }, 403);
-    if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return json({ error: "JSON content type is required." }, 415);
+    if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return json({ error: "JSON content type is required." }, 415);
   }
   const database = env.ACTION_DB;
   if (!database) return json({ error: "Account deletion service is not configured." }, 503);
