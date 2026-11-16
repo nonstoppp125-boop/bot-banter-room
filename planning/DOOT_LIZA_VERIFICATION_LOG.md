@@ -236,3 +236,7 @@ Append new evidence below; never rewrite historical results.\n\n
 
 ## 2026-11-16 — Telegram shared conversation mapping tests
 - Added tests for identity/member/conversation ownership predicates and scoped mapping reads. CI verification pending.
+
+
+## 2026-11-16 — Telegram approval callback tests
+- Added tests for callback length, valid signature, user/workspace binding and tamper rejection. CI verification pending.

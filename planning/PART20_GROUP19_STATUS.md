@@ -27,3 +27,9 @@ No merge to `main`; no production deployment.
 - Added D1 chat-to-conversation mapping with strict bot/chat/user/workspace ownership checks and active-link/member predicates.
 - Conversation links are created only for a non-deleted conversation owned by the mapped user in the linked workspace.
 - CI verification pending.
+
+
+## 2026-11-16 — Telegram approval callback signing
+- Added compact HMAC-SHA256 callback data (under Telegram's 64-byte limit) bound to approval ID, Telegram user ID and workspace ID.
+- Tampering, wrong user/workspace, malformed and oversized callback payloads fail closed. This is a signing primitive only; approval state is still checked against D1 by a future callback route.
+- CI verification pending.

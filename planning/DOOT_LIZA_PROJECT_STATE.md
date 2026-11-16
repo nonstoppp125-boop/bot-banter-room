@@ -248,3 +248,8 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 ## 2026-11-16 — Telegram shared conversation mapping
 - Added D1 Telegram chat-to-conversation mapping contract and migration; creation/read paths verify active Telegram link, workspace membership and conversation ownership.
 - No Telegram bot token or webhook runtime is configured. CI verification pending.
+
+
+## 2026-11-16 — Telegram approval callback security
+- Added user/workspace-bound HMAC callback signatures for Telegram approval actions; no callback can be replayed across users/workspaces.
+- Approval persistence and live callback route remain unconnected. CI verification pending.
