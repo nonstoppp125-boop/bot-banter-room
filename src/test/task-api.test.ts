@@ -11,6 +11,7 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
   const queries: string[] = [];
   const bindings: unknown[][] = [];
   const rows: Record<string, unknown>[] = [];
+  let approvalRow: Record<string, unknown> | null = null;
   const database = {
     prepare(query: string) {
       queries.push(query);
@@ -32,10 +33,20 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
                 const [id, workspaceId, userId] = values;
                 return rows.find((row) => row["id"] === id && row["workspace_id"] === workspaceId && row["user_id"] === userId) as T ?? null;
               }
+              if (query.includes("FROM approvals a JOIN workspace_members")) return approvalRow as T ?? null;
               return null;
             },
             all: async <T = Record<string, unknown>>() => ({ success: true, results: rows as unknown as T[] }),
             run: async () => {
+              if (query.startsWith("INSERT INTO approvals")) {
+                const [id, workspaceId, userId, actionType, payloadHash, summary, expiresAt, createdAt] = values;
+                approvalRow = {
+                  id, workspace_id: workspaceId, user_id: userId, action_type: actionType,
+                  payload_hash: payloadHash, summary, status: "pending", expires_at: expiresAt,
+                  created_at: createdAt, decided_by_user_id: null, decision_reason: null, decided_at: null,
+                };
+                return { success: true, meta: { changes: 1 } };
+              }
               if (query.startsWith("INSERT INTO agent_tasks")) {
                 const [id, workspaceId, userId, status, inputSummary, plan, result, createdAt, updatedAt] = values;
                 rows.push({
@@ -45,6 +56,15 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
                 });
               }
               if (query.startsWith("UPDATE agent_tasks")) {
+                if (query.includes("EXISTS (SELECT 1 FROM approvals a")) {
+                  const [updatedAt, id, workspaceId, userId, approvalId, approvalWorkspace, actionType, payloadHash, expiresAt] = values;
+                  const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === "needs_approval");
+                  const validApproval = approvalRow && approvalRow["id"] === approvalId && approvalRow["workspace_id"] === approvalWorkspace &&
+                    approvalRow["status"] === "approved" && approvalRow["action_type"] === actionType &&
+                    approvalRow["payload_hash"] === payloadHash && Date.parse(String(approvalRow["expires_at"])) > Date.parse(String(expiresAt));
+                  if (row && validApproval) { row["status"] = "queued"; row["updated_at"] = updatedAt; return { success: true, meta: { changes: 1 } }; }
+                  return { success: true, meta: { changes: 0 } };
+                }
                 if (query.includes("attempt_count = attempt_count + 1")) {
                   const [updatedAt, id, workspaceId, userId] = values;
                   const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === "failed" && Number(item["attempt_count"] ?? 0) < 2);
@@ -63,7 +83,7 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
       };
     },
   };
-  return { database, queries, bindings, rows };
+  return { database, queries, bindings, rows, get approvalRow() { return approvalRow; } };
 }
 
 function post(body: unknown, origin = "https://liza.example") {
@@ -112,6 +132,32 @@ describe("authenticated Manager task API", () => {
     expect(queries.some((query) => query.startsWith("INSERT INTO agent_tasks"))).toBe(true);
     expect((JSON.parse(String(rows[0]?.["plan_json"])) as Record<string, unknown>)["approval"]).toBeDefined();
     expect(queries.some((query) => query.includes("UPDATE agent_tasks"))).toBe(false);
+  });
+
+  it("unlocks a high-risk task only after a matching persisted approval is decided", async () => {
+    const state = makeDatabase();
+    const create = await handleTaskRequest(post({ task: "Publish this LinkedIn post" }), { ACTION_DB: state.database });
+    expect(create.status).toBe(201);
+    const created = await create.json() as { task: { id: string; status: string } };
+    expect(created.task.status).toBe("needs_approval");
+    expect(state.approvalRow).not.toBeNull();
+    const patch = () => new Request(url, {
+      method: "PATCH",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "unlock", taskId: created.task.id }),
+    });
+    const pending = await handleTaskRequest(patch(), { ACTION_DB: state.database });
+    expect(pending.status).toBe(409);
+    expect(state.rows[0]?.["status"]).toBe("needs_approval");
+    state.approvalRow!["status"] = "approved";
+    state.approvalRow!["decided_by_user_id"] = "workspace-admin";
+    state.approvalRow!["decision_reason"] = "Reviewed and approved";
+    state.approvalRow!["decided_at"] = new Date().toISOString();
+    const unlocked = await handleTaskRequest(patch(), { ACTION_DB: state.database });
+    expect(unlocked.status).toBe(200);
+    expect((await unlocked.json() as { task: { status: string } }).task.status).toBe("queued");
+    expect(state.rows[0]?.["status"]).toBe("queued");
+    expect(state.queries.some((query) => query.includes("a.status = 'approved'") && query.includes("a.payload_hash = ?"))).toBe(true);
   });
 
   it("cancels only an owned queued task with a same-origin PATCH", async () => {
