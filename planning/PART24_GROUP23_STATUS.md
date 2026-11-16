@@ -40,3 +40,10 @@ No merge to main; no production deployment.
 - The high-severity npm audit gate is restored in build and manual deploy workflows. Audit reports 7 low, 0 moderate, 0 high and 0 critical vulnerabilities.
 - Latest merged-branch CI run `43875777984`: SUCCESS — TypeScript, 51 test files / 401 tests, production build, generated Wrangler Worker config validation and high-threshold dependency audit.
 - KaTeX advisory remains among low findings with no fixed release reported; keep math-rendering trust restrictions and review upstream updates.
+
+
+## 2026-11-16 — Latest verified source checkpoint
+
+- GitHub Actions run `43877244027`, exact code commit `0ac038a9dac7556edd2afccd3f867d85338df328`: production dependency audit found 0 vulnerabilities; TypeScript PASS; 52 test files / 407 tests PASS; production build PASS; generated Wrangler Worker config PASS.
+- The added accessibility contract tests and current persisted task execution/recovery regression suite are included in this run.
+- This does not replace Cloudflare D1/Access live migration tests, real Telegram/OAuth/provider smoke tests, physical-device testing, backup/restore or release approval.
