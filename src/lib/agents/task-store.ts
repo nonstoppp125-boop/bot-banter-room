@@ -1,6 +1,6 @@
 export type DurableTaskStatus="queued"|"running"|"completed"|"failed"|"cancelled"|"needs_approval";
 export interface DurableAgentTask{id:string;workspaceId:string;userId:string;status:DurableTaskStatus;inputSummary:string;plan:unknown;result:unknown|null;createdAt:string;updatedAt:string;}
-export type D1TaskDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;first:<T=Record<string,unknown>>()=>Promise<T|null>;all:<T=Record<string,unknown>>()=>Promise<{success?:boolean;results?:T[]}>}}};
+export export type D1TaskDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;first:<T=Record<string,unknown>>()=>Promise<T|null>;all:<T=Record<string,unknown>>()=>Promise<{success?:boolean;results?:T[]}>}}};
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
 const STATUSES=new Set<DurableTaskStatus>(["queued","running","completed","failed","cancelled","needs_approval"]);
 const ALLOWED_TRANSITIONS: Readonly<Record<DurableTaskStatus, readonly DurableTaskStatus[]>> = {
