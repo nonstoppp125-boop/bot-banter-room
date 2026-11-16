@@ -18,6 +18,7 @@ import {
   extractTavilyResearchSources,
   prepareResearchSources,
   searchTavilyResearch,
+  type ResearchSource,
 } from "./research";
 import { DEFAULT_AGENT_ID, getAgent, getSpecialist, listAgents } from "./registry";
 import type { AgentEnv, AgentRunInput, SpecialistGenerationResult } from "./types";
@@ -284,7 +285,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
 
         if (searchSources.length > 0) {
           let extractionStatus = "Page extraction was not run.";
-          let sourceSet = searchSources;
+          let sourceSet: ResearchSource[] = searchSources;
           try {
             const extraction = await extractTavilyResearchSources(
               searchSources.slice(0, 3),
