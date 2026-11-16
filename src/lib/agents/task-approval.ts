@@ -95,7 +95,7 @@ export async function verifyManagerTaskApproval(
     userId: input.userId, inputSummary: input.inputSummary, plan,
   });
   if (expectedHash !== payloadHash) return { allowed: false, reason: "The task or plan changed after approval was requested." };
-  const approval = await createD1ApprovalStore(database).get({
+  const approval = await createD1ApprovalStore(database).getForAction({
     id: approvalId, workspaceId: input.workspaceId, actorUserId: input.userId,
   });
   return verifyApprovalForAction({
