@@ -26,3 +26,10 @@ Branch: work/group06-manager-planner
 
 GROUP 14: IN PROGRESS — core schema, normalization, KPI, CSV workflow, dashboard and reporting foundations implemented; persistence and live platform adapters remain open.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — CSV safety and export UX
+- Canonical CSV parser now rejects malformed quote transitions, unsupported units, empty metric values and row-limit overflow.
+- Browser importer checks the 2 MB file size before reading.
+- Added a local-only CSV download action for the current browser session.
+- CI verification pending.

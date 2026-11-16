@@ -45,14 +45,24 @@ export function createExecutiveAnalyticsSummary(rows:readonly AnalyticsSnapshot[
 export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
   if (typeof csv !== "string" || csv.length > 2_000_000) throw new Error("CSV is empty or exceeds the 2 MB limit.");
   const rows: string[][] = [];
-  let row: string[] = [], field = "", quoted = false;
+  let row: string[] = [], field = "", quoted = false, afterQuote = false;
   for (let i = 0; i < csv.length; i++) {
     const char = csv[i]!;
     if (quoted) {
       if (char === '"' && csv[i + 1] === '"') { field += '"'; i++; }
-      else if (char === '"') quoted = false;
+      else if (char === '"') { quoted = false; afterQuote = true; }
       else field += char;
+    } else if (afterQuote) {
+      if (char === ",") { row.push(field); field = ""; afterQuote = false; }
+      else if (char === "\n" || char === "\r") {
+        if (char === "\r" && csv[i + 1] === "\n") i++;
+        row.push(field); field = ""; afterQuote = false;
+        if (row.some((cell) => cell.length > 0)) rows.push(row);
+        row = [];
+        if (rows.length > 10_001) throw new Error("CSV exceeds the 10,000-record limit.");
+      } else throw new Error("CSV contains characters after a quoted field.");
     } else if (char === '"' && field.length === 0) quoted = true;
+    else if (char === '"') throw new Error("CSV contains an unexpected quote.");
     else if (char === ",") { row.push(field); field = ""; }
     else if (char === "\n" || char === "\r") {
       if (char === "\r" && csv[i + 1] === "\n") i++;
@@ -65,6 +75,7 @@ export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
   if (quoted) throw new Error("CSV contains an unterminated quoted field.");
   row.push(field);
   if (row.some((cell) => cell.length > 0)) rows.push(row);
+  if (rows.length > 10_001) throw new Error("CSV exceeds the 10,000-record limit.");
   if (rows.length < 2) throw new Error("CSV must contain a header and at least one data row.");
   const headers = rows[0]!.map((value, index) => index === 0 ? value.replace(/^\uFEFF/, "") : value);
   const expected = ["platform","accountId","entityId","entityType","metric","value","unit","periodStart","periodEnd","capturedAt","source"];
@@ -73,10 +84,12 @@ export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
   }
   return rows.slice(1).map((cells, index) => {
     if (cells.length !== expected.length) throw new Error("CSV row " + (index + 2) + " has an invalid column count.");
+    if (cells[6] !== "count") throw new Error("CSV row " + (index + 2) + " has an unsupported metric unit.");
+    if (!cells[5]?.trim()) throw new Error("CSV row " + (index + 2) + " has an empty metric value.");
     const value = Number(cells[5]);
     if (!Number.isFinite(value)) throw new Error("CSV row " + (index + 2) + " has an invalid metric value.");
     return normalizeAnalyticsRecord({
-      id: "csv-" + (index + 1) + "-" + cells[1] + "-" + cells[2] + "-" + cells[4],
+      id: "csv-" + (index + 1),
       platform: cells[0] as AnalyticsPlatform,
       accountId: cells[1]!,
       entityId: cells[2]!,

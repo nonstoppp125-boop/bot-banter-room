@@ -198,3 +198,8 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — Group 13 publication gate verification tests
 - Added tests for blocked publishing despite other checks passing, idempotency-gated retry safety, authentication/permission classification and bounded Retry-After handling.
 - CI verification pending.
+
+
+## 2026-11-16 — Analytics CSV validation and export
+- Added negative tests for invalid metric unit, blank metric values and trailing characters after a quoted CSV field.
+- Browser export/import actions are local-only. CI verification pending.
