@@ -132,7 +132,26 @@ export type D1AnalyticsDatabase = {
 
 export interface DurableAnalyticsSnapshotStore {
   append(snapshot: AnalyticsSnapshot): Promise<void>;
-  list(filters?: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>): Promise<AnalyticsSnapshot[]>;
+  list(filters?: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>): Promise<AnalyticsSnapshot[]>;\n  listPage(filters: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>, limit: number, cursor?: string): Promise<{ records: AnalyticsSnapshot[]; nextCursor: string | null; hasMore: boolean }>;\n  delete(ids: string[], deletedAt: string): Promise<number>;
+}
+
+
+type AnalyticsPageCursor = { periodStart: string; capturedAt: string; storageId: string };
+function encodeAnalyticsCursor(cursor: AnalyticsPageCursor): string {
+  return btoa(JSON.stringify(cursor)).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+}
+function decodeAnalyticsCursor(value: string): AnalyticsPageCursor {
+  if (!value || value.length > 1024 || !/^[A-Za-z0-9_-]+$/.test(value)) throw new Error("Invalid analytics page cursor.");
+  try {
+    const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    const parsed: unknown = JSON.parse(atob(base64 + "=".repeat((4 - base64.length % 4) % 4)));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+    const cursor = parsed as Record<string, unknown>;
+    if (typeof cursor["periodStart"] !== "string" || !validDate(cursor["periodStart"]) ||
+      typeof cursor["capturedAt"] !== "string" || !validTimestamp(cursor["capturedAt"]) ||
+      typeof cursor["storageId"] !== "string" || !cursor["storageId"] || cursor["storageId"].length > 512) throw new Error();
+    return { periodStart: cursor["periodStart"], capturedAt: cursor["capturedAt"], storageId: cursor["storageId"] };
+  } catch { throw new Error("Invalid analytics page cursor."); }
 }
 
 /** D1 adapter. It is usable only after the analytics migration and ACTION_DB binding are provisioned. */
@@ -179,12 +198,56 @@ export function createD1AnalyticsStore(database: D1AnalyticsDatabase, workspaceI
       if (filters.accountId !== undefined) { clauses.push("account_id = ?"); values.push(filters.accountId); }
       if (filters.entityId !== undefined) { clauses.push("entity_id = ?"); values.push(filters.entityId); }
       if (filters.metric !== undefined) { clauses.push("metric = ?"); values.push(filters.metric); }
+      clauses.push("deleted_at IS NULL");
       const query = "SELECT payload_json FROM analytics_snapshots" +
         (clauses.length ? " WHERE " + clauses.join(" AND ") : "") +
-        " ORDER BY period_start ASC, captured_at ASC LIMIT 10000";
+        " ORDER BY period_start ASC, captured_at ASC, id ASC LIMIT 10000";
       const result = await database.prepare(query).bind(...values).all<{ payload_json: string }>();
       if (result.success === false) throw new Error("D1 analytics snapshot query failed");
       return (result.results ?? []).map((row) => restore(row.payload_json));
+    },
+    listPage: async (filters = {}, limit, cursorValue) => {
+      if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error("Analytics page limit must be between 1 and 500.");
+      const clauses: string[] = ["workspace_id = ?", "deleted_at IS NULL"];
+      const values: unknown[] = [workspace];
+      if (filters.platform !== undefined) { clauses.push("platform = ?"); values.push(filters.platform); }
+      if (filters.accountId !== undefined) { clauses.push("account_id = ?"); values.push(filters.accountId); }
+      if (filters.entityId !== undefined) { clauses.push("entity_id = ?"); values.push(filters.entityId); }
+      if (filters.metric !== undefined) { clauses.push("metric = ?"); values.push(filters.metric); }
+      if (cursorValue) {
+        const cursor = decodeAnalyticsCursor(cursorValue);
+        clauses.push("(period_start > ? OR (period_start = ? AND captured_at > ?) OR (period_start = ? AND captured_at = ? AND id > ?))");
+        values.push(cursor.periodStart, cursor.periodStart, cursor.capturedAt, cursor.periodStart, cursor.capturedAt, cursor.storageId);
+      }
+      const query = "SELECT id, period_start, captured_at, payload_json FROM analytics_snapshots WHERE " +
+        clauses.join(" AND ") + " ORDER BY period_start ASC, captured_at ASC, id ASC LIMIT ?";
+      const result = await database.prepare(query).bind(...values, limit + 1).all<{
+        id: string; period_start: string; captured_at: string; payload_json: string;
+      }>();
+      if (result.success === false) throw new Error("D1 analytics page query failed");
+      const rows = result.results ?? [];
+      const hasMore = rows.length > limit;
+      const pageRows = rows.slice(0, limit);
+      const last = pageRows[pageRows.length - 1];
+      return {
+        records: pageRows.map((row) => restore(row.payload_json)),
+        hasMore,
+        nextCursor: hasMore && last ? encodeAnalyticsCursor({
+          periodStart: last.period_start, capturedAt: last.captured_at, storageId: last.id,
+        }) : null,
+      };
+    },
+    delete: async (ids, deletedAt) => {
+      if (!Array.isArray(ids) || ids.length < 1 || ids.length > 100 ||
+        ids.some((id) => typeof id !== "string" || !id.trim() || id.length > 120) ||
+        !validTimestamp(deletedAt)) throw new Error("Invalid analytics deletion request.");
+      const storageIds = [...new Set(ids)].map((id) => JSON.stringify([workspace, clean(id, 120)]));
+      const placeholders = storageIds.map(() => "?").join(", ");
+      const result = await database.prepare(
+        "UPDATE analytics_snapshots SET deleted_at = ? WHERE workspace_id = ? AND deleted_at IS NULL AND id IN (" + placeholders + ")"
+      ).bind(deletedAt, workspace, ...storageIds).run();
+      if (result.success === false) throw new Error("D1 analytics deletion failed.");
+      return result.meta?.changes ?? 0;
     },
   };
 }
