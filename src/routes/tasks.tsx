@@ -71,7 +71,7 @@ function TasksPage() {
       if (!response.ok) throw new Error(data.error || "Task could not be submitted.");
       setTaskText("");
       setNotice(data.task?.status === "needs_approval"
-        ? "Task saved and is waiting for approval."
+        ? "Task saved as approval-gated. The task-to-approval execution bridge is not enabled yet."
         : "Task plan saved to the durable queue. Background execution is not enabled yet.");
       await load();
     } catch (cause) {
@@ -153,7 +153,7 @@ function TasksPage() {
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Submit a bounded task to Manager planning and review its saved status.</p>
         </header>
         <div className="mb-5 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-          <strong>Execution status:</strong> Low-risk queued tasks can be run on demand through the Manager specialist workflow. This is a synchronous user-triggered Worker request, not an always-on background queue. High-risk tasks remain blocked until human approval.
+          <strong>Execution status:</strong> Low-risk queued tasks can be run on demand through the Manager specialist workflow. This is a synchronous user-triggered Worker request, not an always-on background queue. High-risk tasks remain blocked; task-to-approval execution linkage is not enabled yet.
         </div>
         {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">{error}</p>}
         {notice && <p role="status" className="mb-4 rounded-xl border border-border bg-muted p-3 text-sm">{notice}</p>}
