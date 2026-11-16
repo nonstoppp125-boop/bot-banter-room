@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handleTaskExecutionRequest } from "@/lib/agents/task-execution-api";
+import { buildManagerPlan } from "@/lib/agents/manager";
+import { listAgents } from "@/lib/agents/registry";
 
 const token = "A".repeat(43);
 const cookie = "__Host-liza_session=" + token;
@@ -8,7 +10,7 @@ const url = "https://liza.example/api/tasks/execute";
 function makeDatabase(status: "queued" | "needs_approval" = "queued", claimAllowed = true) {
   const rows: Record<string, unknown>[] = [{
     id: "task-1", workspace_id: "workspace-1", user_id: "user-1", status,
-    input_summary: "Prepare a research brief", plan_json: "{}", result_json: null,
+    input_summary: "Prepare a research brief", plan_json: JSON.stringify(buildManagerPlan("Prepare a research brief", listAgents())), result_json: null,
     created_at: "2026-11-16T00:00:00.000Z", updated_at: "2026-11-16T00:00:00.000Z",
   }];
   const queries: string[] = [];
@@ -82,10 +84,11 @@ describe("authenticated Manager task execution", () => {
     const response = await handleTaskExecutionRequest(
       post({ taskId: "task-1" }),
       env(database),
-      async ({ messages, signal }) => {
+      async ({ messages, signal, managerPlan }) => {
         invoked = true;
         expect(messages[0]?.role).toBe("user");
         expect(signal.aborted).toBe(false);
+        expect(managerPlan).toMatchObject({ summary: "Prepare a research brief", planningMode: "deterministic" });
         return new Response(`0:${JSON.stringify("Research brief completed.")}\n`, { status: 200 });
       },
     );
