@@ -4,10 +4,12 @@ import { createD1SessionStore, readSessionCookie, type D1SessionDatabase } from 
 import { createD1TaskStore, type D1TaskDatabase } from "./task-store";
 import { createD1WorkspaceAccessStore } from "./workspace-store";
 import type { AgentEnv } from "./types";
+import { restoreManagerPlan } from "./manager";
+import { listAgents } from "./registry";
 
 type ExecutionDatabase = D1TaskDatabase & D1SessionDatabase & Parameters<typeof createD1WorkspaceAccessStore>[0];
 export type TaskExecutionEnv = AgentEnv & { ACTION_DB?: ExecutionDatabase };
-type Runner = (input: { messages: UIMessage[]; env: AgentEnv; signal: AbortSignal }) => Promise<Response>;
+type Runner = (input: { messages: UIMessage[]; env: AgentEnv; signal: AbortSignal; managerPlan?: unknown }) => Promise<Response>;
 
 const MAX_REQUEST_BYTES = 2_048;
 const MAX_OUTPUT_CHARS = 180_000;
@@ -151,6 +153,9 @@ export async function handleTaskExecutionRequest(
     if (!task) return json({ error: "Task not found." }, 404);
     if (task.status === "needs_approval") return json({ error: "This task requires human approval before execution." }, 409);
     if (task.status !== "queued") return json({ error: "Only queued tasks can be executed." }, 409);
+    const managerPlan = restoreManagerPlan(task.inputSummary, task.plan, listAgents());
+    if (!managerPlan) return json({ error: "The saved Manager plan is invalid or no longer compatible. Create a new task plan." }, 409);
+    if (managerPlan.approvalRequired) return json({ error: "This task requires human approval before execution." }, 409);
 
     const claimedAt = new Date().toISOString();
     if (!await store.claim({ id: task.id, workspaceId: session.workspaceId, userId: session.userId, updatedAt: claimedAt })) {
@@ -168,7 +173,7 @@ export async function handleTaskExecutionRequest(
         role: "user",
         parts: [{ type: "text", text: task.inputSummary }],
       };
-      const response = await runner({ messages: [message], env, signal: controller.signal });
+      const response = await runner({ messages: [message], env, signal: controller.signal, managerPlan });
       const output = await readAssistantText(response, controller.signal);
       if (!output) throw new Error("Specialist workflow returned no final text.");
       const completedAt = new Date().toISOString();
