@@ -40,3 +40,5 @@ No merge to `main`; no production deployment.
 - No app-managed password database, email recovery flow or external identity provider login is implemented.
 - GitHub Actions run 43814615408: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
 - Live Access app, D1 provisioning, production secrets and authenticated runtime smoke remain blocked.
+
+- Added a chat-navigation Sign out action; it calls the same-origin logout route, revokes the current session and clears the host cookie. Regression tests cover logout revocation and cross-origin rejection. Verification pending.

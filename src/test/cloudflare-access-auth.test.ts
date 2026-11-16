@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { handleCloudflareAccessSessionRequest, verifyCloudflareAccessAssertion } from "@/lib/agents/cloudflare-access-auth";
+import { handleCloudflareAccessSessionRequest, handleSessionLogoutRequest, verifyCloudflareAccessAssertion } from "@/lib/agents/cloudflare-access-auth";
 
 const teamDomain = "example.cloudflareaccess.com";
 const audience = "liza-access-audience";
@@ -102,4 +102,29 @@ describe("Cloudflare Access authentication", () => {
     );
     expect(noAssertion.status).toBe(401);
   });
+  it("revokes the opaque session and clears the host cookie on same-origin logout", async () => {
+    const queries: string[] = [];
+    const database = {
+      prepare(query: string) {
+        queries.push(query);
+        return { bind: () => ({ run: async () => ({ success: true, meta: { changes: 1 } }), first: async () => null }) };
+      },
+    };
+    const token = "A".repeat(43);
+    const response = await handleSessionLogoutRequest(new Request("https://liza.example/api/auth/logout", {
+      method: "POST",
+      headers: { origin: "https://liza.example", cookie: "__Host-liza_session=" + token },
+    }), { ACTION_DB: database });
+    expect(response.status).toBe(204);
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+    expect(queries.some((query) => query.startsWith("UPDATE sessions SET revoked_at"))).toBe(true);
+  });
+
+  it("blocks cross-origin logout", async () => {
+    const response = await handleSessionLogoutRequest(new Request("https://liza.example/api/auth/logout", {
+      method: "POST", headers: { origin: "https://evil.example" },
+    }), {});
+    expect(response.status).toBe(403);
+  });
+
 });
