@@ -111,5 +111,5 @@ No commit, push, deployment or external action was performed.
 - Specialist research extraction now validates each untrusted source object at the tool boundary: bounded ID/title/URL/content, required retrieval metadata, optional metadata types, unique source IDs and configured server-side provider credentials.
 - Invalid or duplicate metadata is rejected before any provider request.
 - Added regression tests for malformed metadata, duplicate IDs and missing extraction credentials.
-- CI runs triggered for these changes: `43825669272` and `43825681385`; results pending at the time of this update.
+- GitHub Actions run `43825704479`: SUCCESS — TypeScript, 46 test files / 341 tests, production build and Nitro-generated Wrangler validation.
 - G07.22 remains partial: no arbitrary browsing, shell execution or external side effects are exposed.
