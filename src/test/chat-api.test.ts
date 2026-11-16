@@ -232,9 +232,9 @@ describe("POST /api/chat orchestrator", () => {
 
     expect(res.status).toBe(200);
     await res.text();
-    expect(state.generateCalls).toBe(2);
-    expect(state.generatePrompts[1]).toContain("SPECIALIST problem-solver — REJECTED");
-    expect(state.generatePrompts[1]).toContain("boom");
+    expect(state.generateCalls).toBe(3);
+    expect(state.generatePrompts[2]).toContain("SPECIALIST problem-solver — REJECTED");
+    expect(state.generatePrompts[2]).toContain("boom");
     expect(state.streamSystems[0]).toContain("REVIEWER-NOTE");
   });
 
