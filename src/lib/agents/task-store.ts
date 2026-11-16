@@ -6,7 +6,7 @@ const STATUSES=new Set<DurableTaskStatus>(["queued","running","completed","faile
 const ALLOWED_TRANSITIONS: Readonly<Record<DurableTaskStatus, readonly DurableTaskStatus[]>> = {
  queued: ["running", "cancelled"],
  running: ["completed", "failed", "cancelled"],
- needs_approval: ["cancelled"],
+ needs_approval: ["queued", "cancelled"],
  completed: [],
  failed: ["queued"],
  cancelled: [],
