@@ -22,6 +22,7 @@ import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/we
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
+import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
 import { Route as ApiAccountDeletionRouteImport } from './routes/api/account/deletion'
 import { Route as ApiOAuthStartRouteImport } from './routes/api/integrations/oauth/start'
@@ -95,6 +96,11 @@ const ApiTasksRoute = ApiTasksRouteImport.update({
   path: '/api/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
+  id: '/api/analytics',
+  path: '/api/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAccountExportRoute = ApiAccountExportRouteImport.update({
   id: '/api/account/export',
   path: '/api/account/export',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/tasks': typeof ApiTasksRoute
+  '/api/analytics': typeof ApiAnalyticsRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
@@ -283,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTasksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/analytics': {
+      id: '/api/analytics'
+      path: '/api/analytics'
+      fullPath: '/api/analytics'
+      preLoaderRoute: typeof ApiAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/account/export': {
       id: '/api/account/export'
       path: '/api/account/export'
@@ -373,6 +387,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiApprovalsRoute: ApiApprovalsRoute,
   ApiTasksRoute: ApiTasksRoute,
+  ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiAccountExportRoute: ApiAccountExportRoute,
   ApiAccountDeletionRoute: ApiAccountDeletionRoute,
   ApiOAuthStartRoute: ApiOAuthStartRoute,
