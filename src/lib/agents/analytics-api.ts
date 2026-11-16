@@ -61,8 +61,8 @@ export async function handleAnalyticsRequest(request: Request, env: AnalyticsApi
       const rows = await store.list({ platform: platform as AnalyticsPlatform | undefined, metric: metric as AnalyticsMetricName | undefined });
       return json({ records: rows });
     }
-    const role = authorizeWorkspaceRole({ membership, workspaceId: session.workspaceId, userId: session.userId, requiredRole: "editor" });
-    if (!role.allowed) return json({ error: "Workspace editor access required." }, 403);
+    const role = authorizeWorkspaceRole({ membership, workspaceId: session.workspaceId, userId: session.userId, requiredRole: "admin" });
+    if (!role.allowed) return json({ error: "Workspace administrator access required." }, 403);
     const body = await readBody(request);
     if (!body || typeof body !== "object" || Array.isArray(body) || !Array.isArray((body as Record<string, unknown>).records)) return json({ error: "A records array is required; maximum 100 records." }, 400);
     const records = (body as { records: unknown[] }).records;
