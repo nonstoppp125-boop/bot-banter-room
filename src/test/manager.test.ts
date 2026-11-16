@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildManagerPlan } from "@/lib/agents/manager";
+import { buildLLMAssistedManagerPlan, buildManagerPlan } from "@/lib/agents/manager";
 import type { AgentDefinition } from "@/lib/agents/types";
 
 const agents: AgentDefinition[] = [
@@ -106,5 +106,74 @@ describe("deterministic Manager planning", () => {
     const plan = buildManagerPlan("Implement TypeScript code", restricted);
     expect(plan.agentIds).not.toContain("coding");
     expect(plan.agentIds).toContain("problem-solver");
+  });
+});
+
+
+describe("LLM-assisted Manager decomposition", () => {
+  it("accepts a bounded plan using only routed specialists", async () => {
+    const base = buildManagerPlan("Research the API first, then implement the integration", agents);
+    const plan = await buildLLMAssistedManagerPlan(
+      "Research the API first, then implement the integration",
+      base,
+      async () =>
+        JSON.stringify({
+          subtasks: [
+            { agentId: "research", objective: "Identify relevant API requirements.", dependsOn: [] },
+            { agentId: "coding", objective: "Implement the integration from research findings.", dependsOn: ["research"] },
+          ],
+        }),
+      new AbortController().signal,
+    );
+    expect(plan.planningMode).toBe("llm-assisted");
+    expect(plan.subtasks[1]?.dependsOn).toEqual(["research"]);
+    expect(plan.agentIds).toEqual(["research", "coding"]);
+  });
+
+  it("falls back when the model proposes an unregistered specialist", async () => {
+    const base = buildManagerPlan("Research the API first, then implement the integration", agents);
+    const plan = await buildLLMAssistedManagerPlan(
+      "Research the API first, then implement the integration",
+      base,
+      async () =>
+        JSON.stringify({
+          subtasks: [{ agentId: "shell-executor", objective: "Run commands", dependsOn: [] }],
+        }),
+      new AbortController().signal,
+    );
+    expect(plan.planningMode).toBe("deterministic");
+    expect(plan.planningFallbackReason).toContain("invalid subtask");
+  });
+
+  it("rejects dependency cycles and falls back safely", async () => {
+    const base = buildManagerPlan("Research the API first, then implement the integration", agents);
+    const plan = await buildLLMAssistedManagerPlan(
+      "Research the API first, then implement the integration",
+      base,
+      async () =>
+        JSON.stringify({
+          subtasks: [
+            { agentId: "research", objective: "Research.", dependsOn: ["coding"] },
+            { agentId: "coding", objective: "Implement.", dependsOn: ["research"] },
+          ],
+        }),
+      new AbortController().signal,
+    );
+    expect(plan.planningMode).toBe("deterministic");
+    expect(plan.planningFallbackReason).toContain("dependency cycle");
+  });
+
+  it("does not invoke the model for a simple single-specialist task", async () => {
+    const base = buildManagerPlan("Implement a small TypeScript helper", agents);
+    const plan = await buildLLMAssistedManagerPlan(
+      "Implement a small TypeScript helper",
+      base,
+      async () => {
+        throw new Error("planner should not run");
+      },
+      new AbortController().signal,
+    );
+    expect(plan.planningMode).toBe("deterministic");
+    expect(plan.planningFallbackReason).toBeUndefined();
   });
 });
