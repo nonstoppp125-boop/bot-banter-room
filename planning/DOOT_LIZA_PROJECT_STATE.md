@@ -90,3 +90,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Skipped descendants and tasks with unsuccessful prerequisites are not replanned.
 - Replacement execution is included in quality-review evidence and final execution metrics.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 06 bounded replanning verification
+- Branch: `work/group06-manager-planner`
+- Verified commit: `96c59671077502ba449334cedfc814f269c7dc09`.
+- GitHub Actions run `43797912343`: SUCCESS — TypeScript, 14 test files / 167 tests, production build and Nitro-generated Wrangler configuration validation.
+- G06.15 implemented as one bounded deterministic replacement pass; replacement eligibility is restricted by registry, capability overlap and inference permission.
+- Skipped descendants are not replanned; replan results are included in review evidence and final execution metrics.
+- Group 06 remains IN PROGRESS. No merge to `main`; no production deployment.
