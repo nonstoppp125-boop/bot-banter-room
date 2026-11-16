@@ -8,7 +8,7 @@ const ALLOWED_TRANSITIONS: Readonly<Record<DurableTaskStatus, readonly DurableTa
  running: ["completed", "failed", "cancelled"],
  needs_approval: ["cancelled"],
  completed: [],
- failed: ["queued"],
+ failed: [],
  cancelled: [],
 };
 export function canTransitionTaskStatus(from: DurableTaskStatus, to: DurableTaskStatus): boolean {
