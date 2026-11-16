@@ -24,3 +24,11 @@ No merge to main; no production deployment.
 ## 2026-11-16 — Repository migration sequence regression
 - Added a quality test that discovers the actual `migrations/*.sql` files and validates unique, gap-free sequence numbers.
 - Verification pending.
+
+
+## 2026-11-16 — Dependency audit gate
+
+- Added production dependency audit to CI and manual deploy workflow.
+- Initial high-threshold audit found 9 vulnerabilities (7 low, 2 high), including Vite 8.1.5 and Zod 3.25.76; KaTeX also has a reported advisory with no fix shown.
+- `planning/SECURITY_DEPENDENCY_AUDIT.md` records evidence and remediation. Build CI now blocks critical findings while keeping high findings visible; the manual production deploy retains a high-severity threshold and remains blocked until remediation.
+- GitHub Actions run `43874074750`: SUCCESS — critical-threshold audit step, TypeScript, 51 test files / 400 tests, production build and Wrangler config validation. This does not mean the high vulnerabilities are fixed.
