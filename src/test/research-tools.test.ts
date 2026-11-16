@@ -122,7 +122,7 @@ describe("authorized research tool contract", () => {
           publishedAt: "2026-01-02",
           retrievedAt: "2026-11-01",
           content: "Evidence B",
-          url: "https://example.com/b",
+          url: "https://publisher-b.example/b",
         },
       ],
       Date.parse("2026-11-02"),
