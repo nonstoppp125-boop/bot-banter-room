@@ -342,7 +342,7 @@ export function assessClaimSupport(
     cited.map((source) => {
       if (source.url) {
         try {
-          return new URL(source.url).hostname.toLowerCase().replace(/^www\\./, "");
+          return new URL(source.url).hostname.toLowerCase().replace(/^www\./, "");
         } catch {
           return source.id;
         }
