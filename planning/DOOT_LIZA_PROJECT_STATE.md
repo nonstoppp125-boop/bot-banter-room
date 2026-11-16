@@ -72,3 +72,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Fixed specialist timeout propagation so the per-task AbortSignal reaches the provider request.
 - Group 06 remains partial: pricing-based cost estimate, durable state, bounded replanning, enforced approval workflow, deliverable verification and final task report remain.
 - No merge to main and no production deployment.
+
+
+## 2026-11-16 — Group 06 LLM planner, retry and CI verification
+- Working branch: `work/group06-manager-planner`; local Termux branch unchanged.
+- Verified commit: `1e9a26599a9d80e2ca6389ba6f93e33903b73988`.
+- GitHub Actions run `43797011346`: SUCCESS — TypeScript, 14 test files / 163 tests, production build and Nitro-generated Wrangler configuration validation.
+- Added schema-validated LLM decomposition for complex work, deterministic fallback, dependency preservation, 700-token planner output cap, task-specific cancellation propagation, and one bounded specialist retry.
+- Final synthesis now receives execution outcomes and limitations.
+- Group 06 remains partial: pricing-based cost estimate, durable state, revised-plan replanning, enforced approval workflow and formal deliverable acceptance remain.
+- No merge to main and no production deployment.
