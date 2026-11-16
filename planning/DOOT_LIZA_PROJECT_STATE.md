@@ -407,3 +407,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Failed low-risk tasks support a bounded manual retry; background scheduling and crash recovery remain open.
 - Exact CI evidence at checkpoint: run `43871570424` verified commit `ce03045517cad439c53d14929fdd943f78e443f6`, 51 test files / 395 tests, TypeScript, production build and Wrangler config validation. Later branch commits need a fresh run.
 - No production deployment or live D1/Telegram/provider runtime is claimed.
+
+
+## 2026-11-16 — Security remediation merged and verified
+
+- PR #3 was squash-merged into `work/group06-manager-planner` only (not `main`): Vite 8.3.8, Zod 4.6.7, regenerated npm lockfile and high-severity audit gate restored.
+- Latest merged-branch CI run `43875777984`: SUCCESS — npm audit 7 low / 0 high / 0 critical, TypeScript, 51 test files / 401 tests, production build and Wrangler config validation.
+- The 24-group audit still shows Groups 06–24 as partial/in progress; Groups 01–05 need fresh evidence reconciliation before an overall percentage can be claimed.
+- Production remains unverified: no live D1/Access/Telegram/OAuth configuration, background worker, external-action executors, production smoke/backup/rollback or final user acceptance.
