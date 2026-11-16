@@ -1,6 +1,19 @@
 export interface ExportDataset{users:Record<string,unknown>[];workspaces:Record<string,unknown>[];workspaceMemberships:Record<string,unknown>[];projects:Record<string,unknown>[];conversations:Record<string,unknown>[];messages:Record<string,unknown>[];memories:Record<string,unknown>[];agentTasks:Record<string,unknown>[];approvals:Record<string,unknown>[];appConnections:Record<string,unknown>[];socialAccounts:Record<string,unknown>[];contentDrafts:Record<string,unknown>[];publications:Record<string,unknown>[];analyticsSnapshots:Record<string,unknown>[];auditEvents:Record<string,unknown>[];}
 const SENSITIVE_KEYS=/(token|secret|password|credential|authorization|cookie|private.?key|verifier|session|api.?key|oauth.?state|pkce)/i;
-function safeRecord(record:Record<string,unknown>):Record<string,unknown>{return Object.fromEntries(Object.entries(record).filter(([key])=>!SENSITIVE_KEYS.test(key)).map(([key,value])=>[key,value]));}
+function sanitizeValue(value:unknown,depth=0):unknown{
+ if(depth>8)return "[MAX_DEPTH]";
+ if(Array.isArray(value))return value.slice(0,500).map(item=>sanitizeValue(item,depth+1));
+ if(value&&typeof value==="object")return Object.fromEntries(Object.entries(value as Record<string,unknown>).filter(([key])=>!SENSITIVE_KEYS.test(key)).map(([key,item])=>[key,sanitizeValue(item,depth+1)]));
+ return value;
+}
+function safeRecord(record:Record<string,unknown>):Record<string,unknown>{
+ return Object.fromEntries(Object.entries(record).filter(([key])=>!SENSITIVE_KEYS.test(key)).map(([key,value])=>{
+  if(typeof value==="string"&&/(?:_json|Json)$/.test(key)){
+   try{return[key,JSON.stringify(sanitizeValue(JSON.parse(value)))];}catch{return[key,"[INVALID_JSON_REDACTED]"];}
+  }
+  return[key,sanitizeValue(value)];
+ }));
+}
 function belongs(record:Record<string,unknown>,userId:string,workspaceIds:Set<string>):boolean{
  return record["userId"]===userId||record["user_id"]===userId||record["createdByUserId"]===userId||record["created_by_user_id"]===userId||(typeof record["workspaceId"]==="string"&&workspaceIds.has(record["workspaceId"]))||(typeof record["workspace_id"]==="string"&&workspaceIds.has(record["workspace_id"]));
 }
