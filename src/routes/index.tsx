@@ -61,6 +61,7 @@ function Index() {
 
   return (
     <div className="flex h-dvh flex-col bg-background font-sans">
+      <a href="#main-content" className="sr-only z-50 rounded-md bg-background p-3 text-foreground focus:not-sr-only focus:absolute focus:left-3 focus:top-3">মূল কনটেন্টে যান</a>
       <header className="flex items-center justify-between px-3 py-2">
         <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Liza</span>
         <a href="/analytics" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Analytics</a>
@@ -74,7 +75,7 @@ function Index() {
       </header>
 
       {empty ? (
-        <main className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
+        <main id="main-content" className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
           <h1 className="mb-8 text-center font-display text-2xl font-medium sm:text-3xl">
             আজ কীভাবে সাহায্য করতে পারি?
           </h1>
@@ -92,7 +93,7 @@ function Index() {
           </div>
         </main>
       ) : (
-        <>
+        <main id="main-content" className="flex min-h-0 flex-1 flex-col">
           <Conversation className="flex-1">
             <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6">
               {messages.map((m) => (
@@ -111,7 +112,7 @@ function Index() {
                 </Message>
               ))}
               {status === "submitted" && <Shimmer>ভাবছি...</Shimmer>}
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
@@ -121,7 +122,7 @@ function Index() {
               Liza ভুল করতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।
             </p>
           </div>
-        </>
+        </main>
       )}
     </div>
   );

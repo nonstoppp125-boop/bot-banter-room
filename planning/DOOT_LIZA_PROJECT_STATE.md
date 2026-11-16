@@ -258,3 +258,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 ## 2026-11-16 — Group 18/20 approval persistence
 - Added D1 approval-store contract with payload hashing, owner/admin decision authorization, expiry checks and atomic pending-state decision updates.
 - This stores decisions only; it does not execute publishing, messaging or destructive actions. CI verification pending.
+
+
+## 2026-11-16 — Group 19/21/23 cross-cutting improvements
+- Added a Telegram-to-shared-conversation message mapper that preserves language metadata and verifies the linked bot/user/chat/workspace identity.
+- Improved keyboard accessibility with a skip link, main landmarks and alert semantics.
+- Added a test against the real D1 migration directory to prevent duplicate/gapped migration numbering.
+- CI verification pending.

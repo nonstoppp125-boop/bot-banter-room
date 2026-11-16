@@ -6,3 +6,5 @@ it("blocks release readiness when required evidence is missing",()=>{expect(eval
 it("detects duplicate and missing D1 migration versions",()=>{expect(validateMigrationSequence(["migrations/0001_a.sql","migrations/0002_b.sql","migrations/0003_c.sql"]).valid).toBe(true);expect(validateMigrationSequence(["migrations/0001_a.sql","migrations/0001_b.sql"]).duplicates).toEqual([1]);expect(validateMigrationSequence(["migrations/0001_a.sql","migrations/0003_c.sql"]).gaps).toEqual([2]);});
 it("validates release candidate metadata",()=>{expect(validateReleaseMetadata({version:"1.2.3-rc.1",commitSha:"abcdef1234567",branch:"release/candidate",changeSummary:"RC"}).valid).toBe(true);expect(validateReleaseMetadata({version:"latest",commitSha:"x",branch:"main",changeSummary:""}).valid).toBe(false);});
 });
+
+it("validates the actual repository D1 migration sequence",()=>{const migrations=Object.keys(import.meta.glob("../../migrations/*.sql"));expect(migrations.length).toBeGreaterThan(0);expect(validateMigrationSequence(migrations).valid).toBe(true);});

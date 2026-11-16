@@ -244,3 +244,9 @@ Append new evidence below; never rewrite historical results.\n\n
 
 ## 2026-11-16 — Approval store tests
 - Added tests for payload hashing, workspace-member request creation, owner/admin decision predicate and pending/expiry enforcement. CI verification pending.
+
+
+## 2026-11-16 — Telegram, accessibility and migration regression
+- Added tests for shared Telegram message mapping, identity mismatch rejection and real migration sequence integrity.
+- Added skip-link/main landmark and error alert semantics to the mobile chat view.
+- CI verification pending.

@@ -23,3 +23,9 @@ Branch: work/group06-manager-planner
 
 GROUP 21: IN PROGRESS — install metadata, static-only service worker and mobile/accessibility foundations implemented; device/runtime verification remains open.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Accessibility and shared Telegram conversation
+- Added a keyboard-visible skip-to-main-content link and an alert role for chat errors; both empty and active chat states now expose a main landmark.
+- Telegram messages can be normalized into the same workspace-scoped D1 conversation message shape after identity and conversation mapping checks.
+- Verification pending.

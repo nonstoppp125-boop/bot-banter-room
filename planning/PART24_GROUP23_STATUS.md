@@ -19,3 +19,8 @@ Branch: work/group06-manager-planner
 
 GROUP 23: IN PROGRESS — CI and release-evidence primitives implemented; runtime and manual quality gates remain blocked.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Repository migration sequence regression
+- Added a quality test that discovers the actual `migrations/*.sql` files and validates unique, gap-free sequence numbers.
+- Verification pending.

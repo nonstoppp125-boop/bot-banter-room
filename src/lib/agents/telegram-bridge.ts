@@ -1,3 +1,4 @@
+import type { MessageRecord } from "./conversation-store";
 export interface TelegramMessageInput {
   updateId:number; telegramUserId:string; chatId:string; messageId:number; text:string; languageCode:string|null; receivedAt:string;
 }
@@ -69,5 +70,26 @@ export function createD1TelegramBridgeStore(database:D1TelegramDatabase):Telegra
    if(result.meta?.changes===0)return false;
    throw new Error("D1 did not return Telegram update claim change count.");
   },
+ };
+}
+
+export function toSharedConversationMessage(input:{
+ botId:string;message:TelegramMessageInput;identity:TelegramIdentity;conversationId:string;
+}):MessageRecord{
+ const {botId,message,identity,conversationId}=input;
+ if(!/^[1-9][0-9]{4,15}$/.test(botId)||identity.botId!==botId||
+    identity.telegramUserId!==message.telegramUserId||message.chatId!==message.telegramUserId||
+    !ID.test(identity.userId)||!ID.test(identity.workspaceId)||!ID.test(conversationId)||
+    !Number.isSafeInteger(message.updateId)||!message.text.trim()||
+    !Number.isFinite(Date.parse(message.receivedAt)))throw new Error("Telegram identity or conversation mapping is invalid.");
+ return{
+  id:"tg-"+botId+"-"+message.updateId,
+  conversationId,
+  workspaceId:identity.workspaceId,
+  userId:identity.userId,
+  role:"user",
+  content:message.text,
+  metadata:{channel:"telegram",botId,updateId:message.updateId,telegramUserId:message.telegramUserId,chatId:message.chatId,messageId:message.messageId,languageCode:message.languageCode},
+  createdAt:message.receivedAt,
  };
 }
