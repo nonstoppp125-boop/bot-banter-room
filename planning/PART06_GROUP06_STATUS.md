@@ -47,4 +47,10 @@ No merge to main; no production deployment.
 - GitHub Actions run `43813716174`: SUCCESS — TypeScript, 43 test files / 311 tests, production build and Nitro-generated Wrangler validation.
 
 - Approval inbox route is now included in the generated route registry and exposed from the chat navigation.
-\n\n## 2026-11-16 — Authenticated Manager task intake\n- Added `POST /api/tasks` with same-origin and JSON enforcement, active-session authentication, bounded input validation, deterministic Manager planning, workspace/user-scoped D1 persistence, and automatic `needs_approval` status for high-risk plans.\n- Added `GET /api/tasks` scoped to the authenticated user's workspace and identity. Client input cannot set task status, plan, result, owner, or workspace.\n- Added focused API tests for cross-origin rejection, missing configuration/session, scoped persistence/listing, high-risk gating and malformed payloads.\n- Task intake is not a worker: no task is automatically executed and no external side effect is enabled. Live D1/Access runtime remains unverified.\n
+
+
+## 2026-11-16 — Authenticated Manager task intake
+- Added `POST /api/tasks` with same-origin and JSON enforcement, active-session authentication, bounded input validation, deterministic Manager planning, workspace/user-scoped D1 persistence, and automatic `needs_approval` status for high-risk plans.
+- Added `GET /api/tasks` scoped to the authenticated user's workspace and identity. Client input cannot set task status, plan, result, owner, or workspace.
+- Added focused API tests for cross-origin rejection, missing configuration/session, scoped persistence/listing, high-risk gating and malformed payloads.
+- Task intake is not a worker: no task is automatically executed and no external side effect is enabled. Live D1/Access runtime remains unverified.
