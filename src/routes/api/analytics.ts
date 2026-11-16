@@ -9,6 +9,7 @@ export const Route = createFileRoute("/api/analytics")({
   server: { handlers: {
     GET: async ({ request }) => handleAnalyticsRequest(request, getAnalyticsEnv(request)),
     POST: async ({ request }) => handleAnalyticsRequest(request, getAnalyticsEnv(request)),
+    DELETE: async ({ request }) => handleAnalyticsRequest(request, getAnalyticsEnv(request)),
     HEAD: async () => new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } }),
   } },
 });
