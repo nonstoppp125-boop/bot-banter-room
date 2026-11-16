@@ -145,3 +145,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Offline profile, positioning, audience, market-evidence, brand consistency, performance and dashboard primitives are implemented.
 - Official LinkedIn OAuth/account access remains blocked pending developer application approval, actual product scopes, callback configuration and encrypted durable storage.
 - CI run `43799513815`: SUCCESS — TypeScript, 16 test files / 178 tests, production build and Wrangler validation.
+
+
+## 2026-11-16 — Group 11 LinkedIn Content Studio
+- Added detailed task mapping in `PART12_GROUP11_STATUS.md`.
+- Strategy, calendars, draft formats, language metadata, content review, variants and in-memory version history are implemented.
+- Persistent storage and interactive studio UI remain open; no publishing or account access is claimed.
+- CI run `43799513815`: SUCCESS — 16 test files / 178 tests, TypeScript, production build and Wrangler validation.
