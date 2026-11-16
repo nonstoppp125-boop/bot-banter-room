@@ -102,6 +102,29 @@ describe("durable agent task store", () => {
     expect(values).toEqual(["2026-11-16T10:04:00Z", "task-1", "w1", "u1"]);
   });
 
+  it("recovers only owner-scoped running tasks older than the stale cutoff", async () => {
+    let statement = "";
+    let values: unknown[] = [];
+    const db = {
+      prepare: (query: string) => ({
+        bind: (...bound: unknown[]) => ({
+          first: async () => null,
+          all: async () => ({ success: true, results: [] }),
+          run: async () => { statement = query; values = bound; return { success: true, meta: { changes: 1 } }; },
+        }),
+      }),
+    };
+    const store = createD1TaskStore(db as unknown as Parameters<typeof createD1TaskStore>[0]);
+    expect(await store.recoverStale({
+      id: "task-1", workspaceId: "w1", userId: "u1",
+      staleBefore: "2026-11-16T10:00:00Z", updatedAt: "2026-11-16T10:05:00Z",
+    })).toBe(true);
+    expect(statement).toContain("status = 'running'");
+    expect(statement).toContain("updated_at < ?");
+    expect(statement).toContain("status = 'failed'");
+    expect(values.slice(1)).toEqual(["2026-11-16T10:05:00Z", "task-1", "w1", "u1", "2026-11-16T10:00:00Z"]);
+  });
+
   it("unlocks approval-gated tasks only through a matching approved D1 record", async () => {
     let statement = "";
     let values: unknown[] = [];
