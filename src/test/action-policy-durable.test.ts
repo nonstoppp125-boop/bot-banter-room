@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createD1ActionStore, executeApprovedAction } from "@/lib/agents/action-policy";
+import { createD1ActionStore, executeApprovedAction, executeVerifiedApprovedAction } from "@/lib/agents/action-policy";
 
 describe("durable external action boundary", () => {
   it("fails closed without approval or durable storage", async () => {
@@ -116,4 +116,24 @@ describe("durable external action boundary", () => {
 
     await expect(store.claim("d1-action-4")).rejects.toThrow(/D1 action claim failed/i);
   });
+
+  it("requires a persisted approval bound to the exact action and payload", async () => {
+    const approval = {
+      id: "approval-1", workspaceId: "ws1", userId: "u1",
+      actionType: "social.publish" as const, payloadHash: "a".repeat(64),
+      status: "approved" as const, decidedByUserId: "admin1",
+      decisionReason: "Reviewed", expiresAt: "2026-11-17T10:00:00.000Z",
+      createdAt: "2026-11-16T09:00:00.000Z", decidedAt: "2026-11-16T10:00:00.000Z",
+    };
+    const execute = vi.fn(async () => "published");
+    const store = { claim: vi.fn(async () => true) };
+    const input = { approval, workspaceId: "ws1", actionType: "social.publish" as const,
+      payloadHash: "a".repeat(64), now: "2026-11-16T11:00:00.000Z",
+      idempotencyKey: "publish-1", store, execute };
+    await expect(executeVerifiedApprovedAction(input)).resolves.toMatchObject({ executed: true, result: "published" });
+    expect(store.claim).toHaveBeenCalledTimes(1);
+    await expect(executeVerifiedApprovedAction({ ...input, payloadHash: "b".repeat(64) })).rejects.toThrow(/approval/i);
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
 });

@@ -1,4 +1,6 @@
 import {describe,expect,it} from "vitest";
+import {readdirSync} from "node:fs";
+import {resolve} from "node:path";
 import {evaluateQualityGates,validateMigrationSequence,validateReleaseMetadata} from "@/lib/agents/quality-gates";
 describe("release quality gates",()=>{
 it("never permits deployment from evidence evaluation alone",()=>{const checks=[{id:"typecheck" as const,status:"passed" as const,summary:"tsc",checkedAt:"2026-11-16T10:00:00Z"}];expect(evaluateQualityGates(checks,["typecheck"])).toMatchObject({status:"passed",deploymentAllowed:false});});
@@ -7,4 +9,7 @@ it("detects duplicate and missing D1 migration versions",()=>{expect(validateMig
 it("validates release candidate metadata",()=>{expect(validateReleaseMetadata({version:"1.2.3-rc.1",commitSha:"abcdef1234567",branch:"release/candidate",changeSummary:"RC"}).valid).toBe(true);expect(validateReleaseMetadata({version:"latest",commitSha:"x",branch:"main",changeSummary:""}).valid).toBe(false);});
 });
 
-it("validates the actual repository D1 migration sequence",()=>{const migrations=Object.keys(import.meta.glob("../../migrations/*.sql"));expect(migrations.length).toBeGreaterThan(0);expect(validateMigrationSequence(migrations).valid).toBe(true);});
+it("validates the actual repository D1 migration sequence",()=>{const migrations=Object.keys(import.meta.glob("../../migrations/*.sql"));expect(migrations.length).toBeGreaterThan(0);expect(validateMigrationSequence(migrations).valid).toBe(true);
+it("validates the actual repository migration sequence",()=>{const paths=readdirSync(resolve(process.cwd(),"migrations")).filter(name=>name.endsWith(".sql")).map(name=>"migrations/"+name);expect(validateMigrationSequence(paths).valid).toBe(true);});
+
+});

@@ -1,3 +1,4 @@
+import { verifyApprovalForAction, type ApprovalAction, type ApprovalRecord } from "./approval-store";
 /**
  * Fail-closed authorization contract for future external-action executors.
  * This module does not execute actions or provide durable idempotency storage.
@@ -129,4 +130,33 @@ export function createD1ActionStore(database: D1ActionDatabase): DurableActionSt
       throw new Error("D1 did not return an action claim change count");
     },
   };
+}
+
+
+
+/** Verify the persisted approval against this exact action before claiming its idempotency key. */
+export async function executeVerifiedApprovedAction<T>(input:{
+  approval:ApprovalRecord|null;
+  workspaceId:string;
+  actionType:ApprovalAction;
+  payloadHash:string;
+  now:string;
+  idempotencyKey:string;
+  store:DurableActionStore|null;
+  execute:()=>Promise<T>;
+}):Promise<{executed:true;result:T}>{
+  const decision=verifyApprovalForAction({
+    approval:input.approval,
+    workspaceId:input.workspaceId,
+    actionType:input.actionType,
+    payloadHash:input.payloadHash,
+    now:input.now,
+  });
+  if(!decision.allowed)throw new Error("External action blocked: "+decision.reason);
+  return executeApprovedAction({
+    approvedByUser:true,
+    idempotencyKey:input.idempotencyKey,
+    store:input.store,
+    execute:input.execute,
+  });
 }

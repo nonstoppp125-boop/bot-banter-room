@@ -9,7 +9,7 @@ Branch: work/group06-manager-planner
 - G06.09–G06.12 — Risk classification, capability/permission checks and delegated execution.
 - G06.13 — D1 durable task-store adapter added for create/get/list and optimistic status updates, scoped by workspace and user; live D1 binding/runtime remains unprovisioned.
 - G06.14–G06.17 — Failure tracking, bounded retry/replanning, dependency skips, max fan-out, timeouts and execution budget.
-- G06.18 — D1 approval request/decision adapter added; decision is conditional on pending state, expiry and owner/admin workspace membership; payload hash is bound and authorization is fail-closed. Approval UI/API and runtime integration remain open.
+- G06.18 — D1 approval request/decision adapter and exact action-payload verifier added; decisions require pending state, expiry and owner/admin membership. External-action wrapper verifies workspace, action type, payload hash and expiry before atomic idempotency claim. Approval UI/API and runtime integration remain open.
 - G06.19 — Formal acceptance criteria and schema-checked reviewer results; malformed/missing results fail closed to needs-review.
 - G06.20 — Final synthesis receives execution summary, review status and cost-estimate limitations.
 

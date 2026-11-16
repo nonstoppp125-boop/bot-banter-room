@@ -7,7 +7,7 @@ Branch: work/group06-manager-planner
 - QA01–QA04 — CI runs TypeScript, unit/integration tests, production build and generated Wrangler validation.
 - QA05 — Quality evidence model distinguishes passed, failed, blocked and not-run checks.
 - QA06 — Release readiness is fail-closed when any required evidence is missing or blocked.
-- QA07 — D1 migration sequence validator detects duplicates and gaps.
+- QA07 — D1 migration sequence validator detects duplicates and gaps; CI validates the actual migrations directory.
 - QA08 — Release candidate metadata validates semver, commit SHA, branch and change summary.
 - QA09 — No quality evaluation can authorize deployment; promotion remains a separate explicit decision.
 - QA10 — Unit tests cover fail-closed readiness and migration/version validation.
