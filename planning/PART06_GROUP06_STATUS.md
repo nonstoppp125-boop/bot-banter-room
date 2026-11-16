@@ -36,4 +36,6 @@ No merge to main; no production deployment.
 ## 2026-11-16 — Approval inbox UI
 - Added `/settings/approvals` with an admin-only pending inbox, requester/action/summary/payload-hash/expiry display, mandatory decision reason, and approve/reject actions.
 - UI explicitly states that recording approval does not itself execute external actions. API remains the authority for owner/admin role, same-origin, expiry and pending-only transitions.
-- Verification will be recorded after CI.
+- GitHub Actions run `43813716174`: SUCCESS — TypeScript, 43 test files / 311 tests, production build and Nitro-generated Wrangler validation.
+
+- Approval inbox route is now included in the generated route registry and exposed from the chat navigation.

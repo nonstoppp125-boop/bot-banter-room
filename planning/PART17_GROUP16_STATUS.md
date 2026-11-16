@@ -76,3 +76,5 @@ No merge to main; no production deployment.
 - Standardized the Instagram callback redirect URI in the start test to the actual shared callback route.
 - GitHub Actions run `43813565318`: SUCCESS — TypeScript, 43 test files / 311 tests, production build and Nitro-generated Wrangler validation.
 - Live D1, provider credentials/secrets, remote revocation and live account smoke tests remain blocked by unprovisioned runtime configuration.
+
+- `/settings/integrations` is included in the generated route registry and exposed from the chat navigation.
