@@ -22,3 +22,9 @@ Branch: work/group06-manager-planner
 
 GROUP 16: IN PROGRESS — provider registry and OAuth/webhook security primitives implemented; no external account is connected and no API action is enabled.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — OAuth entropy and audit redaction
+- Added Web Crypto generation for 256-bit OAuth state and RFC 7636 S256 PKCE verifier/challenge pairs; verifier must remain server-side.
+- Integration audit event details exclude token, secret, password, authorization, verifier, credential, cookie and code fields.
+- Verification pending.

@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {authorizeWebhookDelivery,verifyWebhookHmacSha256,calculateProviderRetryDelay,authorizeConnectionAccess,createIntegrationAuditEvent,createOAuthAuthorizationUrl,getIntegrationProvider,validateOAuthCallback} from "@/lib/agents/integration-hub";
+import {authorizeWebhookDelivery,verifyWebhookHmacSha256,calculateProviderRetryDelay,authorizeConnectionAccess,createIntegrationAuditEvent,createOAuthAuthorizationUrl,generateOAuthPkcePair,generateOAuthState,getIntegrationProvider,validateOAuthCallback} from "@/lib/agents/integration-hub";
 describe("integration hub security foundations",()=>{
 it("keeps providers disconnected and OAuth scopes least-privilege allowlisted",()=>{expect(getIntegrationProvider("instagram").connectionStatus).toBe("not-connected");expect(getIntegrationProvider("instagram").allowedScopes).toContain("instagram_business_basic");expect(getIntegrationProvider("linkedin").allowedScopes).toHaveLength(0);});
 it("builds PKCE-bound authorization URLs only for registered scopes and exact callbacks",()=>{const url=new URL(createOAuthAuthorizationUrl({provider:"instagram",authorizationEndpoint:"https://example.com/oauth",clientId:"client-123",redirectUri:"https://app.example.com/callback",registeredRedirectUri:"https://app.example.com/callback",scopes:["instagram_business_basic"],state:"a".repeat(40),codeChallenge:"b".repeat(43)}));expect(url.searchParams.get("code_challenge_method")).toBe("S256");expect(url.searchParams.get("scope")).toBe("instagram_business_basic");expect(()=>createOAuthAuthorizationUrl({provider:"instagram",authorizationEndpoint:"http://evil.example/oauth",clientId:"id",redirectUri:"https://app.example.com/callback",registeredRedirectUri:"https://app.example.com/callback",scopes:["instagram_business_basic"],state:"a".repeat(40),codeChallenge:"b".repeat(43)})).toThrow("HTTPS");expect(()=>createOAuthAuthorizationUrl({provider:"instagram",authorizationEndpoint:"https://example.com/oauth",clientId:"id",redirectUri:"https://evil.example/callback",registeredRedirectUri:"https://app.example.com/callback",scopes:["instagram_business_basic"],state:"a".repeat(40),codeChallenge:"b".repeat(43)})).toThrow("exactly match");});
@@ -10,4 +10,14 @@ it("creates bounded integration audit events",()=>{expect(createIntegrationAudit
 it("verifies signed webhook bodies and rejects replay or stale delivery",async()=>{const secret="s".repeat(40),body='{"event":"push"}',key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]),digest=new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(body))),signature="sha256="+Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");expect(await verifyWebhookHmacSha256({secret,rawBody:body,signature})).toBe(true);let claimed=false;const store={claim:async()=>{if(claimed)return false;claimed=true;return true;}};const input={provider:"github" as const,eventId:"evt-1",rawBody:body,signature,secret,timestamp:"2026-11-16T10:00:00.000Z",now:"2026-11-16T10:00:10.000Z",replayStore:store};expect(await authorizeWebhookDelivery(input)).toMatchObject({allowed:true,reason:"authorized"});expect(await authorizeWebhookDelivery(input)).toMatchObject({allowed:false,reason:"duplicate-event"});expect(await authorizeWebhookDelivery({...input,now:"2026-11-16T10:10:00.000Z"})).toMatchObject({allowed:false,reason:"stale-timestamp"});});
 it("bounds provider retry delays",()=>{expect(calculateProviderRetryDelay(1)).toBe(500);expect(calculateProviderRetryDelay(5)).toBe(8000);expect(calculateProviderRetryDelay(2,60)).toBe(30000);expect(()=>calculateProviderRetryDelay(6)).toThrow();});
 
+});
+
+
+it("generates cryptographically random OAuth state and an S256 PKCE pair",async()=>{
+  const state=generateOAuthState();
+  const pair=await generateOAuthPkcePair();
+  expect(state).toMatch(/^[a-f0-9]{64}$/);
+  expect(pair.verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(pair.challenge).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(pair.challenge).not.toBe(pair.verifier);
 });

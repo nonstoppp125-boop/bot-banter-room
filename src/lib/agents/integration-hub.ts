@@ -51,7 +51,7 @@ export function createOAuthAuthorizationUrl(input:OAuthStartInput):string{
  const scopes=[...new Set(input.scopes)];
  if(scopes.length===0||scopes.some(scope=>!provider.allowedScopes.includes(scope)))throw new Error("Requested OAuth scopes are not in the provider allowlist.");
  endpoint.searchParams.set("response_type","code");
- endpoint.searchParams.set("client_id",input.clientId);
+ endpoint.searchParams.set("client_id",input.clientId.trim());
  endpoint.searchParams.set("redirect_uri",redirect.href);
  endpoint.searchParams.set("scope",scopes.join(" "));
  endpoint.searchParams.set("state",input.state);
@@ -77,7 +77,7 @@ export function authorizeConnectionAccess(input:{ownerUserId:string;actorUserId:
 export interface IntegrationAuditEvent{id:string;userId:string;provider:IntegrationProviderId;action:string;timestamp:string;outcome:"success"|"denied"|"failure";details:Record<string,string>;}
 export function createIntegrationAuditEvent(event:IntegrationAuditEvent):IntegrationAuditEvent{
  if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(event.id)||!event.userId.trim()||!event.action.trim()||!Number.isFinite(Date.parse(event.timestamp)))throw new Error("Invalid integration audit event.");
- const details=Object.fromEntries(Object.entries(event.details).slice(0,20).map(([k,v])=>[k.slice(0,80),v.slice(0,300)]));
+ const details=Object.fromEntries(Object.entries(event.details).filter(([key])=>!/(token|secret|password|authorization|verifier|credential|cookie|code)/i.test(key)).slice(0,20).map(([k,v])=>[k.slice(0,80),v.slice(0,300)]));
  return{...event,details};
 }
 
@@ -124,4 +124,23 @@ export function calculateProviderRetryDelay(attempt:number,retryAfterSeconds?:nu
  if(retryAfterSeconds===undefined||retryAfterSeconds===null)return fallback;
  if(!Number.isFinite(retryAfterSeconds)||retryAfterSeconds<0)return fallback;
  return Math.min(30_000,Math.max(fallback,retryAfterSeconds*1000));
+}
+
+
+function encodeBase64Url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+export function generateOAuthState(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Generate an RFC 7636 S256 verifier/challenge pair. Keep verifier server-side. */
+export async function generateOAuthPkcePair(): Promise<{ verifier: string; challenge: string }> {
+  const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return { verifier, challenge: encodeBase64Url(new Uint8Array(digest)) };
 }
