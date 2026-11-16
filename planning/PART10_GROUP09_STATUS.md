@@ -41,3 +41,10 @@ No merge to `main`; no production deployment.
 - Research/Web Intelligence search and selected-page extraction now execute through a specialist permission registry, rather than direct unscoped orchestrator calls.
 - Missing provider key, invalid tool arguments, cross-agent access and cancellation fail closed.
 - GitHub Actions run `43809939660`: SUCCESS.
+
+
+## 2026-11-16 — Evidence independence hardening
+- Corroboration no longer trusts source-supplied publisher labels when a URL exists; it derives publisher identity from the normalized hostname and collapses `www.` aliases.
+- Added a regression test proving two differently labeled pages on the same hostname remain single-source evidence.
+- This reduces false corroboration but does not provide semantic entailment or contradiction detection; G09.06 remains open.
+- GitHub Actions verification for this change is pending.
