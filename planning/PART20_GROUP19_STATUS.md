@@ -89,3 +89,11 @@ No merge to `main`; no production deployment.
 
 - The web Tasks page now allows the task owner to cancel a pending approval-gated task; the D1 state transition remains owner/workspace-scoped and atomic.
 - Latest GitHub Actions run `43873475716`: SUCCESS — TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation.
+
+
+## 2026-11-16 — Telegram task approval bridge clarification
+
+- Telegram `/task` creates workspace-scoped Manager tasks; high-risk tasks also create payload-bound persisted approval requests.
+- Telegram `/approvals` supports signed owner/admin decisions. After a decision, the user must use the authenticated web Tasks page to verify/unlock and explicitly run the task.
+- The approval-to-on-demand-execution bridge exists through the web API; Telegram itself does not execute specialist workflows or external side effects.
+- Live bot credentials, webhook registration, D1 provisioning and end-to-end runtime smoke remain unverified.
