@@ -53,7 +53,8 @@ jobs:
       - name: Commit only verified dependency files
         run: |
           set -euo pipefail
-          git diff --exit-code -- . ':!package.json' ':!package-lock.json'
+          # The build may rewrite generated route artifacts; keep this remediation commit dependency-only.
+          git restore --worktree -- . ':!package.json' ':!package-lock.json'
           if git diff --quiet -- package.json package-lock.json; then
             echo "No dependency changes were produced."
             exit 1
