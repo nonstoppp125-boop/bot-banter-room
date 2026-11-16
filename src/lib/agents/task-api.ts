@@ -1,6 +1,7 @@
 import { createD1SessionStore, readSessionCookie } from "./session-auth";
 import { buildManagerPlan, restoreManagerPlan } from "./manager";
 import { listAgents } from "./registry";
+import { createManagerTaskApproval, verifyManagerTaskApproval } from "./task-approval";
 import { createD1TaskStore, type D1TaskDatabase } from "./task-store";
 import { createD1WorkspaceAccessStore } from "./workspace-store";
 import type { D1SessionDatabase } from "./session-auth";
@@ -108,13 +109,20 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
       }
       const taskText = body["task"].trim();
       const plan = buildManagerPlan(taskText, listAgents());
+      const taskId = crypto.randomUUID().replace(/-/g, "");
+      const approval = plan.approvalRequired
+        ? await createManagerTaskApproval(database, {
+            taskId, workspaceId: session.workspaceId, userId: session.userId,
+            inputSummary: taskText, plan, now,
+          })
+        : null;
       const task = {
-        id: crypto.randomUUID().replace(/-/g, ""),
+        id: taskId,
         workspaceId: session.workspaceId,
         userId: session.userId,
         status: plan.approvalRequired ? "needs_approval" as const : "queued" as const,
         inputSummary: taskText,
-        plan,
+        plan: approval ? { ...plan, approval } : plan,
         result: null,
         createdAt: now,
         updatedAt: now,
@@ -124,8 +132,8 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
     }
 
     if (request.method === "PATCH") {
-      if (!isRecord(body) || (body["action"] !== "cancel" && body["action"] !== "retry") || typeof body["taskId"] !== "string") {
-        return json({ error: "A taskId and supported cancel/retry action are required." }, 400);
+      if (!isRecord(body) || (body["action"] !== "cancel" && body["action"] !== "retry" && body["action"] !== "unlock") || typeof body["taskId"] !== "string") {
+        return json({ error: "A taskId and supported cancel/retry/unlock action are required." }, 400);
       }
       const store = createD1TaskStore(database);
       const task = await store.get({
@@ -134,6 +142,21 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
         userId: session.userId,
       });
       if (!task) return json({ error: "Task not found." }, 404);
+      if (body["action"] === "unlock") {
+        if (task.status !== "needs_approval") return json({ error: "Only approval-gated tasks can be unlocked." }, 409);
+        const verification = await verifyManagerTaskApproval(database, {
+          taskId: task.id, workspaceId: session.workspaceId, userId: session.userId,
+          inputSummary: task.inputSummary, plan: task.plan, now: new Date().toISOString(),
+        });
+        if (!verification.allowed) return json({ error: verification.reason }, 409);
+        const unlockedAt = new Date().toISOString();
+        const unlocked = await store.update({
+          id: task.id, workspaceId: session.workspaceId, userId: session.userId,
+          expectedStatus: "needs_approval", status: "queued", plan: task.plan, updatedAt: unlockedAt,
+        });
+        if (!unlocked) return json({ error: "Task state changed; refresh and verify approval again." }, 409);
+        return json({ task: { ...task, status: "queued", updatedAt: unlockedAt } });
+      }
       if (body["action"] === "retry") {
         if (task.status !== "failed") return json({ error: "Only failed tasks can be retried." }, 409);
         const plan = restoreManagerPlan(task.inputSummary, task.plan, listAgents());
