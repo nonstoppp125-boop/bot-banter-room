@@ -9,7 +9,7 @@ const linkUrl = "https://liza.example/api/telegram/link-token";
 const webhookUrl = "https://liza.example/api/telegram/webhook";
 const sessionCookie = "__Host-liza_session=" + token;
 
-function databaseMock(mode: "session" | "link" = "session") {
+function databaseMock(mode: "session" | "link" | "linked" = "session") {
   const queries: string[] = [];
   const bindings: unknown[][] = [];
   const database = {
@@ -22,6 +22,9 @@ function databaseMock(mode: "session" | "link" = "session") {
             run: async () => ({ success: true, meta: { changes: 1 } }),
             all: async <T = Record<string, unknown>>() => ({ success: true, results: [] as T[] }),
             first: async <T = Record<string, unknown>>() => {
+              if (query.includes("FROM telegram_user_links")) return mode === "linked" ? {
+                bot_id: "123456", telegram_user_id: "123456789", user_id: "user-1", workspace_id: "workspace-1",
+              } as T : null;
               if (query.includes("FROM sessions")) return {
                 id: "session-1", user_id: "user-1", workspace_id: "workspace-1",
                 expires_at: "2026-11-17T00:00:00.000Z", created_at: "2026-11-16T00:00:00.000Z",
@@ -116,6 +119,54 @@ describe("Telegram link and webhook API", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ linked: false });
     expect(sentBody).toContain("link code");
+  });
+
+  it("saves a low-risk Manager plan from Telegram into the shared task workspace", async () => {
+    const state = databaseMock("linked");
+    let sentBody = "";
+    const response = await handleTelegramWebhookRequest(webhookRequest("/task Prepare a research brief"), {
+      ACTION_DB: state.database, TELEGRAM_BOT_ID: "123456", TELEGRAM_BOT_TOKEN: botToken,
+      TELEGRAM_WEBHOOK_SECRET: webhookSecret,
+    }, async (_input, init) => {
+      sentBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ status: "queued" });
+    expect(state.queries.some((query) => query.startsWith("INSERT INTO agent_tasks"))).toBe(true);
+    expect(sentBody).toContain("Manager task saved");
+    expect(sentBody).toContain("background execution is not enabled");
+  });
+
+  it("keeps high-risk Telegram Manager plans approval-gated", async () => {
+    const state = databaseMock("linked");
+    let sentBody = "";
+    const response = await handleTelegramWebhookRequest(webhookRequest("/task Publish this LinkedIn post"), {
+      ACTION_DB: state.database, TELEGRAM_BOT_ID: "123456", TELEGRAM_BOT_TOKEN: botToken,
+      TELEGRAM_WEBHOOK_SECRET: webhookSecret,
+    }, async (_input, init) => {
+      sentBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ status: "needs_approval" });
+    expect(sentBody).toContain("approval-gated");
+  });
+
+  it("lists recent shared Manager tasks from Telegram", async () => {
+    const state = databaseMock("linked");
+    let sentBody = "";
+    const response = await handleTelegramWebhookRequest(webhookRequest("/tasks"), {
+      ACTION_DB: state.database, TELEGRAM_BOT_ID: "123456", TELEGRAM_BOT_TOKEN: botToken,
+      TELEGRAM_WEBHOOK_SECRET: webhookSecret,
+    }, async (_input, init) => {
+      sentBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ taskCount: 0 });
+    expect(state.queries.some((query) => query.includes("FROM agent_tasks") && query.includes("workspace_id=? AND user_id=?"))).toBe(true);
+    expect(sentBody).toContain("No Manager tasks");
   });
 
   it("lists pending approvals with user-bound buttons and accepts a signed admin decision", async () => {
