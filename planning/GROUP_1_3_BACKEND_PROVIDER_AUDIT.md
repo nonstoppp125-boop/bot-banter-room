@@ -42,7 +42,7 @@ Latest successful CI: [43892965506](https://github.com/nonstoppp125-boop/bot-ban
 
 ## Remaining external blockers
 
-- No deployed production Worker streaming test with real Groq credentials.
-- No account-level quota dashboard; only per-response headers and usage estimates.
+- Local workerd UI-stream smoke test passes; no deployed production Worker streaming test with real Groq credentials.
+- Per-response quota headers and usage estimates are implemented; no account-level dashboard or durable usage ledger.
 - No D1 `ACTION_DB` binding/database ID in tracked `wrangler.json`; production deploy workflow requires it.
 - Cloudflare account secrets, D1 provisioning/migrations and production deployment remain unverified.

@@ -50,11 +50,15 @@ A structured `groq.rate_limit` event is emitted when at least one quota header i
 
 Five focused tests cover header extraction, missing headers, unchanged stream response, 429 without quota headers and no telemetry for an ordinary response. Existing Groq provider construction test also asserts that the wrapped fetch is passed to the SDK.
 
-This is response-level telemetry visible in Worker logs. It is not a durable usage database, organization-wide polling service or quota dashboard.
+This is response-level telemetry visible in Worker logs. It is not a durable usage database, organization-wide polling service or quota dashboard. The wrapper is exercised by five focused tests and preserves the same Response/body for streaming.
 
 ## Usage and cost estimates
 
 Multi-agent execution aggregates provider-reported usage when available and estimates missing token counts from bounded character counts. `pricing.ts` estimates cost from a dated model price table. The final execution report labels this as an estimate and explicitly notes unreported calls/final synthesis assumptions. It is not an invoice or exact billing record.
+
+## Worker runtime verification
+
+CI starts a local Wrangler 4.162.0 workerd instance using wrangler.stream-test.json, requests a fixture that emits an AI SDK UI-message stream, and asserts text/event-stream plus the expected text delta. This validates Worker-runtime stream delivery; it does not call Groq or prove a deployed production Worker is configured.
 
 ## Failure policy
 
