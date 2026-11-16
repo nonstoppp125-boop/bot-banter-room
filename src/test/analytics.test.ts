@@ -54,3 +54,11 @@ describe("unified analytics",()=>{
   });
 
 });
+
+
+it("rejects invalid CSV units, blank values and text after a closing quote",()=>{
+  const canonical=exportAnalyticsCsv([row()]);
+  expect(()=>parseAnalyticsCsv(canonical.replace(',"count",',',"items",'))).toThrow("unit");
+  expect(()=>parseAnalyticsCsv(canonical.replace(',"1000",',',"",'))).toThrow("empty metric value");
+  expect(()=>parseAnalyticsCsv(canonical.replace('"linkedin"','"linkedin"x'))).toThrow("after a quoted field");
+});

@@ -203,3 +203,8 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — Analytics CSV validation and export
 - Added negative tests for invalid metric unit, blank metric values and trailing characters after a quoted CSV field.
 - Browser export/import actions are local-only. CI verification pending.
+
+
+## 2026-11-16 — Group 14 CSV negative tests
+- Added negative tests for wrong units, blank metric values and characters after quoted fields.
+- Verification pending.

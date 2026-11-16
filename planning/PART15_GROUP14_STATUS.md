@@ -33,3 +33,9 @@ No merge to main; no production deployment.
 - Browser importer checks the 2 MB file size before reading.
 - Added a local-only CSV download action for the current browser session.
 - CI verification pending.
+
+
+## 2026-11-16 — Downloadable analytics export and parser hardening
+- BI16 — Added browser-local CSV download for the current imported dataset.
+- CSV parser rejects malformed quote boundaries, unsupported units, blank values and row-count overflow; file size is checked before browser text loading.
+- Additional negative tests added; verification pending.

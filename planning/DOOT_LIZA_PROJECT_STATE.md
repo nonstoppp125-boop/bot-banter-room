@@ -207,3 +207,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Hardened CSV parsing against malformed quoting, wrong units, blank metric values and row overflow.
 - Added a browser-side file-size check and local CSV export action. Imported data remains session-only.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 14 CSV export UX
+- Added a browser-local CSV download button and strict pre-read file size guard.
+- CSV parser now validates canonical units, non-empty values, quote boundaries and row limits.
+- Verification pending.
