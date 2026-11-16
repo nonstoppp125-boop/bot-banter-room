@@ -148,18 +148,19 @@ describe("authenticated Manager task execution", () => {
 
   it("executes an approval-gated Manager task only after verifying the persisted payload-bound approval", async () => {
     const summary = "Publish this LinkedIn post";
-    const { database, rows, approvalRow } = makeDatabase("queued", true, summary);
+    const state = makeDatabase("queued", true, summary);
+    const { database, rows } = state;
     const plan = buildManagerPlan(summary, listAgents());
     const approval = await createManagerTaskApproval(database as never, {
       taskId: "task-1", workspaceId: "workspace-1", userId: "user-1",
       inputSummary: summary, plan, now: "2026-11-16T12:00:00.000Z",
     });
     rows[0]!["plan_json"] = JSON.stringify({ ...plan, approval });
-    expect(approvalRow).not.toBeNull();
-    approvalRow!["status"] = "approved";
-    approvalRow!["decided_by_user_id"] = "workspace-admin";
-    approvalRow!["decision_reason"] = "Reviewed and approved";
-    approvalRow!["decided_at"] = "2026-11-16T12:05:00.000Z";
+    expect(state.approvalRow).not.toBeNull();
+    state.approvalRow!["status"] = "approved";
+    state.approvalRow!["decided_by_user_id"] = "workspace-admin";
+    state.approvalRow!["decision_reason"] = "Reviewed and approved";
+    state.approvalRow!["decided_at"] = "2026-11-16T12:05:00.000Z";
     let invoked = false;
     const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }), env(database), async ({ managerPlan }) => {
       invoked = true;
