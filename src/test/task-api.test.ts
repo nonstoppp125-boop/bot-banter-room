@@ -17,6 +17,9 @@ function makeDatabase() {
           bindings.push(values);
           return {
             first: async <T = Record<string, unknown>>() => {
+              if (query.includes("FROM workspace_members")) {
+                return { workspace_id: "workspace-1", user_id: "user-1", role: "owner" } as T;
+              }
               if (query.includes("FROM sessions")) {
                 return {
                   id: "session-1", user_id: "user-1", workspace_id: "workspace-1",
@@ -25,7 +28,7 @@ function makeDatabase() {
               }
               return null;
             },
-            all: async <T = Record<string, unknown>>() => ({ success: true, results: rows as T[] }),
+            all: async <T = Record<string, unknown>>() => ({ success: true, results: rows as unknown as T[] }),
             run: async () => {
               if (query.startsWith("INSERT INTO agent_tasks")) {
                 const [id, workspaceId, userId, status, inputSummary, plan, result, createdAt, updatedAt] = values;
