@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as LinkedInStudioRouteImport } from './routes/linkedin-studio'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
 import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
@@ -48,6 +49,11 @@ const TasksRoute = TasksRouteImport.update({
 const AnalyticsRoute = AnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LinkedInStudioRoute = LinkedInStudioRouteImport.update({
+  id: '/linkedin-studio',
+  path: '/linkedin-studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
@@ -190,8 +196,7 @@ export interface FileRoutesByFullPath {
   '/settings/privacy': typeof SettingsPrivacyRoute
   '/settings/memory': typeof SettingsMemoryRoute
   '/analytics': typeof AnalyticsRoute
-  '/tasks': typeof TasksRoute
-  '/tasks': typeof TasksRoute
+  '/linkedin-studio': typeof LinkedInStudioRoute
   '/tasks': typeof TasksRoute
 }
 export interface FileRoutesByTo {
@@ -215,6 +220,7 @@ export interface FileRoutesByTo {
   '/settings/privacy': typeof SettingsPrivacyRoute
   '/settings/memory': typeof SettingsMemoryRoute
   '/analytics': typeof AnalyticsRoute
+  '/linkedin-studio': typeof LinkedInStudioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -238,6 +244,7 @@ export interface FileRoutesById {
   '/settings/privacy': typeof SettingsPrivacyRoute
   '/settings/memory': typeof SettingsMemoryRoute
   '/analytics': typeof AnalyticsRoute
+  '/linkedin-studio': typeof LinkedInStudioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -261,6 +268,7 @@ export interface RootRouteChildren {
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
   SettingsPrivacyRoute: typeof SettingsPrivacyRoute
   SettingsMemoryRoute: typeof SettingsMemoryRoute
+  LinkedInStudioRoute: typeof LinkedInStudioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -447,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/linkedin-studio': {
+      id: '/linkedin-studio'
+      path: '/linkedin-studio'
+      fullPath: '/linkedin-studio'
+      preLoaderRoute: typeof LinkedInStudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -476,6 +491,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsApprovalsRoute: SettingsApprovalsRoute,
   SettingsPrivacyRoute: SettingsPrivacyRoute,
   SettingsMemoryRoute: SettingsMemoryRoute,
+  LinkedInStudioRoute: LinkedInStudioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
