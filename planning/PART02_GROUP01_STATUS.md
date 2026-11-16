@@ -15,7 +15,7 @@ Tracked tree inspected: `c2e5e3b8cce1b4d952d396089947f17d13ebbabb`
 - G01.10–G01.11 — `package.json`, `package-lock.json`, `bun.lock` inspected; manifest contains 63 runtime and 21 development dependencies.
 - G01.13–G01.18 — `AGENTS.md`, README, master roadmap, Vite config, Wrangler config, `.env.example`, build and deploy workflows inspected.
 - G01.19 — 30 route files inventoried.
-- G01.20 — 53 component files inventoried: 53 under `src/components/` (52 UI components plus 4 AI-elements? See source tree; exact file paths must be listed in the source inventory before this item is considered fully signed off).
+- G01.20 — 30 route files and all 53 component files (49 UI + 4 AI-elements) are now enumerated in `SOURCE_INVENTORY.md`; route/component cross-check remains open.
 - G01.21 — 52 agent-module files identified under `src/lib/agents/`.
 - G01.22 — 53 test/spec files identified.
 - G01.25 — Two tracked historical chat-route backup snapshots identified and preserved.
@@ -29,7 +29,7 @@ Tracked tree inspected: `c2e5e3b8cce1b4d952d396089947f17d13ebbabb`
 - G01.06–G01.07 — Local untracked/ignored files and hidden local configuration. Must inspect locally without printing secret values.
 - G01.08 — Binary dimensions are not yet measured from the image bytes; physical Android/iOS rendering is also unverified.
 - G01.12 — Import-graph dependency-use and duplicate-package analysis has not been completed. Manifest counts and vulnerability audit do not establish whether a package is unused.
-- G01.20 — Exact full component-path inventory and route/component cross-check remain to be documented.
+- G01.20 — Full component paths are now documented; route-to-component usage cross-check remains open.
 - G01.23 — Test coverage-gap analysis (untested critical branches, failure paths, security boundaries) remains open; test count alone is not coverage evidence.
 - G01.24 — Legacy Lovable implementation review remains open. Presence of `.lovable/*` metadata and `src/lib/lovable-error-reporting.ts` is inventoried, but behavior/history has not been audited.
 - G01.26 — Local checkout vs GitHub comparison remains open; remote branch vs remote `main` is not a substitute.
