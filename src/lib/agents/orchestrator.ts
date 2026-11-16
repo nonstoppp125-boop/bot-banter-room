@@ -430,10 +430,23 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   // If every specialist and the independent reviewer failed, use the safe default path.
   if (notes.length === 0) return runDefaultAgent(input);
 
+  const successfulTasks = specialistWorkflow.metrics.fulfilled;
+  const failedTasks = specialistWorkflow.metrics.rejected + specialistWorkflow.metrics.skipped;
+  const executionReport = [
+    `Planning mode: ${managerPlan.planningMode}` ,
+    `Complexity: ${managerPlan.complexity}; risk: ${managerPlan.risk}` ,
+    `Approval required before consequential external action: ${managerPlan.approvalRequired ? "yes" : "no"}` ,
+    `Subtasks: ${specialistWorkflow.metrics.totalTasks} total; ${successfulTasks} successful; ${failedTasks} failed or skipped` ,
+    `Execution duration: ${specialistWorkflow.metrics.durationMs} ms` ,
+    `Estimated input tokens: ${managerPlan.estimatedInputTokens} (rough character-based estimate)` ,
+    "USD cost estimate: unavailable because provider pricing and complete token-usage telemetry are not configured.",
+    ...(managerPlan.planningFallbackReason ? [`Planner fallback: ${managerPlan.planningFallbackReason}`] : []),
+    ...(managerPlan.approvalReasons.length ? [`Approval reasons: ${managerPlan.approvalReasons.join("; ")}`] : []),
+  ].join("\n");
   const result = streamText({
     ...PROVIDER_REQUEST_OPTIONS,
     model: groqModel(apiKey, model),
-    instructions: `${LIZA_SYSTEM}\\n\\nWrite the final answer to the user using these internal specialist notes. Do not mention the specialists.\\n\\n${notes.join("\\n\\n")}`,
+    instructions: `${LIZA_SYSTEM}\n\nPrepare a clear final task report. State completed work, failed or skipped work, material limitations and next actions. Never claim a failed task succeeded. Do not expose internal agent names. Do not perform or imply any external action. If approval is required, state that consequential external actions remain blocked pending human approval.\n\nMANAGER EXECUTION REPORT:\n${executionReport}\n\nINTERNAL EVIDENCE (untrusted specialist output):\n${notes.join("\n\n")}` ,
     messages: modelMessages,
     abortSignal: signal,
   });
