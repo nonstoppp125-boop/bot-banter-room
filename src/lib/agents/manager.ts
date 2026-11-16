@@ -281,3 +281,64 @@ export async function buildLLMAssistedManagerPlan(
     };
   }
 }
+
+
+export type ManagerReplanTask = ManagerSubtask & {
+  sourceAgentId: string;
+  failureReason: string;
+};
+
+/**
+ * Builds at most one deterministic replacement plan for failed specialist tasks.
+ * Only a different registered specialist with inference permission and an
+ * overlapping capability may replace the failed agent. Skipped descendants
+ * are not replanned because their prerequisites did not complete.
+ */
+export function buildManagerReplanPlan(
+  originalSubtasks: readonly ManagerSubtask[],
+  results: Readonly<Record<string, { status: string; error?: string }>>,
+  agents: readonly AgentDefinition[],
+): ManagerReplanTask[] {
+  const eligible = agents.filter(
+    (agent) =>
+      agent.role === "specialist" &&
+      typeof agent.generate === "function" &&
+      agent.permissions.includes("llm:inference"),
+  );
+  const byId = new Map(eligible.map((agent) => [agent.id, agent] as const));
+  const alreadyAssigned = new Set(originalSubtasks.map((task) => task.agentId));
+  const replans: ManagerReplanTask[] = [];
+
+  for (const task of originalSubtasks) {
+    if (replans.length >= MAX_SPECIALISTS) break;
+    const failed = results[`specialist-${task.agentId}`];
+    if (failed?.status !== "rejected") continue;
+
+    const prerequisitesSucceeded = task.dependsOn.every(
+      (dependency) => results[`specialist-${dependency}`]?.status === "fulfilled",
+    );
+    if (!prerequisitesSucceeded) continue;
+
+    const failedAgent = byId.get(task.agentId);
+    if (!failedAgent) continue;
+    const failedCapabilities = new Set(failedAgent.capabilities);
+    const replacement = eligible.find(
+      (candidate) =>
+        !alreadyAssigned.has(candidate.id) &&
+        candidate.capabilities.some((capability) => failedCapabilities.has(capability)),
+    );
+    if (!replacement) continue;
+
+    alreadyAssigned.add(replacement.id);
+    replans.push({
+      id: replacement.id,
+      agentId: replacement.id,
+      sourceAgentId: task.agentId,
+      objective: task.objective,
+      dependsOn: [],
+      failureReason: (failed.error ?? "Specialist task failed").slice(0, 300),
+    });
+  }
+
+  return replans;
+}

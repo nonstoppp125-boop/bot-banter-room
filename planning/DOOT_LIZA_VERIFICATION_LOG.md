@@ -55,3 +55,9 @@ Append new evidence below; never rewrite historical results.\n\n
 - Nitro-generated Wrangler configuration validation: PASS
 - Verified: LLM-assisted bounded decomposition, deterministic fallback, dependency preservation, specialist timeout cancellation propagation, two-attempt execution budget, execution report context.
 - Group 06 remains IN PROGRESS; no merge to main and no production deployment.
+
+
+## 2026-11-16 — Group 06 bounded replanning implementation
+- Branch: `work/group06-manager-planner`
+- Added capability-compatible replacement selection, strict single-pass recovery, prerequisite gating, and execution/report integration.
+- Automated verification: pending GitHub Actions.

@@ -178,3 +178,105 @@ describe("LLM-assisted Manager decomposition", () => {
     expect(plan.planningFallbackReason).toBeUndefined();
   });
 });
+
+
+describe("bounded Manager replanning", () => {
+  it("reassigns a failed task once to a different permitted specialist with overlapping capability", async () => {
+    const extended = [
+      ...agents,
+      {
+        id: "coding-backup",
+        name: "Coding Backup",
+        description: "Alternative coding specialist",
+        capabilities: ["code-generation"] as const,
+        permissions: ["llm:inference"] as const,
+        role: "specialist" as const,
+        generate: async () => "recovered",
+      },
+    ];
+    const original = buildManagerPlan("Implement a TypeScript feature", extended);
+    const replanned = buildManagerReplanPlan(
+      original.subtasks,
+      { "specialist-coding": { status: "rejected", error: "provider timeout" } },
+      extended,
+    );
+    expect(replanned).toHaveLength(1);
+    expect(replanned[0]).toMatchObject({
+      agentId: "coding-backup",
+      sourceAgentId: "coding",
+      failureReason: "provider timeout",
+      dependsOn: [],
+    });
+  });
+
+  it("does not replan skipped tasks or tasks with failed prerequisites", () => {
+    const extended = [
+      ...agents,
+      {
+        id: "coding-backup",
+        name: "Coding Backup",
+        description: "Alternative coding specialist",
+        capabilities: ["code-generation"] as const,
+        permissions: ["llm:inference"] as const,
+        role: "specialist" as const,
+        generate: async () => "recovered",
+      },
+    ];
+    const original = buildManagerPlan(
+      "Research the API first, then implement the integration",
+      extended,
+    );
+    const replanned = buildManagerReplanPlan(
+      original.subtasks,
+      {
+        "specialist-research": { status: "rejected", error: "research failed" },
+        "specialist-coding": { status: "skipped", error: "dependency failed" },
+      },
+      extended,
+    );
+    expect(replanned).toEqual([]);
+  });
+
+  it("never selects an already-used, unregistered, or permission-restricted replacement", () => {
+    const restricted = {
+      id: "coding-backup",
+      name: "Restricted Backup",
+      description: "No inference permission",
+      capabilities: ["code-generation"] as const,
+      permissions: [] as const,
+      role: "specialist" as const,
+      generate: async () => "must not run",
+    };
+    const original = buildManagerPlan("Implement TypeScript code", [...agents, restricted]);
+    expect(
+      buildManagerReplanPlan(
+        original.subtasks,
+        { "specialist-coding": { status: "rejected" } },
+        [...agents, restricted],
+      ),
+    ).toEqual([]);
+  });
+
+  it("caps replanning at four tasks and never recursively replans replacements", () => {
+    const extended: AgentDefinition[] = [
+      ...agents,
+      ...["coding-alt", "debugging-alt", "research-alt", "linkedin-alt", "security-alt"].map((id) => ({
+        id,
+        name: id,
+        description: "Alternative specialist",
+        capabilities: agents.find((agent) => agent.id === id.replace("-alt", ""))?.capabilities ?? ["problem-solving"],
+        permissions: ["llm:inference"] as const,
+        role: "specialist" as const,
+        generate: async () => "ok",
+      })),
+    ];
+    const originals = ["coding", "debugging", "research", "linkedin", "security"].map((agentId) => ({
+      id: agentId,
+      agentId,
+      objective: "Complete task",
+      dependsOn: [],
+    }));
+    const results = Object.fromEntries(originals.map((task) => [`specialist-${task.agentId}`, { status: "rejected" }]));
+    expect(buildManagerReplanPlan(originals, results, extended)).toHaveLength(4);
+  });
+});

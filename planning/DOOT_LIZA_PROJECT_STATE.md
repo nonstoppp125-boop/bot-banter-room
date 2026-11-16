@@ -82,3 +82,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Final synthesis now receives execution outcomes and limitations.
 - Group 06 remains partial: pricing-based cost estimate, durable state, revised-plan replanning, enforced approval workflow and formal deliverable acceptance remain.
 - No merge to main and no production deployment.
+
+
+## 2026-11-16 — Group 06 bounded replanning implementation
+- Added one bounded deterministic recovery pass for rejected specialist tasks.
+- Replacement must be a different registered specialist with overlapping capability and `llm:inference` permission; replacements are never recursively replanned.
+- Skipped descendants and tasks with unsuccessful prerequisites are not replanned.
+- Replacement execution is included in quality-review evidence and final execution metrics.
+- CI verification pending.

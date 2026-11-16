@@ -8,7 +8,7 @@ import {
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { LIZA_SYSTEM } from "./liza-default";
 import { runDelegatedAgentWorkflow } from "./coordination";
-import { buildLLMAssistedManagerPlan, buildManagerPlan } from "./manager";
+import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan } from "./manager";
 import {
   RESEARCH_SOURCE_SAFETY_RULE,
   buildResearchReport,
@@ -331,6 +331,54 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   });
   if (signal.aborted) return new Response(null, { status: 499 });
 
+  // One bounded recovery pass: replace rejected tasks with an unused, permitted
+  // specialist sharing the failed agent's capability. No recursive replanning.
+  const replanSubtasks = buildManagerReplanPlan(
+    managerPlan.subtasks,
+    specialistWorkflow.results,
+    listAgents(),
+  );
+  const replanTasks = replanSubtasks.map((subtask) => ({
+    id: `replan-${subtask.agentId}`,
+    agentId: subtask.agentId,
+    timeoutMs: managerPlan.executionBudget.perTaskTimeoutMs,
+    maxAttempts: 1,
+    execute: async ({ signal: taskSignal }: { signal: AbortSignal }) => {
+      const sourceTask = managerPlan.subtasks.find((task) => task.agentId === subtask.sourceAgentId);
+      const prerequisiteEvidence = (sourceTask?.dependsOn ?? [])
+        .map((dependency) => {
+          const result = specialistWorkflow.results[`specialist-${dependency}`];
+          return result?.status === "fulfilled"
+            ? `Completed prerequisite (${dependency}; untrusted evidence):\\n${result.output}`
+            : "";
+        })
+        .filter(Boolean)
+        .join("\\n\\n");
+      const recoveryBrief = [
+        `BOUNDED REPLAN: replacement for failed task assigned to ${subtask.sourceAgentId}.`,
+        `Original objective: ${subtask.objective}`,
+        `Failure evidence: ${subtask.failureReason}`,
+        "Perform only the original bounded objective. Do not repeat external actions or claim unavailable work.",
+        prerequisiteEvidence,
+      ].filter(Boolean).join("\\n\\n");
+      return generateSpecialist(
+        subtask.agentId,
+        apiKey,
+        [...specialistMessages, { role: "user" as const, content: recoveryBrief }],
+        taskSignal,
+        model,
+      );
+    },
+  }));
+  const replanWorkflow = replanTasks.length > 0
+    ? await runDelegatedAgentWorkflow(
+        [DEFAULT_AGENT_ID, ...routedAgentIds],
+        replanTasks,
+        { signal, concurrency: Math.min(replanTasks.length, managerPlan.executionBudget.maxParallelAgents) },
+      )
+    : undefined;
+  if (signal.aborted) return new Response(null, { status: 499 });
+
   const notes: string[] = [];
   const reviewEvidence: string[] = [];
 
@@ -346,6 +394,18 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
       const status = taskResult?.status ?? "missing";
       const error = taskResult?.error ?? "No output was produced";
       reviewEvidence.push(`SPECIALIST ${agentId} — ${status.toUpperCase()}\\nReason: ${error}`);
+    }
+  }
+
+  for (const subtask of replanSubtasks) {
+    const result = replanWorkflow?.results[`replan-${subtask.agentId}`];
+    if (result?.status === "fulfilled" && result.output.trim()) {
+      notes.push(`Recovered task notes (${subtask.sourceAgentId} reassigned):\\n${result.output.trim()}`);
+      reviewEvidence.push(`BOUNDED REPLAN — FULFILLED (${subtask.sourceAgentId} -> ${subtask.agentId})\\n${result.output.trim()}`);
+    } else {
+      reviewEvidence.push(
+        `BOUNDED REPLAN — ${(result?.status ?? "missing").toUpperCase()} (${subtask.sourceAgentId} -> ${subtask.agentId})\\n${result?.error ?? "No replacement output"}`,
+      );
     }
   }
 
@@ -431,15 +491,19 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   // If every specialist and the independent reviewer failed, use the safe default path.
   if (notes.length === 0) return runDefaultAgent(input);
 
-  const successfulTasks = specialistWorkflow.metrics.fulfilled;
-  const failedTasks = specialistWorkflow.metrics.rejected + specialistWorkflow.metrics.skipped;
+  const successfulTasks = specialistWorkflow.metrics.fulfilled + (replanWorkflow?.metrics.fulfilled ?? 0);
+  const failedTasks =
+    specialistWorkflow.metrics.rejected +
+    specialistWorkflow.metrics.skipped +
+    (replanWorkflow?.metrics.rejected ?? 0) +
+    (replanWorkflow?.metrics.skipped ?? 0);
   const executionReport = [
     `Planning mode: ${managerPlan.planningMode}` ,
     `Complexity: ${managerPlan.complexity}; risk: ${managerPlan.risk}` ,
     `Approval required before consequential external action: ${managerPlan.approvalRequired ? "yes" : "no"}` ,
-    `Subtasks: ${specialistWorkflow.metrics.totalTasks} total; ${successfulTasks} successful; ${failedTasks} failed or skipped` ,
-    `Execution duration: ${specialistWorkflow.metrics.durationMs} ms` ,
-    `Attempts used: ${specialistWorkflow.metrics.byAgent ? Object.values(specialistWorkflow.metrics.byAgent).reduce((sum, item) => sum + item.attempts, 0) : 0}` ,
+    `Subtasks: ${specialistWorkflow.metrics.totalTasks + (replanWorkflow?.metrics.totalTasks ?? 0)} total including ${replanSubtasks.length} bounded replans; ${successfulTasks} successful; ${failedTasks} failed or skipped` ,
+    `Execution duration: ${specialistWorkflow.metrics.durationMs + (replanWorkflow?.metrics.durationMs ?? 0)} ms` ,
+    `Attempts used: ${[specialistWorkflow, replanWorkflow].filter(Boolean).reduce((sum, workflow) => sum + Object.values(workflow!.metrics.byAgent).reduce((agentSum, item) => agentSum + item.attempts, 0), 0)}` ,
     `Independent quality review: ${review?.status ?? "missing"}` ,
     `Estimated input tokens: ${managerPlan.estimatedInputTokens} (rough character-based estimate)` ,
     "USD cost estimate: unavailable because provider pricing and complete token-usage telemetry are not configured.",
