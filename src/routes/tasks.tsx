@@ -92,7 +92,7 @@ function TasksPage() {
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ taskId }),
       });
-      const data = await response.json() as { error?: string; task?: { status?: string } };
+      const data = await response.json() as { error?: string; detail?: string; task?: { status?: string } };
       if (!response.ok) throw new Error(data.detail || data.error || "Task execution failed.");
       setNotice("Manager specialists completed the task and saved the result.");
       await load();
