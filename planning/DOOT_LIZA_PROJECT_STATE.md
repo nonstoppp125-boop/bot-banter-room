@@ -124,3 +124,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - CI: TypeScript PASS; 16 test files / 175 tests PASS; production build PASS; Nitro Wrangler validation PASS.
 - Cost estimate uses provider-reported specialist/planner token usage, character-based fallback for missing usage, published Groq rates for supported model IDs, and an explicit estimate for final streaming synthesis.
 - G06.08 complete with stated estimate limitations. G06.13 durable task persistence and G06.18 persisted human approval remain infrastructure-dependent.
+
+
+## 2026-11-16 — CI verification refresh
+- GitHub Actions run `43798972433`: SUCCESS — 16 test files / 175 tests, TypeScript, production build and Nitro-generated Wrangler validation.
+- Group 07 registry/specialist runtime tests are verified in CI; G07.22 tool integration remains blocked.
+- Group 08 coordination primitives are substantially implemented; durable external-action idempotency remains unconfigured.
+- Group 09 research primitives are partially implemented; semantic claim verification/full-page inspection remain open.
+- Group 10 remains offline LinkedIn intelligence; OAuth/account access is not claimed.

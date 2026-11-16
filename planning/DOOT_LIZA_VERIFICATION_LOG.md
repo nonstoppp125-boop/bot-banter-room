@@ -106,3 +106,15 @@ Append new evidence below; never rewrite historical results.\n\n
 - Nitro-generated Wrangler configuration validation: PASS
 - Cost estimate tests: published model rates, input/output arithmetic, unknown model and invalid token fail-safe.
 - Documentation CI run `43799105011`: SUCCESS.
+
+
+## 2026-11-16 — Group 07–09 CI verification refresh
+- Branch: `work/group06-manager-planner`
+- GitHub Actions run: `43798972433` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 175 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Group 07 registry and specialist runtime tests verified; G07.22 tools remain blocked.
+- Group 08 coordination primitives verified in CI; external-action execution remains fail-closed pending provisioned durable storage and approval.
+- Group 09 research primitives verified; semantic claim verification is not claimed.

@@ -51,7 +51,7 @@ independent tool execution or external account access.
 
 ## G07.23 — Agent capability tests
 
-IMPLEMENTED AT TEST-CODE LEVEL; RUNTIME UNVERIFIED.
+IMPLEMENTED AND RUNTIME-VERIFIED IN CI.
 
 Registry tests verify unique IDs, descriptions, generator availability, malformed
 metadata rejection, unsupported/duplicate capabilities and permissions, invalid
@@ -68,8 +68,7 @@ Tests verify provider failures reject specialist generation rather than
 fabricating successful output. Existing multi-agent tests also cover
 fallback to normal Liza when both active specialists fail.
 
-Runtime execution remains unverified: Vitest terminates with
-`Illegal instruction` (exit 132) in the current Termux Node environment.
+GitHub Actions runtime verification passed in run `43798972433`; the earlier Termux-specific Vitest crash (exit 132) remains an environment limitation, not a CI failure.
 
 ## G07.25 — Never register nonfunctional placeholder agents
 
@@ -90,3 +89,11 @@ must be assessed against their actual implementation before declaring the
 whole group complete.
 
 No commit, push, deployment or external action was performed.
+
+
+## 2026-11-16 — Group 07 CI verification refresh
+- Branch: `work/group06-manager-planner`
+- GitHub Actions run `43798972433`: SUCCESS — TypeScript, 16 test files / 175 tests, production build and Nitro-generated Wrangler validation.
+- Registry validation and specialist execution tests now have CI runtime evidence.
+- G07.22 remains BLOCKED: specialist-specific tools and a permission-controlled tool execution layer are not implemented.
+- Termux's previous Vitest exit 132 remains a local runtime limitation; CI verification is independent.

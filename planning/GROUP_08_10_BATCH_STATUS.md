@@ -102,3 +102,11 @@ No commit, push, deployment or backup modification was performed by this batch.
 - Added provisioning instructions; no database ID or live binding was invented.
 - The adapter is not yet connected to an external action executor. Group 08
   remains PARTIAL until D1 is provisioned, deployed and verified end-to-end.
+
+
+## 2026-11-16 — Groups 08–10 status refresh after CI
+- Verification baseline: GitHub Actions run `43798972433` SUCCESS — 16 test files / 175 tests, TypeScript, production build and Wrangler validation.
+- Group 08 coordination primitives are implemented: routing, parallel/sequential dependency scheduling, structured handoff messages, shared/isolated contexts, aggregation, synthesis, independent review, partial/complete failure handling, timeouts, bounded retries, cancellation, circular delegation checks and execution metrics.
+- G08.17 remains partial: durable idempotency claim infrastructure exists, but no approved external-action executor is wired and no live D1 binding is provisioned.
+- Group 09 research primitives and tests are implemented; semantic verification of claims and full-page inspection remain incomplete. Search results and metadata-quality checks are not proof of truth.
+- Group 10 remains an offline LinkedIn profile/content intelligence foundation. OAuth, account access and official API actions remain blocked pending developer approval, granted scopes, secure token storage and integration verification.
