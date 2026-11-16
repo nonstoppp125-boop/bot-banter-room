@@ -132,6 +132,41 @@ describe("authenticated Manager task execution", () => {
     expect(queries).toEqual([]);
   });
 
+  it("rejects oversized streamed commands before claiming a task", async () => {
+    const { database, rows } = makeDatabase();
+    const response = await handleTaskExecutionRequest(post({ taskId: "x".repeat(3_000) }), env(database), async () => {
+      throw new Error("runner must not be invoked");
+    });
+    expect(response.status).toBe(413);
+    expect(rows[0]?.["status"]).toBe("queued");
+  });
+
+  it("rejects malformed JSON without touching task state", async () => {
+    const { database, rows } = makeDatabase();
+    const request = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: "{",
+    });
+    const response = await handleTaskExecutionRequest(request, env(database), async () => {
+      throw new Error("runner must not be invoked");
+    });
+    expect(response.status).toBe(400);
+    expect(rows[0]?.["status"]).toBe("queued");
+  });
+
+  it("persists a final text delta even when the stream omits its trailing newline", async () => {
+    const { database, rows } = makeDatabase();
+    const response = await handleTaskExecutionRequest(
+      post({ taskId: "task-1" }),
+      env(database),
+      async () => new Response(`0:${JSON.stringify("Complete without newline.")}`, { status: 200 }),
+    );
+    expect(response.status).toBe(200);
+    expect(rows[0]?.["status"]).toBe("completed");
+    expect(JSON.parse(String(rows[0]?.["result_json"]))).toMatchObject({ output: "Complete without newline." });
+  });
+
   it("blocks missing provider configuration before claiming a task", async () => {
     const { database, rows } = makeDatabase();
     const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }), { ACTION_DB: database }, async () => new Response());
