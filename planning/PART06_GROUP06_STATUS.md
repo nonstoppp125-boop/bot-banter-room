@@ -2,7 +2,7 @@
 
 Date: 2026-11-16
 Branch: work/group06-manager-planner
-Implementation commit: 04ef9f1617f97f2a5262b53a1b75afb716917d6e
+Latest verified commit: d2907df00fa772296538068a785564a567b1f249
 
 ## Current batch
 
@@ -16,14 +16,15 @@ Implemented:
 - G06.17 — Caps specialist fan-out at four and sets a 45-second per-task timeout.
 - G06.18 — Flags explicit publishing, messaging, destructive, deployment and financial intents for human approval.
 - Integrated the plan into the multi-agent orchestrator.
-- Added seven focused Manager planning tests.
+- Added ten focused Manager planning tests, including dependency ordering and parallel execution.
 
 Verified:
-- GitHub Actions run 43793367110: SUCCESS.
-- TypeScript: PASS.
-- Vitest: 14 test files, 156 tests passed.
-- Production build: PASS.
-- Nitro-generated Wrangler configuration validation: PASS.
+- GitHub Actions run 43793367110: SUCCESS (initial batch).
+- GitHub Actions run 43796215581 on commit d2907df00fa772296538068a785564a567b1f249: SUCCESS.
+- TypeScript: PASS on latest commit.
+- Unit/integration tests: PASS on latest commit (14 test files; latest total count not separately captured).
+- Production build: PASS on latest commit.
+- Nitro-generated Wrangler configuration validation: PASS on latest commit.
 
 ## Explicit limitations
 
@@ -37,3 +38,10 @@ Verified:
 
 GROUP 06: IN PROGRESS — PARTIALLY IMPLEMENTED.
 Do not mark complete until remaining roadmap requirements have implementation evidence and consolidated verification.
+
+
+## Dependency-aware execution update — 2026-11-16
+
+- Latest verified commit: `d2907df00fa772296538068a785564a567b1f249`.
+- GitHub Actions run `43796215581`: SUCCESS; TypeScript, unit/integration tests, production build and generated Wrangler configuration validation all passed.
+- Group 06 remains IN PROGRESS. LLM-based decomposition, cost estimation, durable task-state tracking, bounded retries/replanning, approval workflow enforcement and deliverable verification remain open roadmap requirements.
