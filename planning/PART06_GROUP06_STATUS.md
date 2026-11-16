@@ -92,3 +92,11 @@ No merge to main; no production deployment.
 - Added explicit UI language distinguishing saved plans from actual background execution; queued tasks are not presented as running.
 - Registered the route in the generated TanStack route tree and added a Tasks link to the chat navigation.
 - This closes the basic user-facing task intake/listing gap, but does not implement chat-message auto-enqueue, queue consumption, specialist execution, retry/recovery, or live D1 verification.
+
+
+## 2026-11-16 — Owner-scoped queued task cancellation
+
+- Added same-origin, session-authenticated `PATCH /api/tasks` cancellation for a task owned by the active workspace user.
+- Cancellation is limited to the `queued → cancelled` transition and uses the task store's compare-and-swap update; a task claimed or changed by another worker returns conflict rather than being overwritten.
+- Added a Cancel control to the task workspace only for queued tasks, plus API tests for successful cancellation and cross-origin rejection.
+- Running tasks are deliberately not exposed as cancellable until a worker-side cooperative cancellation mechanism exists.
