@@ -117,10 +117,10 @@ export function buildManagerPlan(
   };
 
   // Add only explicit, predictable sequencing edges; otherwise tasks remain parallel.
-  if (/research[\\s\\S]*?(?:then|before|first)[\\s\\S]*?(?:implement|build|code)/i.test(normalizedTask)) {
+  if (/research[\s\S]*?(?:then|before|first)[\s\S]*?(?:implement|build|code)/i.test(normalizedTask)) {
     addDependency("coding", "research");
   }
-  if (/(?:implement|write|create|fix)[\\s\\S]*?(?:then|and then|after that)[\\s\\S]*?debug/i.test(normalizedTask)) {
+  if (/(?:implement|write|create|fix)[\s\S]*?(?:then|and then|after that)[\s\S]*?debug/i.test(normalizedTask)) {
     addDependency("debugging", "coding");
   }
   if (dependencies.has("reporting") && dependencies.has("data-analyst")) {
