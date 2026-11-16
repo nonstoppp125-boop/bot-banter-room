@@ -219,3 +219,8 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — OAuth transaction store tests
 - Added hash and one-time D1 transaction-consumption tests; no live OAuth callback or token exchange is enabled.
 - Verification pending.
+
+
+## 2026-11-16 — Group 18 session auth tests
+- Added tests for 256-bit opaque tokens, SHA-256 hashes, secure cookie attributes, invalid cookie rejection, D1 session creation, active lookup, revocation and expiry behavior.
+- CI verification pending.

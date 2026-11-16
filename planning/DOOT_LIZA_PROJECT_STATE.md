@@ -225,3 +225,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added D1 one-time OAuth transaction storage using state hashes and encrypted PKCE verifier blobs; raw OAuth state/verifier are not stored by the adapter.
 - Runtime remains blocked until D1 binding and encryption-key management are provisioned.
 - Verification pending.
+
+
+## 2026-11-16 — Group 18 session foundations
+- Added opaque session token generation, SHA-256 token hashing, D1 session create/lookup/revoke adapter and secure __Host- cookie helpers.
+- Raw session tokens are not persisted; cookies are Secure, HttpOnly, Path=/ and SameSite=Lax.
+- Login/registration endpoints and live D1 binding remain unconfigured. CI verification pending.
