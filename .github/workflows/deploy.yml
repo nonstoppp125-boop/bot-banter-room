@@ -18,14 +18,14 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ inputs.confirm_deploy == true }}
+    if: ${{ inputs.confirm_deploy == true && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: production
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: automation/doot-preservation-sync
+          ref: ${{ github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -76,6 +76,15 @@ jobs:
           if (!Array.isArray(config.ratelimits) ||
               !config.ratelimits.some((binding) => binding.name === "CHAT_RATE_LIMITER")) {
             console.error("Generated config is missing the CHAT_RATE_LIMITER binding.");
+            process.exit(1);
+          }
+          if (!Array.isArray(config.d1_databases) ||
+              !config.d1_databases.some((binding) =>
+                binding.binding === "ACTION_DB" &&
+                typeof binding.database_id === "string" &&
+                binding.database_id.trim()
+              )) {
+            console.error("Production deployment blocked: generated config is missing the ACTION_DB D1 binding.");
             process.exit(1);
           }
           console.log("Validated generated Worker config:", path);
