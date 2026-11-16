@@ -216,7 +216,7 @@ export async function handleTelegramWebhookRequest(
     const command = message.text.trim();
     if (/^\/start(?:@\w+)?(?:\s|$)/i.test(command) || /^\/help(?:@\w+)?$/i.test(command)) {
       await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher,
-        text: "Liza bot. Link your account first: open Liza → Settings → Integrations → Telegram, generate a link code, then send /link CODE here." });
+        text: "Liza bot. Link your account first: open Liza → Settings → Integrations → Telegram, generate a link code, then send /link CODE here. After linking, use /task DESCRIPTION to save a Manager plan and /tasks to list recent tasks." });
       return json({ ok: true });
     }
     const linkMatch = command.match(/^\/link(?:@\w+)?\s+([A-Za-z0-9_-]{43})$/i);
