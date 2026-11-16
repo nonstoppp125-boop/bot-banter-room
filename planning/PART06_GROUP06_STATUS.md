@@ -107,3 +107,10 @@ No merge to main; no production deployment.
 - Added a deliberate `Create Manager task` action to each non-empty user chat message. It sends only the selected message text to the authenticated task-intake API; ordinary chat messages are not silently duplicated into the task queue.
 - Shows message-scoped success feedback and clearly states that the saved plan is not yet background execution.
 - Together with `/tasks`, the authenticated API and queued-task cancellation, this provides a complete user-facing plan intake/list/cancel path. Actual worker consumption and specialist execution remain open.
+
+
+## 2026-11-16 — Task workspace, chat enqueue and cancellation verification
+
+- Verified task workspace route registration, authenticated chat-message enqueue, owner-scoped queued cancellation and regression coverage.
+- GitHub Actions run `43834221923`: SUCCESS — TypeScript, 47 test files / 354 tests, production build and generated Wrangler Worker config validation.
+- This CI result validates repository code only; no Cloudflare deployment, D1 migration, background worker invocation or live authenticated smoke test is claimed.
