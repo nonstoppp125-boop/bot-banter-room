@@ -98,6 +98,37 @@ describe("authenticated Manager task API", () => {
     expect(bindings.some((values) => values.includes("workspace-1") && values.includes("user-1"))).toBe(true);
   });
 
+  it("rejects oversized streamed bodies before buffering the full payload", async () => {
+    const { database } = makeDatabase();
+    const request = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: "x".repeat(24_001),
+    });
+    expect((await handleTaskRequest(request, { ACTION_DB: database })).status).toBe(413);
+  });
+
+  it("rejects malformed JSON and oversized declared bodies", async () => {
+    const { database } = makeDatabase();
+    const malformed = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: "{",
+    });
+    expect((await handleTaskRequest(malformed, { ACTION_DB: database })).status).toBe(400);
+    const oversized = new Request(url, {
+      method: "POST",
+      headers: {
+        origin: "https://liza.example",
+        "content-type": "application/json",
+        "content-length": "24001",
+        cookie,
+      },
+      body: "{}",
+    });
+    expect((await handleTaskRequest(oversized, { ACTION_DB: database })).status).toBe(413);
+  });
+
   it("rejects malformed task payloads", async () => {
     const { database } = makeDatabase();
     expect((await handleTaskRequest(post({ task: "  " }), { ACTION_DB: database })).status).toBe(400);
