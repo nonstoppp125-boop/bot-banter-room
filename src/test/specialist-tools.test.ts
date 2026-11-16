@@ -22,6 +22,34 @@ describe("permission-controlled specialist tools", () => {
     })).rejects.toThrow(/provider key/i);
   });
 
+  it("rejects malformed and duplicate extraction metadata before provider access", async () => {
+    const signal = new AbortController().signal;
+    await expect(invokeSpecialistTool({
+      agentId: "research", toolId: "research.extract",
+      args: { sources: [{ id: "x", url: "https://example.com" }] },
+      apiKey: "key", signal,
+    })).rejects.toThrow(/metadata is invalid/i);
+
+    const source = {
+      id: "same-id", title: "Source", url: "https://example.com/report",
+      retrievedAt: "2026-11-16T00:00:00.000Z", content: "Evidence",
+    };
+    await expect(invokeSpecialistTool({
+      agentId: "research", toolId: "research.extract",
+      args: { sources: [source, source] }, apiKey: "key", signal,
+    })).rejects.toThrow(/IDs must be unique/i);
+  });
+
+  it("requires server-side credentials for extraction", async () => {
+    await expect(invokeSpecialistTool({
+      agentId: "research", toolId: "research.extract",
+      args: { sources: [{
+        id: "source-1", title: "Source", url: "https://example.com/report",
+        retrievedAt: "2026-11-16T00:00:00.000Z", content: "Evidence",
+      }] }, signal: new AbortController().signal,
+    })).rejects.toThrow(/provider key/i);
+  });
+
   it("allows only exact non-composed coding validation commands", async () => {
     const signal = new AbortController().signal;
     await expect(invokeSpecialistTool({
