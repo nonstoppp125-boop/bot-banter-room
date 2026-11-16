@@ -80,6 +80,28 @@ function TasksPage() {
     }
   };
 
+  const cancel = async (taskId: string) => {
+    setSubmitting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ action: "cancel", taskId }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Task could not be cancelled.");
+      setNotice("Queued task cancelled.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Task could not be cancelled.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <main className="min-h-dvh bg-background px-4 py-6 text-foreground sm:px-8">
       <div className="mx-auto w-full max-w-4xl">
@@ -115,7 +137,10 @@ function TasksPage() {
                   <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{task.inputSummary}</p>
                   <span className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">{statusLabels[task.status] || task.status}</span>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">Created {new Date(task.createdAt).toLocaleString()}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">Created {new Date(task.createdAt).toLocaleString()}</p>
+                  {task.status === "queued" && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel queued task</button>}
+                </div>
               </article>
             ))}
           </div>}
