@@ -23,7 +23,7 @@ import {
   automationAgent,
   reportingAgent,
 } from "./specialists";
-import type { AgentCapability, AgentDefinition } from "./types";
+import type { AgentCapability, AgentDefinition, AgentPermission } from "./types";
 
 export const DEFAULT_AGENT_ID = lizaDefaultAgent.id;
 
@@ -53,6 +53,8 @@ const agentDefinitions: AgentDefinition[] = [
   automationAgent,
   reportingAgent,
 ];
+
+const supportedPermissions = new Set<AgentPermission>(["llm:inference", "research:search", "research:extract", "coding:validate-command"]);
 
 const supportedCapabilities = new Set<AgentCapability>([
   "chat",
@@ -124,7 +126,7 @@ export function validateAgentRegistry(
 
     const permissions = new Set<string>();
     for (const permission of agent.permissions) {
-      if (permission !== "llm:inference")
+      if (!supportedPermissions.has(permission))
         throw new Error(`Agent ${agent.id} has an unsupported permission`);
       if (permissions.has(permission))
         throw new Error(`Agent ${agent.id} has duplicate permission: ${permission}`);

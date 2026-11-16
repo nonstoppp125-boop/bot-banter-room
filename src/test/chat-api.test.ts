@@ -392,11 +392,11 @@ describe("POST /api/chat orchestrator", () => {
     const specialists = listAgents().filter((agent) => agent.role === "specialist");
     expect(specialists.length).toBe(22);
     expect(specialists.every((agent) => agent.capabilities.length > 0)).toBe(true);
-    expect(
-      specialists.every(
-        (agent) => agent.permissions.length === 1 && agent.permissions[0] === "llm:inference",
-      ),
-    ).toBe(true);
+    expect(specialists.every((agent) => agent.permissions.includes("llm:inference"))).toBe(true);
+    expect(specialists.find((agent) => agent.id === "research")?.permissions).toContain("research:search");
+    expect(specialists.find((agent) => agent.id === "web-intelligence")?.permissions).toContain("research:extract");
+    expect(specialists.find((agent) => agent.id === "coding")?.permissions).toContain("coding:validate-command");
+    expect(specialists.find((agent) => agent.id === "data-analyst")?.permissions).toEqual(["llm:inference"]);
 
     const results = await Promise.all(
       specialists.map((agent) => {

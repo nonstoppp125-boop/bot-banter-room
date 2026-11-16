@@ -2,7 +2,7 @@ import { generateText } from "ai";
 
 import { groqModel } from "./groq";
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
-import type { AgentDefinition, SpecialistInput } from "./types";
+import type { AgentDefinition, AgentPermission, SpecialistInput } from "./types";
 
 // Ported from PR #1 (feat/base-multi-agent-orchestration): Problem Solver + Quality Reviewer.
 const SOLVER_SYSTEM =
@@ -57,6 +57,12 @@ const SPECIALIST_CAPABILITIES = {
   reporting: ["reporting", "metrics-analysis"],
 } as const;
 
+const SPECIALIST_TOOL_PERMISSIONS: Record<string, readonly AgentPermission[]> = {
+  research: ["research:search", "research:extract"],
+  "web-intelligence": ["research:search", "research:extract"],
+  coding: ["coding:validate-command"],
+};
+
 function specialist(
   id: string,
   name: string,
@@ -91,7 +97,7 @@ function specialist(
     description,
     role: "specialist",
     capabilities: SPECIALIST_CAPABILITIES[id as keyof typeof SPECIALIST_CAPABILITIES],
-    permissions: ["llm:inference"],
+    permissions: ["llm:inference", ...(SPECIALIST_TOOL_PERMISSIONS[id] ?? [])],
     generate: async (input: SpecialistInput) => (await generateWithUsage(input)).text,
     generateWithUsage,
   };

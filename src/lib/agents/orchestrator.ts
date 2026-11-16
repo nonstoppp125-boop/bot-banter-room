@@ -15,12 +15,11 @@ import {
   RESEARCH_SOURCE_SAFETY_RULE,
   buildResearchReport,
   evaluateResearchQuality,
-  extractTavilyResearchSources,
   prepareResearchSources,
-  searchTavilyResearch,
   type ResearchSource,
 } from "./research";
 import { DEFAULT_AGENT_ID, getAgent, getSpecialist, listAgents } from "./registry";
+import { invokeSpecialistTool } from "./specialist-tools";
 import type { AgentEnv, AgentRunInput, SpecialistGenerationResult } from "./types";
 
 const MAX_MESSAGES = 100;
@@ -281,17 +280,14 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
       researchStatus = "LIVE WEB RESEARCH SKIPPED: no research query was available.";
     } else {
       try {
-        const searchSources = await searchTavilyResearch(taskText, env.TAVILY_API_KEY, signal);
+        const researchAgentId = routedAgentIds.includes("research") ? "research" : "web-intelligence";
+        const searchSources = await invokeSpecialistTool({ agentId: researchAgentId, toolId: "research.search", args: { query: taskText }, apiKey: env.TAVILY_API_KEY, signal }) as ResearchSource[];
 
         if (searchSources.length > 0) {
           let extractionStatus = "Page extraction was not run.";
           let sourceSet: ResearchSource[] = searchSources;
           try {
-            const extraction = await extractTavilyResearchSources(
-              searchSources.slice(0, 3),
-              env.TAVILY_API_KEY,
-              signal,
-            );
+            const extraction = await invokeSpecialistTool({ agentId: researchAgentId, toolId: "research.extract", args: { sources: searchSources.slice(0, 3) }, apiKey: env.TAVILY_API_KEY, signal }) as Awaited<ReturnType<typeof import("./research").extractTavilyResearchSources>>;
             const extractedById = new Map(extraction.sources.map((source) => [source.id, source]));
             sourceSet = searchSources.map((source) => extractedById.get(source.id) ?? source);
             extractionStatus =
