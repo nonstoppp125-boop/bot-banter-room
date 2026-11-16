@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan } from "@/lib/agents/manager";
+import { routeTaskToAgents } from "@/lib/agents/coordination";
+import { listAgents } from "@/lib/agents/registry";
 import type { AgentDefinition } from "@/lib/agents/types";
 
 const agents: AgentDefinition[] = [
@@ -278,5 +280,18 @@ describe("bounded Manager replanning", () => {
     }));
     const results = Object.fromEntries(originals.map((task) => [`specialist-${task.agentId}`, { status: "rejected" }]));
     expect(buildManagerReplanPlan(originals, results, extended)).toHaveLength(4);
+  });
+});
+
+
+describe("platform-specific social specialist routing", () => {
+  it.each([
+    ["Create an Instagram Reels concept", "instagram"],
+    ["Plan a Facebook Page campaign", "facebook"],
+    ["Write a YouTube Shorts script", "youtube"],
+    ["Create a TikTok video storyboard", "tiktok"],
+    ["Draft an X thread", "x-platform"],
+  ])("routes %s to the registered platform specialist", (request, agentId) => {
+    expect(routeTaskToAgents(request, listAgents())).toContain(agentId);
   });
 });
