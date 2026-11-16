@@ -336,17 +336,18 @@ export function assessClaimSupport(
     .map((id) => byId.get(id))
     .filter((source): source is PreparedResearchSource => source !== undefined);
 
+  // Publisher labels are untrusted metadata and can be varied to fake
+  // corroboration. Prefer the canonical source hostname whenever a URL exists.
   const publishers = new Set(
     cited.map((source) => {
-      if (source.publisher?.trim()) return source.publisher.trim().toLowerCase();
       if (source.url) {
         try {
-          return new URL(source.url).hostname.toLowerCase();
+          return new URL(source.url).hostname.toLowerCase().replace(/^www\\./, "");
         } catch {
           return source.id;
         }
       }
-      return source.id;
+      return source.publisher?.trim().toLowerCase() || source.id;
     }),
   );
 
