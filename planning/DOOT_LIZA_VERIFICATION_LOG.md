@@ -292,3 +292,13 @@ Append new evidence below; never rewrite historical results.\n\n
 - Production build: passed.
 - Nitro-generated Wrangler configuration validation: passed.
 - Covered active-user pending deletion lookup, 30-day schedule response ID and cancellation path. No scheduled deletion worker or destructive execution is claimed.
+
+
+## 2026-11-16 — Group 06 task state machine verification
+- Commit: `64b60d18532c52f0194d0da29c6e471c930766b7`.
+- GitHub Actions run: `43822011292` — SUCCESS.
+- TypeScript: PASS.
+- Unit/integration tests: PASS.
+- Production build: PASS.
+- Nitro-generated Wrangler configuration validation: PASS.
+- Added forward-only durable task transitions; approval-gated and terminal tasks cannot be reopened through the generic update adapter.
