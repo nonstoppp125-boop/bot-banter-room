@@ -29,7 +29,7 @@ Branch: `work/group06-manager-planner`
 - Fact review depends on user-supplied supported-claim mapping; it is not independent fact verification.
 - Language selection records the requested language; translation/rewriting requires the AI generation path.
 - Draft and calendar version stores are in-memory and lost on restart; durable storage is deferred to Group 17.
-- No interactive content studio UI or persistent calendar dashboard is implemented here.
+- `/linkedin-studio` now provides an interactive strategy form, 28-day content calendar, topic ideas and structured post-outline builder using the existing bounded content functions. It is intentionally draft-only and stores output only in page state; there is no server persistence, finished AI copy generation, LinkedIn publishing or scheduling.
 - All drafts remain review-only; no LinkedIn publishing, scheduling or messaging is claimed.
 
 ## Verification
@@ -39,5 +39,12 @@ Branch: `work/group06-manager-planner`
 
 ## Status
 
-GROUP 11: PARTIALLY IMPLEMENTED — content planning and draft foundations are implemented; persistent storage, full UI, advanced verification and publishing workflow remain.
+GROUP 11: PARTIALLY IMPLEMENTED — content planning, draft-only interactive UI, calendar and outline builder are implemented; persistent storage, finished AI copy workflow, advanced verification and authorized publishing integration remain.
 No merge to `main`; no production deployment.
+
+
+## 2026-11-16 — Draft-only Content Studio UI
+
+- Added `/linkedin-studio` with strategy inputs, a 28-day planning calendar, topic ideas, format/language selection and structured post-outline generation.
+- Linked the page from the main navigation. No LinkedIn account connection, server persistence, post publishing, scheduling or messaging is enabled.
+- GitHub Actions run `43878285889`, exact code commit `be8dca681998c0c1a618b1af858a6866de63b739`: production dependency audit 0 vulnerabilities; TypeScript PASS; 53 test files / 410 tests PASS; production build PASS; generated Wrangler Worker config PASS.
