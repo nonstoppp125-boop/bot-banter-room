@@ -71,7 +71,7 @@ describe("deterministic Manager planning", () => {
     );
     expect(plan.agentIds.length).toBeLessThanOrEqual(4);
     expect(plan.executionBudget.maxSpecialists).toBe(4);
-    expect(plan.executionBudget.maxDurationMs).toBe(45_000);
+    expect(plan.executionBudget.perTaskTimeoutMs).toBe(45_000);
   });
 
 
