@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, FileUp, RefreshCw, TrendingUp } from "lucide-react";
-import { calculateEngagementRate, createExecutiveAnalyticsSummary, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
+import { buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
 
 export const Route = createFileRoute("/analytics")({ component: AnalyticsPage });
 
@@ -20,6 +20,8 @@ function AnalyticsPage() {
   const summary=createExecutiveAnalyticsSummary(records);
   const engagement=calculateEngagementRate(records);
   const freshness=getAnalyticsFreshness(records);
+  const recommendations=generateAnalyticsRecommendations(records);
+  const trends=buildAnalyticsTrendReport(records, "impressions");
   async function importFile(file?:File) {
     if(!file)return;
     setError(null);
@@ -69,6 +71,12 @@ function AnalyticsPage() {
           <div className="mt-3 flex flex-wrap gap-2">{summary.platforms.map(platform=><span key={platform} className="rounded-full bg-muted px-3 py-1 text-xs">{platform}</span>)}</div>
           <p className="mt-3 text-xs text-muted-foreground">{summary.note}</p>
           {summary.limitations.length>0&&<ul className="mt-3 list-disc pl-5 text-xs text-muted-foreground">{summary.limitations.map((item,i)=><li key={i}>{item}</li>)}</ul>}
+        </section>
+        <section className="mt-6 rounded-xl border border-border bg-card p-4">
+          <h2 className="font-medium">Evidence-based recommendations</h2>
+          {recommendations.length ? <ul className="mt-3 space-y-3">{recommendations.map(item=><li key={item.id} className="border-t border-border pt-3"><p className="text-sm font-medium">{item.title} <span className="ml-2 text-xs text-muted-foreground">{item.priority}</span></p><p className="mt-1 text-sm text-muted-foreground">{item.rationale}</p>{item.evidence.length>0&&<p className="mt-1 text-xs text-muted-foreground">Evidence: {item.evidence.join(" · ")}</p>}</li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">No additional recommendations from the supplied metrics.</p>}
+          <h3 className="mt-5 font-medium">Impression trend</h3>
+          {trends.length ? <div className="mt-2 space-y-2">{trends.slice(-12).map((item,i)=><div key={item.platform+item.periodStart+i} className="flex justify-between gap-3 text-sm"><span>{item.platform} · {item.periodStart}–{item.periodEnd}</span><span className="tabular-nums">{item.value.toLocaleString()}</span></div>)}</div> : <p className="mt-2 text-xs text-muted-foreground">No impression trend data supplied.</p>}
         </section>
         <section className="mt-6 overflow-hidden rounded-xl border border-border">
           <h2 className="border-b border-border p-4 font-medium">Imported metric records</h2>

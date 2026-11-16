@@ -91,3 +91,30 @@ export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
     });
   });
 }
+
+
+export interface AnalyticsRecommendation { id:string; priority:"high"|"medium"|"low"; title:string; rationale:string; evidence:string[]; }
+
+/** Recommendations use only supplied snapshots and never assume external benchmarks. */
+export function generateAnalyticsRecommendations(rows:readonly AnalyticsSnapshot[],now=new Date().toISOString()):AnalyticsRecommendation[]{
+ if(!rows.length)return[{id:"collect-data",priority:"high",title:"Connect or import analytics data",rationale:"No metric snapshots are available, so performance conclusions cannot be supported.",evidence:[]}];
+ const out:AnalyticsRecommendation[]=[],fresh=getAnalyticsFreshness(rows,now);
+ if(fresh.status!=="fresh")out.push({id:"refresh-data",priority:fresh.status==="missing"?"high":"medium",title:"Refresh analytics snapshots",rationale:fresh.status==="missing"?"No capture timestamp is available.":"The latest supplied snapshot is stale.",evidence:fresh.latestCapturedAt?[fresh.latestCapturedAt]:[]});
+ const platforms=[...new Set(rows.map(r=>r.platform))],rates=platforms.map(platform=>({platform,result:calculateEngagementRate(rows.filter(r=>r.platform===platform))})).filter(x=>x.result.rate!==null);
+ if(rates.length>=2){const sorted=[...rates].sort((a,b)=>b.result.rate!-a.result.rate!),best=sorted[0]!,worst=sorted[sorted.length-1]!;if(best.platform!==worst.platform)out.push({id:"compare-platform-engagement",priority:"low",title:"Review the strongest platform's content patterns",rationale:best.platform+" has the highest observed engagement rate in the supplied dataset. This is descriptive, not proof of causation.",evidence:[best.platform+": "+best.result.rate!.toFixed(2)+"%",worst.platform+": "+worst.result.rate!.toFixed(2)+"%"]});}
+ const gained=sumMetrics(rows,["followersGained"]),lost=sumMetrics(rows,["followersLost"]);
+ if(gained!==null&&lost!==null&&gained-lost<0)out.push({id:"review-follower-retention",priority:"medium",title:"Review follower retention",rationale:"Reported follower losses exceed gains. Check period alignment and audience feedback before changing strategy.",evidence:["Gained: "+gained,"Lost: "+lost,"Net: "+(gained-lost)]});
+ const missing=platforms.filter(p=>{const subset=rows.filter(r=>r.platform===p);return sumMetrics(subset,["impressions"])===null&&sumMetrics(subset,["reach"])===null;});
+ if(missing.length)out.push({id:"complete-exposure-metrics",priority:"medium",title:"Complete exposure metrics",rationale:"Engagement rate cannot be calculated without impressions or reach.",evidence:missing});
+ return out;
+}
+export function buildAnalyticsTrendReport(rows:readonly AnalyticsSnapshot[],metric:AnalyticsMetricName){
+ const grouped=new Map<string,{platform:AnalyticsPlatform;periodStart:string;periodEnd:string;value:number}>();
+ for(const row of rows){if(row.metric!==metric)continue;const key=[row.platform,row.periodStart,row.periodEnd].join("|"),current=grouped.get(key);if(current)current.value+=row.value;else grouped.set(key,{platform:row.platform,periodStart:row.periodStart,periodEnd:row.periodEnd,value:row.value});}
+ return [...grouped.values()].sort((a,b)=>a.periodStart.localeCompare(b.periodStart)||a.platform.localeCompare(b.platform));
+}
+export function buildAnalyticsDimensionReport(rows:readonly AnalyticsSnapshot[],dimension:"campaign"|"audience"|"contentPillar",metric:AnalyticsMetricName){
+ const grouped=new Map<string,{value:number;recordCount:number}>();
+ for(const row of rows){if(row.metric!==metric)continue;const label=clean(row.dimensions[dimension],160)||"Unspecified",current=grouped.get(label)??{value:0,recordCount:0};current.value+=row.value;current.recordCount++;grouped.set(label,current);}
+ return [...grouped.entries()].map(([dimension,data])=>({dimension,...data})).sort((a,b)=>b.value-a.value);
+}
