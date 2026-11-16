@@ -357,3 +357,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Updated production deployment workflow to require explicit confirmation on `main`, use the selected ref, and verify an `ACTION_DB` D1 binding before deploy.
 - Verification: GitHub Actions run `43869406584` SUCCESS — TypeScript, 51 test files / 390 tests, production build and generated Wrangler Worker config validation.
 - No deployment or external action was performed. Background queue worker, live D1/Access and provider integrations remain open.
+
+
+## 2026-11-16 — Telegram Manager task intake
+
+- Added Telegram `/task` and `/tasks` commands backed by the same durable task store and workspace/user ownership checks as the web UI.
+- Added workspace-scoped saved-memory retrieval to linked Telegram replies; memory content is explicitly treated as untrusted reference data.
+- High-risk task plans remain blocked; Telegram does not execute tasks or claim background processing.
+- Verification: GitHub Actions run `43870462130` SUCCESS — TypeScript, 51 test files / 395 tests, production build and generated Wrangler Worker config validation.
+- Live bot credentials, webhook registration and D1 provisioning remain external blockers.
