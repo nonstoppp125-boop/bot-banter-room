@@ -26,3 +26,12 @@ Branch: work/group06-manager-planner
 
 GROUP 14: IN PROGRESS — core schema, normalization, KPI, CSV workflow, dashboard and reporting foundations implemented; persistence and live platform adapters remain open.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Workspace isolation hardening
+
+- Added migration `0013_workspace_scoped_analytics.sql` with a nullable workspace foreign key and workspace/period index. Existing legacy snapshots remain unscoped and are intentionally not exposed by workspace-scoped reads.
+- Changed the durable D1 analytics adapter to require a validated workspace ID. Writes, idempotency lookups and list queries are all scoped to that workspace.
+- Added regression coverage for workspace-scoped writes, reads and invalid workspace IDs.
+- CI run `43827000844` passed TypeScript, 46 test files / 343 tests, production build and Nitro-generated Wrangler configuration validation.
+- Still open: authenticated analytics API, explicit save/load UI, dedicated campaign/audience/content/trend report views, D1 provisioning and live platform adapters. No production persistence or provider integration is claimed.
