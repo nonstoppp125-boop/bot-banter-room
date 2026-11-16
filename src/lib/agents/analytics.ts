@@ -41,48 +41,53 @@ export function exportAnalyticsCsv(rows:readonly AnalyticsSnapshot[]){const cols
 export function createExecutiveAnalyticsSummary(rows:readonly AnalyticsSnapshot[]){const metrics:AnalyticsMetricName[]=["impressions","reach","views","reactions","likes","comments","shares","clicks","followersGained","followersLost","saves"],totals=Object.fromEntries(metrics.map(m=>[m,sumMetrics(rows,[m])])),platforms=[...new Set(rows.map(r=>r.platform))];return{snapshotCount:rows.length,platforms,totals,engagementByPlatform:platforms.map(platform=>{const subset=rows.filter(r=>r.platform===platform),imp=calculateEngagementRate(subset,"impressions"),reach=calculateEngagementRate(subset,"reach");return{platform,engagementRate:imp.rate??reach.rate,denominator:imp.rate!==null?"impressions":reach.rate!==null?"reach":null};}),limitations:[...new Set(rows.flatMap(r=>r.limitations))],note:"Only supplied, normalized snapshots are included. Missing platform metrics are not inferred."};}
 
 
-function aggregateForAnalyticsRows(rows: readonly AnalyticsSnapshot[]) {
-  const metricNames: AnalyticsMetricName[] = ["impressions","reach","views","reactions","likes","comments","shares","clicks","followersGained","followersLost","saves"];
-  return Object.fromEntries(metricNames.map((metric) => [metric, sumMetrics(rows, [metric])])) as Record<AnalyticsMetricName, number | null>;
-}
-function groupRowsBy(rows: readonly AnalyticsSnapshot[], selector: (row: AnalyticsSnapshot) => string | null) {
-  const groups = new Map<string, AnalyticsSnapshot[]>();
-  for (const row of rows) { const key = selector(row); if (!key) continue; const group=groups.get(key)??[]; group.push(row); groups.set(key,group); }
-  return groups;
-}
-export function createPerformanceDashboard(rows: readonly AnalyticsSnapshot[], generatedAt: string) {
-  if (!validTimestamp(generatedAt)) throw new Error("Dashboard generation timestamp is invalid.");
-  const platforms=[...new Set(rows.map(row=>row.platform))];
-  return {
-    generatedAt,
-    executive:createExecutiveAnalyticsSummary(rows),
-    freshness:getAnalyticsFreshness(rows,generatedAt),
-    platformCards:platforms.map(platform=>{
-      const subset=rows.filter(row=>row.platform===platform);
-      return {platform,snapshotCount:subset.length,totals:aggregateForAnalyticsRows(subset),engagement:calculateEngagementRate(subset,"impressions"),sourceCount:new Set(subset.map(row=>row.source)).size,limitations:[...new Set(subset.flatMap(row=>row.limitations))]};
-    }),
-    dataPolicy:"Dashboard values are derived only from supplied snapshots; missing metrics remain null.",
-  };
-}
-export function createCampaignAnalyticsReport(rows: readonly AnalyticsSnapshot[]) {
-  const groups=groupRowsBy(rows.filter(row=>row.entityType==="campaign"),row=>row.dimensions.campaignId??row.entityId);
-  return [...groups.entries()].map(([campaignId,group])=>({campaignId,platforms:[...new Set(group.map(row=>row.platform))],totals:aggregateForAnalyticsRows(group),engagement:calculateEngagementRate(group,"impressions"),snapshotCount:group.length,sources:[...new Set(group.map(row=>row.source))],limitations:[...new Set(group.flatMap(row=>row.limitations))]}));
-}
-export function createAudienceAnalyticsReport(rows: readonly AnalyticsSnapshot[],dimension="audienceSegment") {
-  const safeDimension=clean(dimension,60); if(!safeDimension)throw new Error("Audience dimension is required.");
-  const groups=groupRowsBy(rows,row=>row.dimensions[safeDimension]??null);
-  return [...groups.entries()].map(([segment,group])=>({segment,platforms:[...new Set(group.map(row=>row.platform))],totals:aggregateForAnalyticsRows(group),snapshotCount:group.length,sourceCount:new Set(group.map(row=>row.source)).size,limitations:[...new Set(group.flatMap(row=>row.limitations))]}));
-}
-export function createContentAnalyticsReport(rows: readonly AnalyticsSnapshot[]) {
-  const groups=groupRowsBy(rows.filter(row=>row.entityType==="post"),row=>row.platform+":"+row.entityId);
-  return [...groups.entries()].map(([contentKey,group])=>({contentKey,platform:group[0]!.platform,contentId:group[0]!.entityId,totals:aggregateForAnalyticsRows(group),engagement:calculateEngagementRate(group,"impressions"),snapshotCount:group.length,sources:[...new Set(group.map(row=>row.source))],limitations:[...new Set(group.flatMap(row=>row.limitations))]}));
-}
-export function createAnalyticsTrendReport(rows: readonly AnalyticsSnapshot[],metric:AnalyticsMetricName) {
-  const selected=rows.filter(row=>row.metric===metric);
-  const groups=groupRowsBy(selected,row=>row.platform+":"+row.periodStart+":"+row.periodEnd);
-  const points=[...groups.entries()].map(([key,group])=>({key,platform:group[0]!.platform,periodStart:group[0]!.periodStart,periodEnd:group[0]!.periodEnd,metric,value:sumMetrics(group,[metric]),sourceCount:new Set(group.map(row=>row.source)).size})).sort((a,b)=>a.periodStart.localeCompare(b.periodStart));
-  const byPlatform=new Map<string,typeof points>();
-  for(const point of points){const list=byPlatform.get(point.platform)??[];list.push(point);byPlatform.set(point.platform,list);}
-  const changes=[...byPlatform.entries()].flatMap(([platform,series])=>{const ordered=[...series].sort((a,b)=>a.periodStart.localeCompare(b.periodStart));return ordered.slice(1).map((current,index)=>{const previous=ordered[index]!;return{platform,currentPeriodStart:current.periodStart,previousPeriodStart:previous.periodStart,absoluteChange:current.value===null||previous.value===null?null:current.value-previous.value,percentageChange:current.value===null||previous.value===null||previous.value===0?null:((current.value-previous.value)/previous.value)*100};});});
-  return {metric,points,changes,limitations:["Periods are grouped from supplied snapshots; overlapping periods are not deduplicated.","A zero previous-period value has no percentage-change result."]};
+/** Parse the canonical CSV export with strict size, row and column bounds. */
+export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
+  if (typeof csv !== "string" || csv.length > 2_000_000) throw new Error("CSV is empty or exceeds the 2 MB limit.");
+  const rows: string[][] = [];
+  let row: string[] = [], field = "", quoted = false;
+  for (let i = 0; i < csv.length; i++) {
+    const char = csv[i]!;
+    if (quoted) {
+      if (char === '"' && csv[i + 1] === '"') { field += '"'; i++; }
+      else if (char === '"') quoted = false;
+      else field += char;
+    } else if (char === '"' && field.length === 0) quoted = true;
+    else if (char === ",") { row.push(field); field = ""; }
+    else if (char === "\n" || char === "\r") {
+      if (char === "\r" && csv[i + 1] === "\n") i++;
+      row.push(field); field = "";
+      if (row.some((cell) => cell.length > 0)) rows.push(row);
+      row = [];
+      if (rows.length > 10_001) throw new Error("CSV exceeds the 10,000-record limit.");
+    } else field += char;
+  }
+  if (quoted) throw new Error("CSV contains an unterminated quoted field.");
+  row.push(field);
+  if (row.some((cell) => cell.length > 0)) rows.push(row);
+  if (rows.length < 2) throw new Error("CSV must contain a header and at least one data row.");
+  const headers = rows[0]!.map((value, index) => index === 0 ? value.replace(/^\uFEFF/, "") : value);
+  const expected = ["platform","accountId","entityId","entityType","metric","value","unit","periodStart","periodEnd","capturedAt","source"];
+  if (headers.length !== expected.length || expected.some((name, index) => headers[index] !== name)) {
+    throw new Error("CSV header does not match the Liza analytics export format.");
+  }
+  return rows.slice(1).map((cells, index) => {
+    if (cells.length !== expected.length) throw new Error("CSV row " + (index + 2) + " has an invalid column count.");
+    const value = Number(cells[5]);
+    if (!Number.isFinite(value)) throw new Error("CSV row " + (index + 2) + " has an invalid metric value.");
+    return normalizeAnalyticsRecord({
+      id: "csv-" + (index + 1) + "-" + cells[1] + "-" + cells[2] + "-" + cells[4],
+      platform: cells[0] as AnalyticsPlatform,
+      accountId: cells[1]!,
+      entityId: cells[2]!,
+      entityType: cells[3] as AnalyticsSnapshot["entityType"],
+      metricName: cells[4]!,
+      value,
+      periodStart: cells[7]!,
+      periodEnd: cells[8]!,
+      capturedAt: cells[9]!,
+      source: cells[10]!,
+      limitations: ["Imported from CSV; provider authenticity was not independently verified."],
+    });
+  });
 }

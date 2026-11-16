@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {calculateEngagementRate,compareMetricPeriods,createExecutiveAnalyticsSummary,detectMetricAnomalies,exportAnalyticsCsv,getAnalyticsFreshness,InMemoryAnalyticsStore,normalizeAnalyticsRecord} from "@/lib/agents/analytics";
+import {calculateEngagementRate,compareMetricPeriods,createExecutiveAnalyticsSummary,detectMetricAnomalies,exportAnalyticsCsv,getAnalyticsFreshness,InMemoryAnalyticsStore,normalizeAnalyticsRecord,parseAnalyticsCsv} from "@/lib/agents/analytics";
 import type {AnalyticsIngestionInput} from "@/lib/agents/analytics";
 const row=(overrides:Partial<AnalyticsIngestionInput>={})=>normalizeAnalyticsRecord({id:"snapshot-1",platform:"linkedin",accountId:"account-1",entityId:"post-1",entityType:"post",metricName:"impressions",value:1000,periodStart:"2026-11-01",periodEnd:"2026-11-07",capturedAt:"2026-11-08T10:00:00.000Z",source:"official-api",...overrides});
 describe("unified analytics",()=>{
@@ -12,29 +12,4 @@ it("requires enough observations for anomaly detection",()=>{expect(detectMetric
 it("reports freshness and missing data",()=>{expect(getAnalyticsFreshness([],"2026-11-09T10:00:00.000Z").status).toBe("missing");expect(getAnalyticsFreshness([row()],"2026-11-08T11:00:00.000Z").status).toBe("fresh");expect(getAnalyticsFreshness([row()],"2026-11-10T10:00:00.000Z").status).toBe("stale");});
 it("exports CSV safely against spreadsheet formulas",()=>{expect(exportAnalyticsCsv([row({source:'=IMPORTDATA("x")'})])).toContain("'=IMPORTDATA(""x"")");});
 it("does not invent absent metrics",()=>{const s=createExecutiveAnalyticsSummary([row()]);expect(s.snapshotCount).toBe(1);expect(s.totals.impressions).toBe(1000);expect(s.totals.comments).toBeNull();expect(s.note).toContain("not inferred");});
-});
-
-
-describe("analytics dashboard and dimension reports",()=>{
-  it("builds platform performance cards with freshness and limitations",()=>{
-    const input=[row(),row({id:"eng-1",metricName:"likes",value:30,limitations:["sample export"]})];
-    const dashboard=createPerformanceDashboard(input,"2026-11-09T10:00:00.000Z");
-    expect(dashboard.platformCards[0]?.totals.impressions).toBe(1000);
-    expect(dashboard.platformCards[0]?.engagement.rate).toBe(3);
-    expect(dashboard.freshness.status).toBe("fresh");
-  });
-  it("groups campaign and content reports by platform-scoped entities",()=>{
-    const campaign=normalizeAnalyticsRecord({id:"c1",platform:"linkedin",accountId:"a",entityId:"campaign-1",entityType:"campaign",metricName:"impressions",value:500,periodStart:"2026-11-01",periodEnd:"2026-11-07",capturedAt:"2026-11-08T10:00:00.000Z",source:"manual"});
-    const post=normalizeAnalyticsRecord({id:"p1",platform:"linkedin",accountId:"a",entityId:"post-1",entityType:"post",metricName:"impressions",value:200,periodStart:"2026-11-01",periodEnd:"2026-11-07",capturedAt:"2026-11-08T10:00:00.000Z",source:"manual"});
-    expect(createCampaignAnalyticsReport([campaign])[0]?.campaignId).toBe("campaign-1");
-    expect(createContentAnalyticsReport([post])[0]?.contentId).toBe("post-1");
-  });
-  it("builds audience and trend reports from supplied dimensions and periods",()=>{
-    const a=row({dimensions:{audienceSegment:"founders"},value:100});
-    const b=row({id:"s2",metricName:"impressions",value:150,periodStart:"2026-11-08",periodEnd:"2026-11-14",dimensions:{audienceSegment:"founders"}});
-    expect(createAudienceAnalyticsReport([a,b])[0]?.segment).toBe("founders");
-    const trend=createAnalyticsTrendReport([a,b],"impressions");
-    expect(trend.points).toHaveLength(2);
-    expect(trend.changes[0]?.absoluteChange).toBe(50);
-  });
 });

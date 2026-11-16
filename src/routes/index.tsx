@@ -63,6 +63,7 @@ function Index() {
     <div className="flex h-dvh flex-col bg-background font-sans">
       <header className="flex items-center justify-between px-3 py-2">
         <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Liza</span>
+        <a href="/analytics" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Analytics</a>
         <button
           onClick={() => setMessages([])}
           aria-label="নতুন চ্যাট"
