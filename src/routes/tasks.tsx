@@ -13,6 +13,7 @@ type Task = {
   inputSummary: string;
   createdAt: string;
   updatedAt: string;
+  result?: { output?: string; error?: string } | null;
 };
 
 const statusLabels: Record<Task["status"], string> = {
@@ -80,6 +81,29 @@ function TasksPage() {
     }
   };
 
+  const execute = async (taskId: string) => {
+    setSubmitting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/tasks/execute", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ taskId }),
+      });
+      const data = await response.json() as { error?: string; task?: { status?: string } };
+      if (!response.ok) throw new Error(data.detail || data.error || "Task execution failed.");
+      setNotice("Manager specialists completed the task and saved the result.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Task execution failed.");
+      await load();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const cancel = async (taskId: string) => {
     setSubmitting(true);
     setError(null);
@@ -112,7 +136,7 @@ function TasksPage() {
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Submit a bounded task to Manager planning and review its saved status.</p>
         </header>
         <div className="mb-5 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-          <strong>Execution status:</strong> This interface currently saves Manager plans to the durable task store. It does not claim that queued tasks are running in a background worker.
+          <strong>Execution status:</strong> Low-risk queued tasks can be run on demand through the Manager specialist workflow. This is a synchronous user-triggered Worker request, not an always-on background queue. High-risk tasks remain blocked until human approval.
         </div>
         {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">{error}</p>}
         {notice && <p role="status" className="mb-4 rounded-xl border border-border bg-muted p-3 text-sm">{notice}</p>}
@@ -137,9 +161,13 @@ function TasksPage() {
                   <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm">{task.inputSummary}</p>
                   <span className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">{statusLabels[task.status] || task.status}</span>
                 </div>
+                {task.result?.output && <pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/60 p-3 text-sm">{task.result.output}</pre>}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">Created {new Date(task.createdAt).toLocaleString()}</p>
-                  {task.status === "queued" && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel queued task</button>}
+                  <div className="flex flex-wrap gap-2">
+                    {task.status === "queued" && <button type="button" onClick={() => void execute(task.id)} disabled={submitting} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">{submitting ? "Running…" : "Run with Manager"}</button>}
+                    {task.status === "queued" && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel queued task</button>}
+                  </div>
                 </div>
               </article>
             ))}
