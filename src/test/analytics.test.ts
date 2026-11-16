@@ -75,4 +75,26 @@ describe("unified analytics",()=>{
     expect(restored[0]).toMatchObject({ metric: "impressions", value: 1000 });
   });
 
+
+  it("scopes durable analytics writes and reads to one workspace", async () => {
+    const calls: Array<{ query: string; values: unknown[] }> = [];
+    const database = {
+      prepare: (query: string) => ({
+        bind: (...values: unknown[]) => ({
+          run: async () => { calls.push({ query, values }); return { success: true, meta: { changes: 1 } }; },
+          first: async () => null,
+          all: async () => { calls.push({ query, values }); return { success: true, results: [] }; },
+        }),
+      }),
+    };
+    const store = createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "workspace-a");
+    await store.append(row());
+    await store.list();
+    expect(calls[0]?.query).toContain("workspace_id");
+    expect(calls[0]?.values.at(-1)).toBe("workspace-a");
+    expect(calls[1]?.query).toContain("WHERE workspace_id = ?");
+    expect(calls[1]?.values[0]).toBe("workspace-a");
+    expect(() => createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "../other")).toThrow("workspace");
+  });
+
 });
