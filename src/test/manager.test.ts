@@ -74,6 +74,26 @@ describe("deterministic Manager planning", () => {
     expect(plan.executionBudget.maxDurationMs).toBe(45_000);
   });
 
+
+  it("creates an ordered dependency when research is requested before implementation", () => {
+    const plan = buildManagerPlan(
+      "Research the API first, then implement the integration",
+      agents,
+    );
+    expect(plan.subtasks.find((task) => task.agentId === "coding")?.dependsOn).toContain("research");
+    expect(plan.subtasks.find((task) => task.agentId === "research")?.dependsOn).toEqual([]);
+  });
+
+  it("orders debugging after implementation when the request says then debug", () => {
+    const plan = buildManagerPlan("Implement a fix and then debug the result", agents);
+    expect(plan.subtasks.find((task) => task.agentId === "debugging")?.dependsOn).toContain("coding");
+  });
+
+  it("keeps unrelated specialist tasks parallel", () => {
+    const plan = buildManagerPlan("Research the market and review security", agents);
+    expect(plan.subtasks.every((task) => task.dependsOn.length === 0)).toBe(true);
+  });
+
   it("falls back to problem solver for a general request", () => {
     const plan = buildManagerPlan("Hello there", agents);
     expect(plan.agentIds).toEqual(["problem-solver"]);
