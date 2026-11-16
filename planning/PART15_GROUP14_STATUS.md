@@ -51,3 +51,11 @@ No merge to main; no production deployment.
 - Corrected strict TypeScript issues in the authenticated analytics API request-filter construction and indexed JSON access.
 - GitHub Actions run `43827976993` passed: TypeScript, tests and production build (Nitro-generated Wrangler validation included in the workflow).
 - Group 14 remains IN PROGRESS: authenticated workspace persistence is implemented at source level, but live D1 migration/runtime verification and official platform ingestion are not complete. Campaign/audience/content/trend report views, retention/deletion controls and pagination also remain open.
+
+## 2026-11-16 — Workspace key isolation and dimension reports
+
+- Namespaced D1 analytics primary keys by workspace while retaining the original snapshot ID inside the payload. This avoids collisions because the legacy table's primary key is globally unique even after adding workspace_id.
+- Added a regression test proving the same source snapshot ID can be stored independently in two workspaces.
+- Added campaign, audience and content-pillar impression report panels to the analytics dashboard. Reports explicitly show empty states when dimensions are not supplied; no dimension is inferred.
+- GitHub Actions run `43828820245`: TypeScript, unit/integration tests, production build and generated Wrangler configuration validation all completed successfully.
+- Group 14 remains IN PROGRESS: official platform ingestion, retention/deletion controls, pagination, complete dimension-aware CSV workflow, and live D1 migration/runtime verification are still open.
