@@ -54,6 +54,27 @@ describe("unified analytics",()=>{
   });
 
 
+  it("namespaces globally unique D1 keys so identical snapshot IDs can exist in separate workspaces", async () => {
+    const storageIds: string[] = [];
+    const database = {
+      prepare: (query: string) => ({
+        bind: (...values: unknown[]) => ({
+          run: async () => { if (query.startsWith("INSERT")) storageIds.push(String(values[0])); return { success: true, meta: { changes: 1 } }; },
+          first: async () => null,
+          all: async () => ({ success: true, results: [] }),
+        }),
+      }),
+    };
+    const a = createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "workspace-a");
+    const b = createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "workspace-b");
+    await a.append(row({ id: "same-source-id" }));
+    await b.append(row({ id: "same-source-id" }));
+    expect(storageIds).toHaveLength(2);
+    expect(storageIds[0]).not.toBe(storageIds[1]);
+    expect(JSON.parse(storageIds[0]!)).toEqual(["workspace-a", "same-source-id"]);
+    expect(JSON.parse(storageIds[1]!)).toEqual(["workspace-b", "same-source-id"]);
+  });
+
   it("scopes durable analytics writes and reads to one workspace", async () => {
     const calls: Array<{ query: string; values: unknown[] }> = [];
     const database = {
