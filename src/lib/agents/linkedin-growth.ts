@@ -1,6 +1,6 @@
 import { executeVerifiedApprovedAction } from "./action-policy";
 import type { ApprovalStore } from "./approval-store";
-import { hashApprovalPayload } from "./approval-store";
+import { hashApprovalPayload, verifyApprovalForAction } from "./approval-store";
 import type { DurableActionStore } from "./action-policy";
 
 export type LinkedInDraftStatus =
@@ -331,6 +331,11 @@ export async function publishApprovedLinkedInDraft(
   if (!input.approvalStore || !input.approvalId || !input.workspaceId) throw new Error("Persisted approval storage is unavailable.");
   const payloadHash = await hashApprovalPayload({ platform: "linkedin", draftId: current.id, content: current.content });
   const key = "li-pub-" + (await hashApprovalPayload({ draftId: current.id, version: current.version })).slice(0, 32);
+  const approval = await input.approvalStore.get({ id: input.approvalId, workspaceId: input.workspaceId, actorUserId: input.approverUserId });
+  const approvalDecision = verifyApprovalForAction({ approval, workspaceId: input.workspaceId, actionType: "social.publish", payloadHash, now });
+  if (!approval || approval.decidedByUserId !== input.approverUserId || !approvalDecision.allowed) {
+    throw new Error("LinkedIn publication blocked: persisted approval is missing or does not match the draft.");
+  }
   const publishing = transition(input.store, current, "publishing", input.actor, now);
 
   try {
