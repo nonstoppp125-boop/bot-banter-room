@@ -36,7 +36,7 @@ const MAX_TASK_CHARS = 20_000;
 const MAX_TASK_TIMEOUT_MS = 45_000;
 
 const HIGH_RISK_ACTIONS: readonly [RegExp, string][] = [
-  [/\b(publish|post\s+(?:this|it|the|my)|send|message)\b/i, "External publishing or messaging"],
+  [/\b(publish|post\s+(?:this|it|the|my)|send\s+(?:this|it|the|my)|message\s+(?:this|it|the|my)|send\s+(?:a|an|the)\s+(?:message|email|dm))\b/i, "External publishing or messaging"],
   [/\b(delete|remove|destroy|overwrite)\b/i, "Destructive or irreversible change"],
   [/\b(deploy|release|ship\s+to\s+production)\b/i, "Production deployment or release"],
   [/\b(purchase|buy|pay|transfer|withdraw)\b/i, "Financial or purchase action"],
@@ -109,7 +109,9 @@ export function buildManagerPlan(
         : "simple";
   const riskAssessment = assessRisk(normalizedTask);
   const estimatedInputTokens = Math.ceil(normalizedTask.length / 4);
-  const dependencies = new Map(agentIds.map((id) => [id, new Set<string>()]));
+  const dependencies = new Map<string, Set<string>>(
+    agentIds.map((id) => [id, new Set<string>()] as const),
+  );
   const addDependency = (agentId: string, dependencyId: string) => {
     if (agentId !== dependencyId && dependencies.has(agentId) && dependencies.has(dependencyId)) {
       dependencies.get(agentId)!.add(dependencyId);
@@ -154,7 +156,7 @@ export function buildManagerPlan(
     executionBudget: {
       maxSpecialists: MAX_SPECIALISTS,
       maxParallelAgents: Math.max(1, Math.min(MAX_SPECIALISTS, agentIds.length)),
-      perTaskTimeoutMs: MAX_EXECUTION_MS,
+      perTaskTimeoutMs: MAX_TASK_TIMEOUT_MS,
     },
     limitations: [
       "Routing and risk classification are deterministic heuristics, not an autonomous LLM planner.",
