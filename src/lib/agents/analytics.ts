@@ -39,7 +39,7 @@ export function detectMetricAnomalies(history:readonly number[],current:number,t
 export function getAnalyticsFreshness(rows:readonly AnalyticsSnapshot[],now=new Date().toISOString(),staleAfterMs=86400000){if(!validTimestamp(now)||!Number.isFinite(staleAfterMs)||staleAfterMs<0)throw new Error("Invalid freshness evaluation parameters.");if(!rows.length)return{status:"missing" as const,latestCapturedAt:null,ageMs:null};const latest=rows.reduce((v,r)=>Date.parse(r.capturedAt)>Date.parse(v)?r.capturedAt:v,rows[0]!.capturedAt),ageMs=Math.max(0,Date.parse(now)-Date.parse(latest));return{status:ageMs<=staleAfterMs?"fresh" as const:"stale" as const,latestCapturedAt:latest,ageMs};}
 export function exportAnalyticsCsv(rows:readonly AnalyticsSnapshot[]){
  const columns=["platform","accountId","entityId","entityType","metric","value","unit","periodStart","periodEnd","capturedAt","source","campaign","audience","contentPillar"] as const;
- const quote=(value:unknown)=>{const raw=String(value??""),safe=/^[=+@\\-]/.test(raw)?"'"+raw:raw;return '"'+safe.replace(/"/g,'""')+'"';};
+ const quote=(value:unknown)=>{const raw=String(value??""),safe=/^[=+@-]/.test(raw)?"'"+raw:raw;return '"'+safe.replace(/"/g,'""')+'"';};
  return [columns.join(","),...rows.map(row=>[
   row.platform,row.accountId,row.entityId,row.entityType,row.metric,row.value,row.unit,
   row.periodStart,row.periodEnd,row.capturedAt,row.source,
@@ -84,7 +84,7 @@ export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
     throw new Error("CSV header does not match the Liza analytics export format.");
   }
   return rows.slice(1).map((cells, index) => {
-    if (cells.length !== expected.length) throw new Error("CSV row " + (index + 2) + " has an invalid column count.");
+    if (cells.length !== expected.length + (hasDimensions ? dimensionHeaders.length : 0)) throw new Error("CSV row " + (index + 2) + " has an invalid column count.");
     const value = Number(cells[5]);
     if (!Number.isFinite(value)) throw new Error("CSV row " + (index + 2) + " has an invalid metric value.");
     return normalizeAnalyticsRecord({
