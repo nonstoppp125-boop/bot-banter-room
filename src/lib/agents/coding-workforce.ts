@@ -49,7 +49,7 @@ export function validateCodeChangeProposal(proposal:CodeChangeProposal,inventory
  if(totalBytes>2_000_000)errors.push("Proposal exceeds the 2 MB total content limit.");
  return{valid:errors.length===0,errors,totalBytes};
 }
-const VALIDATION_COMMANDS=new Set(["npm run typecheck","npm test","npm run build","npm run lint","git status --short","git diff --check","git diff --stat"]);
+const VALIDATION_COMMANDS=new Set(["npm run typecheck","npm test","npm run build","npm run lint","npm audit --omit=dev --audit-level=high","git status --short","git diff --check","git diff --stat"]);
 export function authorizeValidationCommand(command:string):{allowed:boolean;reason:string}{
  const normalized=cleanText(command,300);
  if(VALIDATION_COMMANDS.has(normalized))return{allowed:true,reason:"Exact allowlisted validation command."};
@@ -70,4 +70,38 @@ export interface EngineeringEvent { id:string; taskId:string; type:"planned"|"pr
 export function createEngineeringEvent(input:EngineeringEvent):EngineeringEvent{
  if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(input.id)||!cleanText(input.taskId,100)||!Number.isFinite(Date.parse(input.timestamp)))throw new Error("Invalid engineering event metadata.");
  return{...input,summary:cleanText(input.summary,500),evidence:input.evidence.map(v=>cleanText(v,500)).filter(Boolean).slice(0,20)};
+}
+
+
+export interface DependencyManifestReport {
+  packageCount: number;
+  productionDependencies: Array<{ name:string; version:string; pinned:boolean }>;
+  developmentDependencies: Array<{ name:string; version:string; pinned:boolean }>;
+  lifecycleScripts: string[];
+  lockfilePresent: boolean;
+  findings: string[];
+  auditCommand: "npm audit --omit=dev --audit-level=high";
+}
+export function inspectDependencyManifest(packageJson:string,lockfilePresent:boolean):DependencyManifestReport{
+ if(typeof packageJson!=="string"||packageJson.length>1_000_000)throw new Error("Package manifest is missing or exceeds the 1 MB limit.");
+ let parsed:unknown;try{parsed=JSON.parse(packageJson);}catch{throw new Error("Package manifest is not valid JSON.");}
+ if(!parsed||typeof parsed!=="object")throw new Error("Package manifest must be a JSON object.");
+ const data=parsed as Record<string,unknown>;
+ const collect=(value:unknown)=>Object.entries(value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{})
+  .filter(([name,version])=>Boolean(cleanText(name,200))&&typeof version==="string")
+  .map(([name,version])=>({name:cleanText(name,200),version:cleanText(version,100),pinned:/^\d+\.\d+\.\d+(?:[-+].*)?$/.test(String(version))}));
+ const production=collect(data.dependencies),development=collect(data.devDependencies);
+ const scripts=data.scripts&&typeof data.scripts==="object"?data.scripts as Record<string,unknown>:{};
+ const lifecycle=["preinstall","install","postinstall","prepare"].filter(name=>typeof scripts[name]==="string");
+ const findings:string[]=[];
+ if(!lockfilePresent)findings.push("No lockfile was reported; reproducible dependency installation is not verified.");
+ if(lifecycle.length)findings.push("Lifecycle scripts require review: "+lifecycle.join(", "));
+ if([...production,...development].some(item=>!item.pinned))findings.push("One or more dependency versions use ranges or tags rather than exact pins.");
+ return{packageCount:production.length+development.length,productionDependencies:production,developmentDependencies:development,lifecycleScripts:lifecycle,lockfilePresent,findings,auditCommand:"npm audit --omit=dev --audit-level=high"};
+}
+export function createCodeChangeProposal(input:{id:string;inventory:RepositoryInventory;targetBranch:string;changes:ProposedFileChange[]}):CodeChangeProposal{
+ const proposal:CodeChangeProposal={id:input.id,repository:input.inventory.repository,baseSha:input.inventory.headSha,targetBranch:input.targetBranch,changes:input.changes,status:"pending-review"};
+ const result=validateCodeChangeProposal(proposal,input.inventory);
+ if(!result.valid)throw new Error("Code change proposal rejected: "+result.errors.join(" "));
+ return proposal;
 }
