@@ -75,6 +75,43 @@ describe("unified analytics",()=>{
     expect(JSON.parse(storageIds[1]!)).toEqual(["workspace-b", "same-source-id"]);
   });
 
+  it("paginates with a stable keyset cursor and soft-deletes only selected workspace IDs", async () => {
+    const first = row({ id: "first" });
+    const second = row({ id: "second", periodStart: "2026-11-08", periodEnd: "2026-11-14", capturedAt: "2026-11-15T10:00:00.000Z" });
+    const sourceRows = [first, second].map((snapshot) => ({
+      id: JSON.stringify(["workspace-1", snapshot.id]),
+      period_start: snapshot.periodStart,
+      captured_at: snapshot.capturedAt,
+      payload_json: JSON.stringify(snapshot),
+    }));
+    const calls: Array<{ query: string; values: unknown[] }> = [];
+    let page = 0;
+    const database = {
+      prepare: (query: string) => ({
+        bind: (...values: unknown[]) => ({
+          run: async () => { calls.push({ query, values }); return { success: true, meta: { changes: 1 } }; },
+          first: async () => null,
+          all: async () => {
+            calls.push({ query, values });
+            return { success: true, results: page++ === 0 ? sourceRows : [sourceRows[1]!] };
+          },
+        }),
+      }),
+    };
+    const store = createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "workspace-1");
+    const firstPage = await store.listPage({}, 1);
+    expect(firstPage.records.map((item) => item.id)).toEqual(["first"]);
+    expect(firstPage.hasMore).toBe(true);
+    expect(firstPage.nextCursor).toBeTruthy();
+    const secondPage = await store.listPage({}, 1, firstPage.nextCursor!);
+    expect(secondPage.records.map((item) => item.id)).toEqual(["second"]);
+    expect(secondPage.hasMore).toBe(false);
+    expect(calls[1]?.query).toContain("period_start > ?");
+    expect(await store.delete(["first"], "2026-11-16T12:00:00.000Z")).toBe(1);
+    expect(calls[2]?.query).toContain("UPDATE analytics_snapshots SET deleted_at");
+    expect(calls[2]?.values).toContain("workspace-1");
+  });
+
   it("scopes durable analytics writes and reads to one workspace", async () => {
     const calls: Array<{ query: string; values: unknown[] }> = [];
     const database = {
