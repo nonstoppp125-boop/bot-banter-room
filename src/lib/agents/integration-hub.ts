@@ -301,5 +301,13 @@ export function createD1ConnectionStore(database:D1ConnectionDatabase){
     .bind(record.id,record.workspaceId,record.userId,record.provider,JSON.stringify([...new Set(record.scopes)]),record.encryptedTokenBlob,record.tokenExpiresAt,record.createdAt,record.updatedAt).run();
    if(result.success===false||result.meta?.changes!==1)throw new Error("D1 connection persistence failed.");
   },
+  revokeOwned:async(input:{id:string;workspaceId:string;userId:string;now:string})=>{
+   if(!/^[A-Za-z0-9._:-]{1,120}$/.test(input.id)||!/^[A-Za-z0-9._:-]{1,120}$/.test(input.workspaceId)||
+      !/^[A-Za-z0-9._:-]{1,120}$/.test(input.userId)||!Number.isFinite(Date.parse(input.now)))throw new Error("Invalid connection revocation request.");
+   const result=await database.prepare("UPDATE app_connections SET status='revoked',encrypted_token_blob=NULL,revoked_at=?,updated_at=? WHERE id=? AND workspace_id=? AND user_id=? AND status='connected'")
+    .bind(input.now,input.now,input.id,input.workspaceId,input.userId).run();
+   if(result.success===false)throw new Error("D1 connection revocation failed.");
+   return result.meta?.changes===1;
+  },
  };
 }
