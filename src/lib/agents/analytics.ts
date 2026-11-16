@@ -156,9 +156,12 @@ export function createD1AnalyticsStore(database: D1AnalyticsDatabase, workspaceI
     append: async (snapshot) => {
       const normalized = restore(JSON.stringify(snapshot));
       const payload = JSON.stringify(normalized);
+      // The legacy table uses a globally unique primary key. Namespace the storage key
+      // by workspace so identical source snapshot IDs can safely exist in separate workspaces.
+      const storageId = JSON.stringify([workspace, normalized.id]);
       const result = await database.prepare(
         "INSERT OR IGNORE INTO analytics_snapshots (id, platform, account_id, entity_id, entity_type, metric, period_start, period_end, captured_at, source, value, payload_json, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      ).bind(normalized.id, normalized.platform, normalized.accountId, normalized.entityId,
+      ).bind(storageId, normalized.platform, normalized.accountId, normalized.entityId,
         normalized.entityType, normalized.metric, normalized.periodStart, normalized.periodEnd,
         normalized.capturedAt, normalized.source, normalized.value, payload, workspace).run();
       if (result.success === false) throw new Error("D1 analytics snapshot write failed");
@@ -166,7 +169,7 @@ export function createD1AnalyticsStore(database: D1AnalyticsDatabase, workspaceI
       if (result.meta?.changes !== 0) throw new Error("D1 did not return an analytics write change count");
       const existing = await database.prepare(
         "SELECT payload_json FROM analytics_snapshots WHERE id = ? AND workspace_id = ?",
-      ).bind(normalized.id, workspace).first<{ payload_json: string }>();
+      ).bind(storageId, workspace).first<{ payload_json: string }>();
       if (!existing || existing.payload_json !== payload) throw new Error("Analytics snapshot ID already exists with different data.");
     },
     list: async (filters = {}) => {
