@@ -47,4 +47,4 @@ No merge to `main`; no production deployment.
 - Corroboration no longer trusts source-supplied publisher labels when a URL exists; it derives publisher identity from the normalized hostname and collapses `www.` aliases.
 - Added a regression test proving two differently labeled pages on the same hostname remain single-source evidence.
 - This reduces false corroboration but does not provide semantic entailment or contradiction detection; G09.06 remains open.
-- GitHub Actions verification for this change is pending.
+- GitHub Actions run `43826138186`: SUCCESS — TypeScript, 46 test files / 342 tests, production build and Nitro-generated Wrangler validation.
