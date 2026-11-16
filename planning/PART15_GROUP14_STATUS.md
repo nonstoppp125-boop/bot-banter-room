@@ -14,14 +14,14 @@ Branch: work/group06-manager-planner
 - BI12 — Conservative median-baseline anomaly detection requiring at least three historical observations.
 - BI13 and BI18 — Evidence-based recommendations use supplied snapshots only; freshness, follower retention, exposure gaps and descriptive platform comparisons are flagged without external benchmarks.
 - BI15 — Each snapshot preserves source and limitations; CSV imports are marked as user-supplied and unauthenticated.
-- BI16 — CSV export escapes quotes and neutralizes spreadsheet formula-like values; dashboard imports canonical CSV with strict size/row bounds.
+- BI16 — CSV export escapes quotes and neutralizes spreadsheet formula-like values; browser dashboard imports canonical CSV with strict size/row bounds and offers local CSV download.
 - BI17 — Executive summary reports totals and missing metrics honestly.
 - BI19 — Data freshness helper reports missing, fresh or stale.
 - BI20 — Tests cover normalization, invalid data, idempotency, KPI arithmetic, comparisons, anomalies, freshness, CSV import/export safety, dimensions, trends, recommendations and missing metrics.
 
 ## Remaining / blocked
 - Durable analytics history and ingestion adapters require a provisioned database and authorized platform APIs.
-- Dedicated campaign/audience/content/trend report views and downloadable export UI remain open.
+- Dedicated campaign/audience/content/trend report views remain open.
 - Metric availability and definitions vary by platform/account permission; source metadata is mandatory.
 
 GROUP 14: IN PROGRESS — core schema, normalization, KPI, CSV workflow, dashboard and reporting foundations implemented; persistence and live platform adapters remain open.

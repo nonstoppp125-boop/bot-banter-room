@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, FileUp, RefreshCw, TrendingUp } from "lucide-react";
-import { buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
+import { ArrowLeft, Download, FileUp, RefreshCw, TrendingUp } from "lucide-react";
+import { buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, exportAnalyticsCsv, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
 
 export const Route = createFileRoute("/analytics")({ component: AnalyticsPage });
 
@@ -26,6 +26,7 @@ function AnalyticsPage() {
     if(!file)return;
     setError(null);
     try {
+      if(file.size>2_000_000) throw new Error("CSV exceeds the 2 MB limit.");
       const parsed=parseAnalyticsCsv(await file.text());
       setRecords(parsed);
       setFileName(file.name);
@@ -58,6 +59,7 @@ function AnalyticsPage() {
       </section> : <>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <span>Source file: {fileName} · {records.length} metric records</span>
+          <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent" onClick={()=>{const blob=new Blob([exportAnalyticsCsv(records)],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="liza-analytics.csv";link.click();URL.revokeObjectURL(url);}}><Download className="size-3.5"/> Export CSV</button>
           <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent" onClick={()=>{setRecords([]);setFileName("");setError(null);}}><RefreshCw className="size-3.5"/> Clear session</button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

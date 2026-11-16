@@ -208,3 +208,9 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — Group 14 CSV negative tests
 - Added negative tests for wrong units, blank metric values and characters after quoted fields.
 - Verification pending.
+
+
+## 2026-11-16 — Group 14 migration/export correction
+- Analytics D1 migration sequence is now 0003, following existing 0002 LinkedIn Growth migration.
+- Dashboard CSV export is browser-local; import size is checked before reading.
+- Verification pending.

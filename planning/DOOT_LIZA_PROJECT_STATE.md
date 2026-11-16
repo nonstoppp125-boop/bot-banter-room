@@ -213,3 +213,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added a browser-local CSV download button and strict pre-read file size guard.
 - CSV parser now validates canonical units, non-empty values, quote boundaries and row limits.
 - Verification pending.
+
+
+## 2026-11-16 — Group 14 migration and export correction
+- Renamed analytics migration sequence from 0002 to 0003 because 0002 is already occupied by LinkedIn Growth.
+- Added local CSV download to the analytics dashboard and pre-read file-size validation.
+- Verification pending.
