@@ -150,3 +150,14 @@ No merge to main; no production deployment.
 - Telegram uses the linked workspace's saved-memory search for personalized replies; high-risk plans remain approval-gated and cannot execute through Telegram.
 - No background task worker or Telegram task execution was added. On-demand execution remains available only from the web Tasks UI.
 - Verification: GitHub Actions run `43870462130` SUCCESS — TypeScript, 51 test files / 395 tests, production build and generated Wrangler Worker config validation.
+
+
+## 2026-11-16 — Payload-bound approval-to-task execution verification
+
+- High-risk Manager tasks now create a persisted approval request bound to task ID, workspace, requester, task summary and deterministic Manager plan hash.
+- The web Tasks unlock action verifies the persisted approval decision, expiry, action type and payload hash. The D1 task store then performs a conditional unlock only if the matching approval row is still approved, unexpired and payload-identical.
+- Generic task state updates cannot promote `needs_approval` to `queued`; the dedicated approved-unlock method is the only path.
+- The synchronous task execution endpoint verifies the persisted approval again before claiming and running the Manager specialist workflow.
+- Important boundary: this execution only runs the specialist workflow/report. No social publishing, messaging, deletion, deployment or financial side effect is connected or implied. No background worker is deployed.
+- GitHub Actions run `43872309252`: SUCCESS — TypeScript, 51 test files / 397 tests, production build and generated Wrangler Worker config validation.
+- Remaining: real background queue consumer, crash recovery, cooperative cancellation UI, live D1/Access provisioning and smoke tests, and separately authorized external-action executors.
