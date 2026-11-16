@@ -3,8 +3,8 @@
 Audit refresh: 2026-11-16  
 Repository: `nonstoppp125-boop/bot-banter-room`  
 Branch: `work/group06-manager-planner`  
-Branch HEAD: `cdc9f2aaf912af1efbd2d2cea5560f8c3b42c8c9`  
-Inspected tree: `c2e5e3b8cce1b4d952d396089947f17d13ebbabb`
+Branch HEAD: `2d3ff40d081394adb7d151b0ac26a67fd91012d6`  
+Inspected tree: `897441aef2800620733ef8cfa84a5b6be3adbd23`
 
 ## Scope
 
@@ -17,7 +17,8 @@ Recursive Git tree inventory of tracked remote files only. It does not inspect t
 | Tracked blobs | 311 |
 | Files under `src/` | 201 |
 | Test/spec files by filename | 53 |
-| Route files under `src/routes/` | 30 |
+| Executable route modules under `src/routes/` | 27 |
+| Additional inventory entries (README + 2 historical backups) | 3 |
 | SQL migrations | 15 |
 | Tracked visual assets | 5 |
 | Group status documents | 21 |
@@ -198,7 +199,7 @@ Total tracked component files: **53**.
 - `public/icons/doot-512.png`
 - `public/icons/doot-maskable-512.png`
 
-The byte sizes are recorded in `BINARY_ASSET_INVENTORY.md`. Pixel dimensions and actual Android/iOS rendering still require device-side inspection.
+The byte sizes and image-header dimensions are recorded in `BINARY_ASSET_INVENTORY.md`. Actual Android/iOS rendering still requires device-side inspection.
 
 ## Tracked historical backups
 
@@ -206,6 +207,10 @@ The byte sizes are recorded in `BINARY_ASSET_INVENTORY.md`. Pixel dimensions and
 - `src/routes/api/chat.ts.before-env-fix`
 
 These are historical snapshots, not active route files. Do not delete until the local checkout has been reconciled and their local purpose confirmed.
+
+## Local checkout reconciliation (2026-11-16)
+
+The separate audit checkout `~/bot-banter-room-audit` is clean at `2d3ff40d081394adb7d151b0ac26a67fd91012d6`, with zero ahead/behind commits against `origin/work/group06-manager-planner`; untracked and ignored path listings were empty. The unrelated `~/ai-agent-system` working tree was not modified.
 
 ## Remaining audit work
 

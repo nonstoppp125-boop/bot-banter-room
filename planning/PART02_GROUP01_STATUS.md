@@ -3,7 +3,7 @@
 Audit refresh: 2026-11-16  
 Repository: `nonstoppp125-boop/bot-banter-room`  
 Working branch: `work/group06-manager-planner`  
-Remote branch HEAD before this audit update: `80b04d576b86976e0a11d86184479e544ce0c660`  
+Remote branch HEAD at this audit refresh: `2d3ff40d081394adb7d151b0ac26a67fd91012d6`  
 Tracked tree inspected: `c2e5e3b8cce1b4d952d396089947f17d13ebbabb`
 
 ## Verified remotely
@@ -21,19 +21,23 @@ Tracked tree inspected: `c2e5e3b8cce1b4d952d396089947f17d13ebbabb`
 - G01.25 — Two tracked historical chat-route backup snapshots identified and preserved.
 - G01.26 — Remote branch compared with remote `main`: diverged, 489 commits ahead and 1 behind; merge base `3f0b138105ab3781e920b8853c41ae0d188735ec`. No merge/reset/rebase performed.
 - G01.27–G01.28 — Remote inventory, CI evidence, environment prerequisites and audit limitations recorded.
-- CI run `43878285889` for code commit `be8dca681998c0c1a618b1af858a6866de63b739`: locked install, production dependency audit, TypeScript, tests, production build and generated Wrangler config validation all succeeded. Run reports 53 test files / 410 tests.
+- Fresh CI run `43881236656` for exact current branch HEAD `2d3ff40d081394adb7d151b0ac26a67fd91012d6`: locked install, configured production dependency audit, TypeScript, tests, production build and generated Wrangler config validation all succeeded. It reports 53 test files / 410 tests. The configured audit is `npm audit --omit=dev --audit-level=high`; it excludes dev dependencies and does not prove zero advisories below high severity.
 
 ## Still open — do not mark complete
 
-- G01.03–G01.04 — User's actual Termux checkout status, index/worktree changes and preservation of local modifications. GitHub remote APIs cannot inspect the phone's local checkout.
-- G01.06–G01.07 — Local untracked/ignored files and hidden local configuration. Must inspect locally without printing secret values.
-- G01.08 — Binary dimensions are not yet measured from the image bytes; physical Android/iOS rendering is also unverified.
+- G01.03–G01.04 — **Completed locally:** `~/bot-banter-room-audit` is on `work/group06-manager-planner`, HEAD `2d3ff40d081394adb7d151b0ac26a67fd91012d6`; worktree clean and local-vs-origin commit counts `0 0`. The separate `~/ai-agent-system` checkout is a different repository with pre-existing modifications; it was not changed.
+- G01.06–G01.07 — **Completed locally:** untracked and ignored path listings in the audit checkout were empty. No secret values were read or printed.
+- G01.08 — **Partially complete:** PNG headers verify 180×180, 192×192, 512×512 and 512×512 for the four app icons; favicon ICO declares a 256×256 entry. Physical Android/iOS rendering and installation remain device acceptance checks.
 - G01.12 — Import-graph dependency-use and duplicate-package analysis has not been completed. Manifest counts and vulnerability audit do not establish whether a package is unused.
-- G01.20 — Full component paths are now documented; route-to-component usage cross-check remains open.
+- G01.20 — **Partially complete:** 27 executable route modules were reconciled (the other three inventory entries are README + two historical backups). The home route imports four AI-elements components; inspected root and page routes do not import shared `src/components/ui` primitives. Full project-wide component-use graph remains open.
 - G01.23 — Test coverage-gap analysis (untested critical branches, failure paths, security boundaries) remains open; test count alone is not coverage evidence.
 - G01.24 — Legacy Lovable artifacts reviewed: `.lovable/plan.md` is materially stale (it describes a two-route, one-agent app, while the current tree contains 30 route files and 52 agent modules); `.lovable/north-star/north-star.md` explicitly says retain and do not delete without user approval; `.lovable/project.json` is template metadata; `src/lib/lovable-error-reporting.ts` is an editor-preview telemetry bridge. Legacy AI Gateway helpers `src/lib/ai/responses.ts` and `run-id.ts` remain tracked. Do not delete or refactor these without completing import-reference analysis and preserving Lovable compatibility.
-- G01.26 — Local checkout vs GitHub comparison remains open; remote branch vs remote `main` is not a substitute.
+- G01.26 — **Completed locally:** local HEAD exactly matches `origin/work/group06-manager-planner` at `2d3ff40d081394adb7d151b0ac26a67fd91012d6` (`0` ahead / `0` behind). Remote working branch vs `main` remains diverged (500 ahead / 1 behind); no reconciliation was attempted.
 - G01.29–G01.30 — Final audit report sign-off and architecture mapping approval remain blocked until the above evidence is complete.
+
+## Local reconciliation evidence
+
+The separate audit checkout `~/bot-banter-room-audit` is clean and exactly synchronized with the intended remote branch. The unrelated `~/ai-agent-system` working tree contains a separate legacy project and many pre-existing modifications; it was left untouched. `doot-source-audit` was not accessed.
 
 ## Safety
 
