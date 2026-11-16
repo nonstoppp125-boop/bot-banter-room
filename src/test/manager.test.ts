@@ -119,14 +119,14 @@ describe("LLM-assisted Manager decomposition", () => {
       async () =>
         JSON.stringify({
           subtasks: [
+            { agentId: "coding", objective: "Implement the integration from research findings.", dependsOn: [] },
             { agentId: "research", objective: "Identify relevant API requirements.", dependsOn: [] },
-            { agentId: "coding", objective: "Implement the integration from research findings.", dependsOn: ["research"] },
           ],
         }),
       new AbortController().signal,
     );
     expect(plan.planningMode).toBe("llm-assisted");
-    expect(plan.subtasks[1]?.dependsOn).toEqual(["research"]);
+    expect(plan.subtasks.find((task) => task.agentId === "coding")?.dependsOn).toEqual(["research"]);
     expect(plan.agentIds).toEqual(["research", "coding"]);
   });
 
