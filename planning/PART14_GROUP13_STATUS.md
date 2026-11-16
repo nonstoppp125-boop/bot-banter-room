@@ -68,3 +68,9 @@ No merge to `main`; no production deployment.
 - Added source/metric-definition provenance, data freshness indicators and a warning when metric definitions differ.
 - This is an offline adapter foundation only; no platform analytics API is connected or queried.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 13 publication safety and API failure handling
+- S22: added a fail-closed publication preflight gate requiring approved draft, server-side approval verification, connected provider, official adapter, durable idempotency and verified media requirements. Current platforms remain blocked; no publish action is executed.
+- S24: added provider error classification for authentication, permission, rate-limit, validation, transient and unknown failures. Uncertain publication retries require confirmed durable idempotency; otherwise manual reconciliation is required.
+- CI verification pending.

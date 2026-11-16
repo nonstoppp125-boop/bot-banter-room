@@ -193,3 +193,8 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — Group 14 report model tests
 - Added tests for performance dashboard totals/freshness, campaign and content grouping, audience dimensions and trend changes.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 13 publication gate verification tests
+- Added tests for blocked publishing despite other checks passing, idempotency-gated retry safety, authentication/permission classification and bounded Retry-After handling.
+- CI verification pending.

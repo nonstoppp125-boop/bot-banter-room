@@ -668,3 +668,68 @@ export function createCrossPlatformSocialReport(input: {
     sourcePolicy: "All metrics are caller-supplied snapshots. This function does not fetch or verify platform analytics.",
   };
 }
+
+
+export function evaluateSocialPublishingGate(input: {
+  platform: SocialPlatform;
+  draftStatus: SocialDraftStatus;
+  approvedBy: string | null;
+  serverApprovalVerified: boolean;
+  providerConnectionVerified: boolean;
+  providerAdapterConfigured: boolean;
+  durableIdempotencyAvailable: boolean;
+  mediaRequirementsVerified: boolean;
+}) {
+  const readiness = getSocialIntegrationReadiness(input.platform);
+  const blockers: string[] = [];
+  if (input.draftStatus !== "approved" && input.draftStatus !== "scheduled") blockers.push("draft-not-approved");
+  if (!clean(input.approvedBy, 100)) blockers.push("approver-missing");
+  if (!input.serverApprovalVerified) blockers.push("server-side-approval-not-verified");
+  if (!input.providerConnectionVerified || readiness.connectionStatus !== "connected") blockers.push("provider-account-not-connected");
+  if (!readiness.livePublishingEnabled) blockers.push("live-publishing-disabled");
+  if (!input.providerAdapterConfigured) blockers.push("official-provider-adapter-not-configured");
+  if (!input.durableIdempotencyAvailable) blockers.push("durable-idempotency-unavailable");
+  if (!input.mediaRequirementsVerified) blockers.push("media-requirements-not-verified");
+  return {
+    allowed: blockers.length === 0,
+    platform: input.platform,
+    blockers,
+    note: "Preflight only. This function does not publish content or authorize an external action.",
+  };
+}
+
+export function classifySocialProviderFailure(input: {
+  operation: "read" | "publish";
+  statusCode?: number;
+  providerCode?: string;
+  message?: string;
+  retryAfterSeconds?: number;
+  durableIdempotencyConfirmed?: boolean;
+}) {
+  const status = input.statusCode;
+  const classification =
+    status === 401 ? "authentication" as const :
+    status === 403 ? "permission" as const :
+    status === 429 ? "rate-limited" as const :
+    status !== undefined && status >= 400 && status < 500 ? "validation" as const :
+    status !== undefined && status >= 500 ? "transient" as const :
+    "unknown" as const;
+  const retryAfterSeconds = input.retryAfterSeconds !== undefined &&
+    Number.isFinite(input.retryAfterSeconds) &&
+    input.retryAfterSeconds >= 0 &&
+    input.retryAfterSeconds <= 86_400
+      ? input.retryAfterSeconds
+      : null;
+  const retryableClass = classification === "rate-limited" || classification === "transient";
+  const safeToRetry = retryableClass &&
+    (input.operation === "read" || input.durableIdempotencyConfirmed === true);
+  return {
+    classification,
+    statusCode: status ?? null,
+    providerCode: clean(input.providerCode, 100) || null,
+    message: clean(input.message, 500) || "Provider request failed.",
+    retryAfterSeconds,
+    safeToRetry,
+    manualReconciliationRequired: input.operation === "publish" && retryableClass && !safeToRetry,
+  };
+}

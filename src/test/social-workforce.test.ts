@@ -256,3 +256,51 @@ describe("cross-platform social analytics normalization", () => {
     })).toThrow(/invalid/);
   });
 });
+
+
+describe("social publishing preflight and provider failure handling", () => {
+  it("fails closed until every server-side publishing prerequisite is verified", async () => {
+    const { evaluateSocialPublishingGate } = await import("@/lib/agents/social-workforce");
+    const result = evaluateSocialPublishingGate({
+      platform: "instagram",
+      draftStatus: "approved",
+      approvedBy: "owner",
+      serverApprovalVerified: true,
+      providerConnectionVerified: true,
+      providerAdapterConfigured: true,
+      durableIdempotencyAvailable: true,
+      mediaRequirementsVerified: true,
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.blockers).toContain("provider-account-not-connected");
+    expect(result.blockers).toContain("live-publishing-disabled");
+  });
+
+  it("requires durable idempotency before retrying uncertain publication failures", async () => {
+    const { classifySocialProviderFailure } = await import("@/lib/agents/social-workforce");
+    const unsafe = classifySocialProviderFailure({
+      operation: "publish",
+      statusCode: 503,
+      message: "temporary provider failure",
+      retryAfterSeconds: 30,
+    });
+    expect(unsafe.classification).toBe("transient");
+    expect(unsafe.safeToRetry).toBe(false);
+    expect(unsafe.manualReconciliationRequired).toBe(true);
+    const safe = classifySocialProviderFailure({
+      operation: "publish",
+      statusCode: 429,
+      retryAfterSeconds: 60,
+      durableIdempotencyConfirmed: true,
+    });
+    expect(safe.safeToRetry).toBe(true);
+    expect(safe.retryAfterSeconds).toBe(60);
+  });
+
+  it("classifies authentication, permission and invalid retry metadata", async () => {
+    const { classifySocialProviderFailure } = await import("@/lib/agents/social-workforce");
+    expect(classifySocialProviderFailure({ operation: "read", statusCode: 401 }).classification).toBe("authentication");
+    expect(classifySocialProviderFailure({ operation: "read", statusCode: 403 }).classification).toBe("permission");
+    expect(classifySocialProviderFailure({ operation: "read", statusCode: 429, retryAfterSeconds: -1 }).retryAfterSeconds).toBeNull();
+  });
+});

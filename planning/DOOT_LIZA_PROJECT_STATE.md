@@ -195,3 +195,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 ## 2026-11-16 — Group 14 dashboard/report models
 - Added platform performance dashboard, campaign, audience-segment, content and time-series report data models over normalized analytics snapshots.
 - No interactive dashboard UI or live platform ingestion is claimed. CI verification pending.
+
+
+## 2026-11-16 — Group 13 publication gate and API failure handling
+- Added fail-closed publishing preflight and provider error classifier. Every platform remains disabled until account connection, provider approval, server-side human approval, official adapter, durable idempotency and media checks are verified.
+- Retry policy prevents blind retries of uncertain publication side effects; manual reconciliation is required without confirmed durable idempotency.
+- No live publishing is enabled. CI verification pending.
