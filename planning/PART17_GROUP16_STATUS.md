@@ -16,12 +16,13 @@ Branch: work/group06-manager-planner
 
 ## Remaining / blocked
 - APP03 — Session-authenticated OAuth start endpoint now validates provider scope allowlists and exact registered HTTPS redirect URI, creates PKCE S256, encrypts the verifier with AES-256-GCM, and stores only a state hash plus encrypted verifier in D1, bound to the active workspace and user via migration `0011_oauth_workspace_binding.sql`.
-- APP04–APP11 — OAuth callback, provider token exchange, encrypted token storage/refresh/revocation and connection UI remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
+- APP04–APP05 — OAuth callback consumes state once, verifies user/workspace/redirect binding, enforces provider token-host allowlists, exchanges the code with PKCE and persists access/refresh credentials only as AES-256-GCM encrypted D1 blobs.
+- APP06–APP11 — Token refresh/revocation, connection listing/disconnect UI, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.
 
-GROUP 16: IN PROGRESS — provider registry and secure OAuth start flow implemented; callback/token exchange and live account connections remain blocked by runtime configuration and provider approvals.
+GROUP 16: IN PROGRESS — secure OAuth start/callback and encrypted connection persistence are implemented; refresh/revocation, UI, provider approval and live account verification remain.
 No merge to main; no production deployment.
 
 
@@ -47,3 +48,12 @@ No merge to main; no production deployment.
 - Final verification refresh: run `43811004266` passed TypeScript, unit/integration tests, production build and Wrangler validation.
 
 - Workspace-binding verification: OAuth transactions now persist `workspace_id`; callback consumption rejects legacy/unbound rows. CI run `43811415246` passed all checks.
+
+
+## 2026-11-16 — OAuth callback and encrypted connection persistence
+- Added `GET /api/integrations/oauth/callback`; the D1 state transaction is consumed exactly once and must match the active user and workspace plus the registered redirect URI.
+- Token exchange uses a provider-specific HTTPS host allowlist, server-side client credentials and the decrypted PKCE verifier. Provider-returned scopes must cover the requested scopes.
+- Access/refresh tokens are encrypted using AES-256-GCM with provider/user/workspace-bound AAD before insertion into `app_connections`; plaintext credentials are never returned to the browser or stored in clear text.
+- Added tests for successful exchange, encrypted persistence, replay rejection, workspace mismatch and token-host allowlist enforcement.
+- GitHub Actions run `43811831485`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+- Refresh/revocation, UI, live D1 provisioning, provider client credentials and live account smoke tests remain open.
