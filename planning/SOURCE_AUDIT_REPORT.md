@@ -12,10 +12,10 @@ The remote branch has a substantial implemented product foundation, but this is 
 
 | Item | Count |
 |---|---:|
-| Tracked blobs | 307 |
-| Files under `src/` | 198 |
-| Test/spec files | 51 |
-| Frontend/API route files | 29 |
+| Tracked blobs | 311 |
+| Files under `src/` | 201 |
+| Test/spec files | 53 |
+| Frontend/API route files | 30 |
 | SQL migrations | 15 |
 | PWA image/icon assets | 5 |
 | Group status documents | 21 |
