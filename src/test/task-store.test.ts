@@ -82,6 +82,26 @@ describe("durable agent task store", () => {
     expect(values.at(-1)).toBe("queued");
   });
 
+  it("atomically retries failed tasks with a fixed two-attempt ceiling", async () => {
+    let statement = "";
+    let values: unknown[] = [];
+    const db = {
+      prepare: (query: string) => ({
+        bind: (...bound: unknown[]) => ({
+          first: async () => null,
+          all: async () => ({ success: true, results: [] }),
+          run: async () => { statement = query; values = bound; return { success: true, meta: { changes: 1 } }; },
+        }),
+      }),
+    };
+    const store = createD1TaskStore(db as unknown as Parameters<typeof createD1TaskStore>[0]);
+    expect(await store.retry({ id: "task-1", workspaceId: "w1", userId: "u1", updatedAt: "2026-11-16T10:04:00Z" })).toBe(true);
+    expect(statement).toContain("status = 'failed'");
+    expect(statement).toContain("attempt_count < 2");
+    expect(statement).toContain("attempt_count = attempt_count + 1");
+    expect(values).toEqual(["2026-11-16T10:04:00Z", "task-1", "w1", "u1"]);
+  });
+
   it("rejects malformed task claim identities before touching D1", async () => {
     let calls = 0;
     const db = {
@@ -100,7 +120,7 @@ describe("durable agent task store", () => {
   it("allows only forward execution transitions", () => {
     expect(canTransitionTaskStatus("queued", "running")).toBe(true);
     expect(canTransitionTaskStatus("running", "completed")).toBe(true);
-    expect(canTransitionTaskStatus("running", "failed")).toBe(true);
+    expect(canTransitionTaskStatus("running", "failed")).toBe(true);\n    expect(canTransitionTaskStatus("failed", "queued")).toBe(true);
     expect(canTransitionTaskStatus("queued", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("running", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("needs_approval", "cancelled")).toBe(true);
