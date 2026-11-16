@@ -283,11 +283,31 @@ export async function encryptConnectionCredentials(input:{
  const result=new Uint8Array(iv.length+encrypted.length);result.set(iv);result.set(encrypted,iv.length);return result;
 }
 
+/** Decrypts a workspace-bound connection credential blob for server-side refresh only. */
+export async function decryptConnectionCredentials(input:{
+ blob:Uint8Array;key:Uint8Array;provider:IntegrationProviderId;userId:string;workspaceId:string;
+}):Promise<OAuthConnectionCredentialPayload>{
+ validateOAuthEncryptionKey(input.key);
+ if(!(input.blob instanceof Uint8Array)||input.blob.byteLength<29)throw new Error("Encrypted connection credential blob is invalid.");
+ const iv=asArrayBuffer(input.blob.slice(0,12)),ciphertext=asArrayBuffer(input.blob.slice(12));
+ const aad=new TextEncoder().encode("liza-connection:v1:"+input.provider+":"+input.workspaceId+":"+input.userId);
+ const cryptoKey=await crypto.subtle.importKey("raw",asArrayBuffer(input.key),{name:"AES-GCM"},false,["decrypt"]);
+ const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:asArrayBuffer(aad),tagLength:128},cryptoKey,ciphertext);
+ const value:unknown=JSON.parse(new TextDecoder().decode(plaintext));
+ if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Decrypted connection credentials are invalid.");
+ const record=value as Record<string,unknown>;
+ if(typeof record["accessToken"]!=="string"||!record["accessToken"]||record["accessToken"].length>10000||
+    !(record["refreshToken"]===null||(typeof record["refreshToken"]==="string"&&record["refreshToken"].length<=10000))||
+    typeof record["tokenType"]!=="string"||!record["tokenType"]||record["tokenType"].length>40||
+    typeof record["createdAt"]!=="string"||!Number.isFinite(Date.parse(record["createdAt"])))throw new Error("Decrypted connection credential fields are invalid.");
+ return{accessToken:record["accessToken"],refreshToken:record["refreshToken"] as string|null,tokenType:record["tokenType"],createdAt:record["createdAt"]};
+}
+
 export interface D1ConnectionRecord {
  id:string;workspaceId:string;userId:string;provider:IntegrationProviderId;scopes:string[];
  encryptedTokenBlob:Uint8Array;tokenExpiresAt:string|null;createdAt:string;updatedAt:string;
 }
-export type D1ConnectionDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>}}};
+export type D1ConnectionDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;first:<T=Record<string,unknown>>()=>Promise<T|null>}}};
 export function createD1ConnectionStore(database:D1ConnectionDatabase){
  if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 connection database is required.");
  return{
@@ -301,6 +321,24 @@ export function createD1ConnectionStore(database:D1ConnectionDatabase){
    const result=await database.prepare("INSERT INTO app_connections (id,workspace_id,user_id,provider,provider_account_id,scopes_json,encrypted_token_blob,token_expires_at,status,created_at,updated_at) VALUES (?,?,?,?,NULL,?,?,?,'connected',?,?)")
     .bind(record.id,record.workspaceId,record.userId,record.provider,JSON.stringify([...new Set(record.scopes)]),record.encryptedTokenBlob,record.tokenExpiresAt,record.createdAt,record.updatedAt).run();
    if(result.success===false||result.meta?.changes!==1)throw new Error("D1 connection persistence failed.");
+  },
+  getOwned:async(input:{id:string;workspaceId:string;userId:string})=>{
+   const row=await database.prepare("SELECT id,provider,scopes_json,encrypted_token_blob,token_expires_at FROM app_connections WHERE id=? AND workspace_id=? AND user_id=? AND status='connected'")
+    .bind(input.id,input.workspaceId,input.userId).first<{id:string;provider:IntegrationProviderId;scopes_json:string;encrypted_token_blob:Uint8Array|null;token_expires_at:string|null}>();
+   if(!row||!(row.encrypted_token_blob instanceof Uint8Array))return null;
+   let scopes:unknown;try{scopes=JSON.parse(row.scopes_json);}catch{throw new Error("Stored connection scopes are invalid JSON.");}
+   if(!Array.isArray(scopes)||!scopes.every(scope=>typeof scope==="string")||!INTEGRATION_PROVIDERS[row.provider]||
+      scopes.some(scope=>!INTEGRATION_PROVIDERS[row.provider].allowedScopes.includes(scope)))throw new Error("Stored connection metadata is invalid.");
+   return{id:row.id,provider:row.provider,scopes:scopes as string[],encryptedTokenBlob:row.encrypted_token_blob,tokenExpiresAt:row.token_expires_at};
+  },
+  updateCredentials:async(input:{id:string;workspaceId:string;userId:string;scopes:string[];encryptedTokenBlob:Uint8Array;tokenExpiresAt:string|null;now:string})=>{
+   if(!(input.encryptedTokenBlob instanceof Uint8Array)||input.encryptedTokenBlob.byteLength<29||
+      !input.scopes.length||!Number.isFinite(Date.parse(input.now))||
+      (input.tokenExpiresAt!==null&&!Number.isFinite(Date.parse(input.tokenExpiresAt))))throw new Error("Invalid refreshed connection credentials.");
+   const result=await database.prepare("UPDATE app_connections SET scopes_json=?,encrypted_token_blob=?,token_expires_at=?,updated_at=? WHERE id=? AND workspace_id=? AND user_id=? AND status='connected'")
+    .bind(JSON.stringify([...new Set(input.scopes)]),input.encryptedTokenBlob,input.tokenExpiresAt,input.now,input.id,input.workspaceId,input.userId).run();
+   if(result.success===false)throw new Error("D1 connection refresh update failed.");
+   return result.meta?.changes===1;
   },
   revokeOwned:async(input:{id:string;workspaceId:string;userId:string;now:string})=>{
    if(!/^[A-Za-z0-9._:-]{1,120}$/.test(input.id)||!/^[A-Za-z0-9._:-]{1,120}$/.test(input.workspaceId)||

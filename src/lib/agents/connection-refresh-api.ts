@@ -77,9 +77,9 @@ export async function handleConnectionRefreshRequest(
     const session = await createD1SessionStore(database).getActive(token, now);
     if (!session?.workspaceId) return json({ error: "Active workspace session required." }, 401);
     const body = await readBody(request);
-    if (!body || typeof body !== "object" || Array.isArray(body) ||
-        typeof (body as Record<string, unknown>)["connectionId"] !== "string") return json({ error: "A valid connection ID is required." }, 400);
-    const connectionId = (body as Record<string, string>)["connectionId"];
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "A valid connection ID is required." }, 400);
+    const connectionId = (body as Record<string, unknown>)["connectionId"];
+    if (typeof connectionId !== "string") return json({ error: "A valid connection ID is required." }, 400);
     const store = createD1ConnectionStore(database);
     const connection = await store.getOwned({ id: connectionId, workspaceId: session.workspaceId, userId: session.userId });
     if (!connection) return json({ error: "Connection was not found or is not owned by this user." }, 404);
