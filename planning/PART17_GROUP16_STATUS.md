@@ -15,7 +15,7 @@ Branch: work/group06-manager-planner
 - APP20 — Unit tests cover allowlists, callback validation, webhook authenticity/replay, retry bounds, ownership and audit metadata.
 
 ## Remaining / blocked
-- APP03 — Session-authenticated OAuth start endpoint now validates provider scope allowlists and exact registered HTTPS redirect URI, creates PKCE S256, encrypts the verifier with AES-256-GCM, and stores only a state hash plus encrypted verifier in D1.
+- APP03 — Session-authenticated OAuth start endpoint now validates provider scope allowlists and exact registered HTTPS redirect URI, creates PKCE S256, encrypts the verifier with AES-256-GCM, and stores only a state hash plus encrypted verifier in D1, bound to the active workspace and user via migration `0011_oauth_workspace_binding.sql`.
 - APP04–APP11 — OAuth callback, provider token exchange, encrypted token storage/refresh/revocation and connection UI remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
@@ -45,3 +45,5 @@ No merge to main; no production deployment.
 - Callback, token exchange, encrypted access-token persistence, refresh/revocation and UI remain unimplemented; no provider account is connected.
 
 - Final verification refresh: run `43811004266` passed TypeScript, unit/integration tests, production build and Wrangler validation.
+
+- Workspace-binding verification: OAuth transactions now persist `workspace_id`; callback consumption rejects legacy/unbound rows. CI run `43811415246` passed all checks.
