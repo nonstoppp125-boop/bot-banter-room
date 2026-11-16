@@ -35,8 +35,8 @@ async function readBody(request: Request): Promise<unknown | null> {
 
 /** Workspace-authenticated analytics import and retrieval. Imported provenance is never trusted as provider-authenticated. */
 export async function handleAnalyticsRequest(request: Request, env: AnalyticsApiEnv): Promise<Response> {
-  if (request.method !== "GET" && request.method !== "POST") return json({ error: "Method not allowed." }, 405);
-  if (request.method === "POST") {
+  if (!["GET", "POST", "DELETE"].includes(request.method)) return json({ error: "Method not allowed." }, 405);
+  if (request.method !== "GET") {
     const origin = request.headers.get("origin");
     if (!origin || origin !== new URL(request.url).origin) return json({ error: "Cross-origin analytics writes are blocked." }, 403);
     if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return json({ error: "JSON content type is required." }, 415);
@@ -61,11 +61,31 @@ export async function handleAnalyticsRequest(request: Request, env: AnalyticsApi
       const filters: { platform?: AnalyticsPlatform; metric?: AnalyticsMetricName } = {};
       if (platform) filters.platform = platform as AnalyticsPlatform;
       if (metric) filters.metric = metric as AnalyticsMetricName;
-      const rows = await store.list(filters);
-      return json({ records: rows });
+      const rawLimit = url.searchParams.get("limit");
+      const limit = rawLimit === null ? 200 : Number(rawLimit);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 500) return json({ error: "Page limit must be between 1 and 500." }, 400);
+      const cursor = url.searchParams.get("cursor") || undefined;
+      try {
+        const page = await store.listPage(filters, limit, cursor);
+        return json(page);
+      } catch (error) {
+        if (error instanceof Error && /cursor|limit/i.test(error.message)) return json({ error: error.message }, 400);
+        throw error;
+      }
     }
     const role = authorizeWorkspaceRole({ membership, workspaceId: session.workspaceId, userId: session.userId, requiredRole: "admin" });
     if (!role.allowed) return json({ error: "Workspace administrator access required." }, 403);
+    if (request.method === "DELETE") {
+      const body = await readBody(request);
+      if (!body || typeof body !== "object" || Array.isArray(body) ||
+        !Array.isArray((body as Record<string, unknown>)["ids"])) return json({ error: "An ids array is required (maximum 100)." }, 400);
+      const ids = (body as { ids: unknown[] }).ids;
+      if (ids.length < 1 || ids.length > 100 || ids.some((id) => typeof id !== "string" || !id.trim() || id.length > 120)) {
+        return json({ error: "Provide between 1 and 100 valid snapshot IDs." }, 400);
+      }
+      const deleted = await store.delete(ids as string[], new Date().toISOString());
+      return json({ deleted, scope: "current-workspace" });
+    }
     const body = await readBody(request);
     if (!body || typeof body !== "object" || Array.isArray(body) || !Array.isArray((body as Record<string, unknown>)["records"])) return json({ error: "A records array is required; maximum 100 records." }, 400);
     const records = (body as { records: unknown[] }).records;
