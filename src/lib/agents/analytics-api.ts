@@ -58,19 +58,22 @@ export async function handleAnalyticsRequest(request: Request, env: AnalyticsApi
       const metric = url.searchParams.get("metric") || undefined;
       if (platform && !platforms.has(platform as AnalyticsPlatform)) return json({ error: "Unsupported platform filter." }, 400);
       if (metric && !metrics.has(metric as AnalyticsMetricName)) return json({ error: "Unsupported metric filter." }, 400);
-      const rows = await store.list({ platform: platform as AnalyticsPlatform | undefined, metric: metric as AnalyticsMetricName | undefined });
+      const filters: { platform?: AnalyticsPlatform; metric?: AnalyticsMetricName } = {};
+      if (platform) filters.platform = platform as AnalyticsPlatform;
+      if (metric) filters.metric = metric as AnalyticsMetricName;
+      const rows = await store.list(filters);
       return json({ records: rows });
     }
     const role = authorizeWorkspaceRole({ membership, workspaceId: session.workspaceId, userId: session.userId, requiredRole: "admin" });
     if (!role.allowed) return json({ error: "Workspace administrator access required." }, 403);
     const body = await readBody(request);
-    if (!body || typeof body !== "object" || Array.isArray(body) || !Array.isArray((body as Record<string, unknown>).records)) return json({ error: "A records array is required; maximum 100 records." }, 400);
+    if (!body || typeof body !== "object" || Array.isArray(body) || !Array.isArray((body as Record<string, unknown>)["records"])) return json({ error: "A records array is required; maximum 100 records." }, 400);
     const records = (body as { records: unknown[] }).records;
     if (records.length < 1 || records.length > 100) return json({ error: "Import must contain between 1 and 100 records." }, 400);
     const normalized = records.map((item, index) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) throw new Error("Invalid record at index " + index);
       const input = item as Partial<AnalyticsIngestionInput>;
-      const metricName = typeof input.metricName === "string" ? input.metricName : (item as Record<string, unknown>).metric;
+      const metricName = typeof input.metricName === "string" ? input.metricName : (item as Record<string, unknown>)["metric"];
       if (typeof metricName !== "string") throw new Error("Invalid metric at index " + index);
       return normalizeAnalyticsRecord({ ...input, metricName, source: "user-import", limitations: [...(Array.isArray(input.limitations) ? input.limitations.filter((v): v is string => typeof v === "string") : []), "User-imported data; provider authenticity was not independently verified."] } as AnalyticsIngestionInput);
     });
