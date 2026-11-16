@@ -37,7 +37,15 @@ export function compareMetricPeriods(current:readonly AnalyticsSnapshot[],previo
 function median(values:number[]){const s=[...values].sort((a,b)=>a-b),m=Math.floor(s.length/2);return s.length%2?s[m]!:(s[m-1]!+s[m]!)/2;}
 export function detectMetricAnomalies(history:readonly number[],current:number,thresholdRatio=0.5){if(!Number.isFinite(current)||current<0||!Number.isFinite(thresholdRatio)||thresholdRatio<=0)throw new Error("Anomaly inputs must be finite and non-negative.");const valid=history.filter(v=>Number.isFinite(v)&&v>=0).slice(-30);if(valid.length<3)return{anomalous:false,baseline:null,deviationRatio:null,direction:null as "up"|"down"|null};const baseline=median(valid);if(baseline===0)return{anomalous:current>0,baseline,deviationRatio:current>0?null:0,direction:current>0?"up" as const:null};const delta=(current-baseline)/baseline;return{anomalous:Math.abs(delta)>=thresholdRatio,baseline,deviationRatio:delta,direction:delta>=thresholdRatio?"up" as const:delta<=-thresholdRatio?"down" as const:null};}
 export function getAnalyticsFreshness(rows:readonly AnalyticsSnapshot[],now=new Date().toISOString(),staleAfterMs=86400000){if(!validTimestamp(now)||!Number.isFinite(staleAfterMs)||staleAfterMs<0)throw new Error("Invalid freshness evaluation parameters.");if(!rows.length)return{status:"missing" as const,latestCapturedAt:null,ageMs:null};const latest=rows.reduce((v,r)=>Date.parse(r.capturedAt)>Date.parse(v)?r.capturedAt:v,rows[0]!.capturedAt),ageMs=Math.max(0,Date.parse(now)-Date.parse(latest));return{status:ageMs<=staleAfterMs?"fresh" as const:"stale" as const,latestCapturedAt:latest,ageMs};}
-export function exportAnalyticsCsv(rows:readonly AnalyticsSnapshot[]){const cols:(keyof AnalyticsSnapshot)[]=["platform","accountId","entityId","entityType","metric","value","unit","periodStart","periodEnd","capturedAt","source"];const quote=(v:unknown)=>{const raw=String(v??""),safe=/^[=+@\-]/.test(raw)?"'"+raw:raw;return '"'+safe.replace(/"/g,'""')+'"';};return[cols.join(","),...rows.map(r=>cols.map(k=>quote(r[k])).join(","))].join("\n");}
+export function exportAnalyticsCsv(rows:readonly AnalyticsSnapshot[]){
+ const columns=["platform","accountId","entityId","entityType","metric","value","unit","periodStart","periodEnd","capturedAt","source","campaign","audience","contentPillar"] as const;
+ const quote=(value:unknown)=>{const raw=String(value??""),safe=/^[=+@\\-]/.test(raw)?"'"+raw:raw;return '"'+safe.replace(/"/g,'""')+'"';};
+ return [columns.join(","),...rows.map(row=>[
+  row.platform,row.accountId,row.entityId,row.entityType,row.metric,row.value,row.unit,
+  row.periodStart,row.periodEnd,row.capturedAt,row.source,
+  row.dimensions["campaign"]??"",row.dimensions["audience"]??"",row.dimensions["contentPillar"]??"",
+ ].map(quote).join(","))].join("\n");
+}
 export function createExecutiveAnalyticsSummary(rows:readonly AnalyticsSnapshot[]){const metrics:AnalyticsMetricName[]=["impressions","reach","views","reactions","likes","comments","shares","clicks","followersGained","followersLost","saves"],totals=Object.fromEntries(metrics.map(m=>[m,sumMetrics(rows,[m])])),platforms=[...new Set(rows.map(r=>r.platform))];return{snapshotCount:rows.length,platforms,totals,engagementByPlatform:platforms.map(platform=>{const subset=rows.filter(r=>r.platform===platform),imp=calculateEngagementRate(subset,"impressions"),reach=calculateEngagementRate(subset,"reach");return{platform,engagementRate:imp.rate??reach.rate,denominator:imp.rate!==null?"impressions":reach.rate!==null?"reach":null};}),limitations:[...new Set(rows.flatMap(r=>r.limitations))],note:"Only supplied, normalized snapshots are included. Missing platform metrics are not inferred."};}
 
 
@@ -68,7 +76,11 @@ export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
   if (rows.length < 2) throw new Error("CSV must contain a header and at least one data row.");
   const headers = rows[0]!.map((value, index) => index === 0 ? value.replace(/^\uFEFF/, "") : value);
   const expected = ["platform","accountId","entityId","entityType","metric","value","unit","periodStart","periodEnd","capturedAt","source"];
-  if (headers.length !== expected.length || expected.some((name, index) => headers[index] !== name)) {
+  const dimensionHeaders = ["campaign","audience","contentPillar"];
+  const hasDimensions = headers.length === expected.length + dimensionHeaders.length &&
+    dimensionHeaders.every((name, index) => headers[expected.length + index] === name);
+  if ((headers.length !== expected.length && !hasDimensions) ||
+    expected.some((name, index) => headers[index] !== name)) {
     throw new Error("CSV header does not match the Liza analytics export format.");
   }
   return rows.slice(1).map((cells, index) => {
@@ -87,6 +99,9 @@ export function parseAnalyticsCsv(csv: string): AnalyticsSnapshot[] {
       periodEnd: cells[8]!,
       capturedAt: cells[9]!,
       source: cells[10]!,
+      dimensions: hasDimensions ? {
+        campaign: cells[11]!, audience: cells[12]!, contentPillar: cells[13]!,
+      } : {},
       limitations: ["Imported from CSV; provider authenticity was not independently verified."],
     });
   });
