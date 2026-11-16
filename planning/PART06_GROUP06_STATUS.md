@@ -17,10 +17,10 @@ Branch: work/group06-manager-planner
 - The D1 schema includes `agent_tasks`, `approvals` and `action_claims`; typed D1 task, approval and idempotency adapters exist. `ACTION_DB` is not provisioned in a live Cloudflare environment, so persistence is not runtime-verified.
 - Session-authenticated Cloudflare Access login/logout and the admin approval inbox UI/API are implemented on this branch. Live Access application, domain/audience configuration, D1 binding/migrations and authenticated runtime smoke remain unverified.
 - `executeVerifiedApprovedAction` verifies the persisted approval against the exact workspace, approving user, action type, payload hash and expiry, then claims a durable idempotency key before invoking its supplied executor. No production external-action executor is wired or enabled; this helper is a guarded boundary, not evidence that publishing, messaging, deletion or deployment works end-to-end.
-- Durable task storage is an adapter only; no session-authenticated task lifecycle API or background execution worker is wired into the Manager workflow yet.
+- Durable task storage is now exposed through session-authenticated `GET/POST /api/tasks`: POST stores a bounded Manager plan scoped to the active session's workspace/user; GET lists only that user's tasks. High-risk plans enter `needs_approval`; this API queues plans only and does not execute specialists or external actions. No background execution worker or Manager chat-to-task enqueue is wired yet.
 - Provider usage and final synthesis cost remain approximate where provider telemetry is unavailable.
 
-GROUP 06: IN PROGRESS — planner, bounded replan, cost reporting, task/approval D1 adapters, approval API/UI, session auth and fail-closed approved-action boundary are implemented. Remaining work includes Manager-to-task-store lifecycle wiring, live D1/Access provisioning and smoke tests, plus a separately authorized real external-action executor.
+GROUP 06: IN PROGRESS — planner, bounded replan, cost reporting, task/approval D1 adapters, approval API/UI, session auth and fail-closed approved-action boundary are implemented. Remaining work includes background task execution and Manager chat-to-task enqueue, live D1/Access provisioning and smoke tests, plus a separately authorized real external-action executor.
 No merge to main; no production deployment.
 
 
@@ -47,3 +47,4 @@ No merge to main; no production deployment.
 - GitHub Actions run `43813716174`: SUCCESS — TypeScript, 43 test files / 311 tests, production build and Nitro-generated Wrangler validation.
 
 - Approval inbox route is now included in the generated route registry and exposed from the chat navigation.
+\n\n## 2026-11-16 — Authenticated Manager task intake\n- Added `POST /api/tasks` with same-origin and JSON enforcement, active-session authentication, bounded input validation, deterministic Manager planning, workspace/user-scoped D1 persistence, and automatic `needs_approval` status for high-risk plans.\n- Added `GET /api/tasks` scoped to the authenticated user's workspace and identity. Client input cannot set task status, plan, result, owner, or workspace.\n- Added focused API tests for cross-origin rejection, missing configuration/session, scoped persistence/listing, high-risk gating and malformed payloads.\n- Task intake is not a worker: no task is automatically executed and no external side effect is enabled. Live D1/Access runtime remains unverified.\n
