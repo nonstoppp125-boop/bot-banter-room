@@ -17,11 +17,11 @@ Branch: work/group06-manager-planner
 - The D1 schema includes `agent_tasks`, `approvals` and `action_claims`; typed D1 task, approval and idempotency adapters exist. `ACTION_DB` is not provisioned in a live Cloudflare environment, so persistence is not runtime-verified.
 - Session-authenticated Cloudflare Access login/logout and the admin approval inbox UI/API are implemented on this branch. Live Access application, domain/audience configuration, D1 binding/migrations and authenticated runtime smoke remain unverified.
 - `executeVerifiedApprovedAction` verifies the persisted approval against the exact workspace, approving user, action type, payload hash and expiry, then claims a durable idempotency key before invoking its supplied executor. No production external-action executor is wired or enabled; this helper is a guarded boundary, not evidence that publishing, messaging, deletion or deployment works end-to-end.
-- Durable task storage is exposed through session-authenticated `GET/POST/PATCH /api/tasks`: POST stores a bounded Manager plan scoped to the active session's workspace/user; GET lists only that user's tasks; PATCH cancels only queued tasks using compare-and-swap. High-risk plans enter `needs_approval`; this API queues plans only and does not execute specialists or external actions.
+- Durable task storage is exposed through session-authenticated `GET/POST/PATCH /api/tasks`: POST stores a bounded Manager plan scoped to the active session's workspace/user; GET lists only that user's tasks; PATCH supports queued cancellation, bounded manual retry, payload-bound approval verification/unlock, and owner-scoped recovery of running tasks stale for at least five minutes. `POST /api/tasks/execute` provides explicit, synchronous, user-triggered specialist execution of a persisted plan; it claims queued tasks atomically, validates the saved plan and approval, propagates cancellation, enforces a 110-second execution limit, bounds persisted text output, and records completed/failed/cancelled outcomes. This is not a background queue consumer.
 - Chat UI now has an explicit per-user-message `Create Manager task` action, and `/tasks` supports plan intake, listing and queued cancellation. These are user-facing queue controls, not automatic background execution.
 - Provider usage and final synthesis cost remain approximate where provider telemetry is unavailable.
 
-GROUP 06: IN PROGRESS — planner, bounded replan, cost reporting, task/approval D1 adapters, approval API/UI, session auth and fail-closed approved-action boundary are implemented. Remaining work includes a real queue/worker consumer, specialist execution from persisted plans, bounded retries/recovery and cooperative cancellation, live D1/Access provisioning and smoke tests, plus separately authorized real external-action executors.
+GROUP 06: IN PROGRESS — planner, persisted plan execution on demand, approval-bound unlock, manual retry/stale recovery, cancellation, task/approval D1 adapters and approval UI are implemented. Remaining work includes an always-on queue/worker consumer with heartbeat and crash recovery, automated retry scheduling, live D1/Access provisioning and smoke tests, plus separately authorized external-action executors.
 No merge to main; no production deployment.
 
 
@@ -195,3 +195,12 @@ No merge to main; no production deployment.
 - GitHub Actions run `43874290438` verified exact code commit `5ee043fde774f32a4784ba51c07e12ab05bc46a0`: TypeScript PASS, 51 test files / 400 tests PASS, production build PASS and generated Wrangler Worker config PASS.
 - Coverage includes persisted-plan execution, payload-bound approval/unlock, high-risk execution re-verification, two-attempt manual retry, Telegram task intake/approval, and cooperative request-abort cancellation.
 - This does not verify live Cloudflare D1, Access, Telegram webhook or provider-side external actions. Background queue scheduling/crash recovery and external action executors remain open.
+
+
+## 2026-11-16 — Persisted execution, recovery and CI checkpoint
+
+- `POST /api/tasks/execute` explicitly runs a stored Manager plan synchronously after session/workspace ownership, plan validity and approval checks; it is not an always-on queue worker.
+- Owner-scoped stale-running recovery changes tasks older than five minutes to failed with an explicit recovery record; the user can then use the bounded manual retry control.
+- The web Tasks page exposes on-demand execution, cancellation, approval unlock, manual retry and stale recovery.
+- GitHub Actions run `43877244027`, exact code commit `0ac038a9dac7556edd2afccd3f867d85338df328`: production dependency audit found 0 vulnerabilities; TypeScript PASS; 52 test files / 407 tests PASS; production build PASS; generated Wrangler Worker config PASS.
+- Remaining: always-on queue/worker consumer, heartbeat/lease management and crash recovery, automated retries, live D1/Access provisioning and smoke tests, external-action executors and production verification.
