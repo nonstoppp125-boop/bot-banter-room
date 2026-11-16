@@ -84,3 +84,5 @@ No merge to main; no production deployment.
 - Added a user-triggered refresh control and safe token-expiry metadata to `/settings/integrations`; the UI calls the workspace-scoped refresh API and never receives token material.
 - Automatic background refresh remains disabled until scheduling/runtime provisioning is approved.
 - Verification pending.
+
+- Manual refresh UI verification: run `43814055257` passed TypeScript, 43 test files / 311 tests, production build and Wrangler validation. Background refresh remains disabled.

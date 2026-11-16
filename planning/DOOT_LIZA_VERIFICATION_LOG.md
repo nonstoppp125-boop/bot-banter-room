@@ -250,3 +250,14 @@ Append new evidence below; never rewrite historical results.\n\n
 - Added tests for shared Telegram message mapping, identity mismatch rejection and real migration sequence integrity.
 - Added skip-link/main landmark and error alert semantics to the mobile chat view.
 - CI verification pending.
+
+
+## 2026-11-16 — Integrations and approval UI verification
+- Commit: `719c7247c1a90a27bba486df4ab840bf3fb045bf`.
+- Run: `43814055257` — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: 43 files, 311 tests passed.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Earlier UI/route integration commit `29260724b6ca3dbd91146e44b289f75ee5c103f7` also passed in run `43813716174`.
+- Verification is CI-only; D1 provisioning, authenticated runtime smoke, physical mobile tests and production deployment are not claimed.

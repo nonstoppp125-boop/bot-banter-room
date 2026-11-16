@@ -265,3 +265,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Improved keyboard accessibility with a skip link, main landmarks and alert semantics.
 - Added a test against the real D1 migration directory to prevent duplicate/gapped migration numbering.
 - CI verification pending.
+
+
+## 2026-11-16 — Current continuation checkpoint
+- Active isolated branch: `work/group06-manager-planner`.
+- Latest commit: `719c7247c1a90a27bba486df4ab840bf3fb045bf`.
+- GitHub Actions run `43814055257`: SUCCESS — TypeScript, 43 test files / 311 tests, production build and Nitro-generated Wrangler validation.
+- Group 06: planner, task/approval persistence adapters, approval APIs and admin approval inbox UI implemented; live D1, login/session issuance and real external action executor remain blocked.
+- Group 16: provider registry, OAuth start/callback, AES-GCM encrypted credential persistence, refresh/disconnect APIs, integration listing/connect/refresh/disconnect UI implemented; live D1, provider secrets, remote token revocation and provider account smoke tests remain blocked.
+- Groups 17–24 retain their individual status documents; several runtime/manual release requirements remain open. No production deployment or merge to main.
+- Local Termux branch/worktree was not modified.
