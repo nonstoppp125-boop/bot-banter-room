@@ -62,3 +62,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - GitHub Actions run `43796215581`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler configuration validation.
 - Manager planner now includes deterministic dependency ordering and downstream evidence handoff; this is not yet an LLM-based autonomous planner.
 - Group 06 remains IN PROGRESS; no merge to `main` and no production deployment.
+
+
+## 2026-11-16 — Group 06 LLM planner and timeout hardening
+- Working branch: `work/group06-manager-planner`; local Termux branch unchanged.
+- Latest code commit: `41d897a1481e8ff313eed74e3b8ec69cae5deb9e`.
+- Latest verified commit remains `d2907df00fa772296538068a785564a567b1f249`; CI run `43796777895` for current code is pending and has no jobs started.
+- Added schema-validated LLM-assisted decomposition for complex tasks, deterministic fallback, dependency preservation, and a 700-token planner output cap.
+- Fixed specialist timeout propagation so the per-task AbortSignal reaches the provider request.
+- Group 06 remains partial: pricing-based cost estimate, durable state, bounded replanning, enforced approval workflow, deliverable verification and final task report remain.
+- No merge to main and no production deployment.
