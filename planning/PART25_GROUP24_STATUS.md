@@ -17,3 +17,9 @@ Branch: work/group06-manager-planner
 
 GROUP 24: IN PROGRESS — release decision/manifest primitives implemented; final release is blocked by unprovisioned runtime and required manual evidence.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Production release checklist
+
+- Added `planning/PRODUCTION_ENVIRONMENT_CHECKLIST.md` with the required D1 binding/migrations, Access configuration, provider credentials, Telegram webhook, deployment secrets and final acceptance evidence.
+- Release remains blocked until real production configuration, backups/restore, rollback rehearsal, smoke tests and user sign-off exist.
