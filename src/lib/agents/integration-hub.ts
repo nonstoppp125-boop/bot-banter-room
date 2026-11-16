@@ -144,3 +144,78 @@ export async function generateOAuthPkcePair(): Promise<{ verifier: string; chall
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
   return { verifier, challenge: encodeBase64Url(new Uint8Array(digest)) };
 }
+
+
+export async function hashOAuthState(state: string): Promise<string> {
+  if (!/^[A-Za-z0-9_-]{32,200}$/.test(state)) throw new Error("OAuth state is invalid.");
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(state)));
+  return Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export interface OAuthTransactionRecord {
+  stateHash: string;
+  provider: IntegrationProviderId;
+  userId: string;
+  redirectUri: string;
+  encryptedVerifierBlob: Uint8Array;
+  scopes: string[];
+  expiresAt: string;
+  createdAt: string;
+}
+export interface OAuthTransactionStore {
+  create(record: OAuthTransactionRecord): Promise<void>;
+  consume(stateHash: string, now: string): Promise<OAuthTransactionRecord | null>;
+}
+export type D1OAuthTransactionDatabase = {
+  prepare: (query: string) => {
+    bind: (...values: unknown[]) => {
+      run: () => Promise<{ success?: boolean; meta?: { changes?: number } }>;
+      first: <T = Record<string, unknown>>() => Promise<T | null>;
+    };
+  };
+};
+
+/** Stores only a state hash and an encrypted PKCE verifier; raw state/verifier never enter this adapter. */
+export function createD1OAuthTransactionStore(database: D1OAuthTransactionDatabase): OAuthTransactionStore {
+  if (!database || typeof database.prepare !== "function") throw new Error("A valid D1 OAuth database is required.");
+  return {
+    create: async (record) => {
+      if (!/^[a-f0-9]{64}$/.test(record.stateHash) ||
+          !/^[A-Za-z0-9._:-]{1,120}$/.test(record.userId) ||
+          !INTEGRATION_PROVIDERS[record.provider] ||
+          !record.redirectUri.startsWith("https://") ||
+          !(record.encryptedVerifierBlob instanceof Uint8Array) ||
+          record.encryptedVerifierBlob.byteLength < 32 ||
+          !Array.isArray(record.scopes) || !record.scopes.length ||
+          !Number.isFinite(Date.parse(record.createdAt)) ||
+          !Number.isFinite(Date.parse(record.expiresAt)) ||
+          Date.parse(record.expiresAt) <= Date.parse(record.createdAt)) {
+        throw new Error("Invalid OAuth transaction record.");
+      }
+      const result = await database.prepare(
+        "INSERT OR IGNORE INTO oauth_transactions (state_hash, provider, user_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ).bind(record.stateHash, record.provider, record.userId, record.redirectUri,
+        record.encryptedVerifierBlob, JSON.stringify([...new Set(record.scopes)]), record.expiresAt, record.createdAt).run();
+      if (result.success === false) throw new Error("D1 OAuth transaction write failed.");
+      if (result.meta?.changes !== 1) throw new Error("OAuth state hash already exists or D1 did not confirm the insert.");
+    },
+    consume: async (stateHash, now) => {
+      if (!/^[a-f0-9]{64}$/.test(stateHash) || !Number.isFinite(Date.parse(now))) return null;
+      const row = await database.prepare(
+        "UPDATE oauth_transactions SET consumed_at = ? WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ? RETURNING state_hash, provider, user_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at",
+      ).bind(now, stateHash, now).first<{
+        state_hash: string; provider: IntegrationProviderId; user_id: string; redirect_uri: string;
+        encrypted_verifier_blob: Uint8Array; scopes_json: string; expires_at: string; created_at: string;
+      }>();
+      if (!row) return null;
+      let scopes: unknown;
+      try { scopes = JSON.parse(row.scopes_json); } catch { throw new Error("Stored OAuth scopes are invalid JSON."); }
+      if (!Array.isArray(scopes) || !scopes.every(scope => typeof scope === "string")) throw new Error("Stored OAuth scopes are invalid.");
+      return {
+        stateHash: row.state_hash, provider: row.provider, userId: row.user_id,
+        redirectUri: row.redirect_uri, encryptedVerifierBlob: row.encrypted_verifier_blob,
+        scopes, expiresAt: row.expires_at, createdAt: row.created_at,
+      };
+    },
+  };
+}

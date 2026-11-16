@@ -214,3 +214,8 @@ Append new evidence below; never rewrite historical results.\n\n
 - Analytics D1 migration sequence is now 0003, following existing 0002 LinkedIn Growth migration.
 - Dashboard CSV export is browser-local; import size is checked before reading.
 - Verification pending.
+
+
+## 2026-11-16 — OAuth transaction store tests
+- Added hash and one-time D1 transaction-consumption tests; no live OAuth callback or token exchange is enabled.
+- Verification pending.

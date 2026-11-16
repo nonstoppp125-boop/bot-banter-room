@@ -28,3 +28,9 @@ No merge to main; no production deployment.
 - Added Web Crypto generation for 256-bit OAuth state and RFC 7636 S256 PKCE verifier/challenge pairs; verifier must remain server-side.
 - Integration audit event details exclude token, secret, password, authorization, verifier, credential, cookie and code fields.
 - Verification pending.
+
+
+## 2026-11-16 — Durable OAuth transaction contract
+- Added D1 OAuth transaction store contract that persists only a SHA-256 state hash and an encrypted PKCE verifier blob; consume uses a single conditional UPDATE/RETURNING to enforce one-time use and expiry.
+- Added state hashing and a test proving a transaction can be consumed only once. The D1 binding and encryption key remain unprovisioned; no OAuth flow is live.
+- Verification pending.

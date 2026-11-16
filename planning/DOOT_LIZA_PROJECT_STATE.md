@@ -219,3 +219,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Renamed analytics migration sequence from 0002 to 0003 because 0002 is already occupied by LinkedIn Growth.
 - Added local CSV download to the analytics dashboard and pre-read file-size validation.
 - Verification pending.
+
+
+## 2026-11-16 — OAuth state persistence contract
+- Added D1 one-time OAuth transaction storage using state hashes and encrypted PKCE verifier blobs; raw OAuth state/verifier are not stored by the adapter.
+- Runtime remains blocked until D1 binding and encryption-key management are provisioned.
+- Verification pending.
