@@ -63,7 +63,7 @@ describe("production D1 config preparation", () => {
     });
 
     expect(result.d1_databases.filter((item) => item.binding === "ACTION_DB")).toHaveLength(1);
-    expect(result.d1_databases[0].database_name).toBe("doot-production");
+    expect(result.d1_databases[0]?.database_name).toBe("doot-production");
   });
 
   it("rejects missing or malformed database identifiers", () => {
