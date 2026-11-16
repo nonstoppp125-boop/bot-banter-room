@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AnalyticsRoute = AnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/settings/integrations',
+  path: '/settings/integrations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
   '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/api/integrations': typeof ApiIntegrationsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesByTo {
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
   '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/api/integrations': typeof ApiIntegrationsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesById {
@@ -122,14 +130,15 @@ export interface FileRoutesById {
   '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
   '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/api/integrations': typeof ApiIntegrationsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  fullPaths: '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
-  id: '__root__' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  to: '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  id: '__root__' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -241,6 +250,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiIntegrationRefreshRoute: ApiIntegrationRefreshRoute,
   ApiIntegrationsRoute: ApiIntegrationsRoute,
   AnalyticsRoute: AnalyticsRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

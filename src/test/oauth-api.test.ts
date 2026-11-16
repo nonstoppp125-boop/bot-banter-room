@@ -64,11 +64,12 @@ describe("OAuth authorization start API", () => {
       OAUTH_ENCRYPTION_KEY: key,
       OAUTH_INSTAGRAM_CLIENT_ID: "client-123",
       OAUTH_INSTAGRAM_AUTHORIZATION_ENDPOINT: "https://www.facebook.com/v22.0/dialog/oauth",
-      OAUTH_INSTAGRAM_REDIRECT_URI: "https://app.example/api/integrations/oauth/callback/instagram",
+      OAUTH_INSTAGRAM_REDIRECT_URI: "https://app.example/api/integrations/oauth/callback",
       OAUTH_INSTAGRAM_REGISTERED_REDIRECT_URI: "https://app.example/api/integrations/oauth/callback/instagram",
     });
-    expect(response.status).toBe(302);
-    const location = new URL(response.headers.get("location") ?? "");
+    expect(response.status).toBe(200);
+    const payload = await response.json() as { authorizationUrl: string };
+    const location = new URL(payload.authorizationUrl);
     expect(location.searchParams.get("client_id")).toBe("client-123");
     expect(location.searchParams.get("code_challenge_method")).toBe("S256");
     expect(location.searchParams.get("scope")).toContain("instagram_business_basic");

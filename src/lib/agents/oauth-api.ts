@@ -126,10 +126,7 @@ export async function handleOAuthStartRequest(request: Request, env: OAuthApiEnv
       expiresAt,
       createdAt: now,
     });
-    return new Response(null, {
-      status: 302,
-      headers: { Location: authorizationUrl, "Cache-Control": "no-store" },
-    });
+    return json({ authorizationUrl });
   } catch {
     return json({ error: "OAuth authorization could not be started." }, 400);
   }
