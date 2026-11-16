@@ -22,7 +22,7 @@ describe("workspace approval persistence",()=>{
 });
 
 it("authorizes only an exact, unexpired approved action payload",async()=>{
- const approval={id:"a1",workspaceId:"ws1",userId:"u1",actionType:"social.publish" as const,payloadHash:"a".repeat(64),status:"approved" as const,decidedByUserId:"admin1",decisionReason:"approved",expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-16T09:00:00.000Z",decidedAt:"2026-11-16T10:00:00.000Z"};
+ const approval={id:"a1",workspaceId:"ws1",userId:"u1",actionType:"social.publish" as const,payloadHash:"a".repeat(64),summary:"Publish approved draft",status:"approved" as const,decidedByUserId:"admin1",decisionReason:"approved",expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-16T09:00:00.000Z",decidedAt:"2026-11-16T10:00:00.000Z"};
  const base={approval,workspaceId:"ws1",actionType:"social.publish" as const,payloadHash:"a".repeat(64),now:"2026-11-16T11:00:00.000Z"};
  expect(verifyApprovalForAction(base).allowed).toBe(true);
  expect(verifyApprovalForAction({...base,payloadHash:"b".repeat(64)}).allowed).toBe(false);

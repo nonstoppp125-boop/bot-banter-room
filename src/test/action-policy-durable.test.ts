@@ -4,7 +4,7 @@ import { createD1ActionStore, executeVerifiedApprovedAction } from "@/lib/agents
 describe("durable external action boundary", () => {
   const approval = {
     id:"approval-1",workspaceId:"ws1",userId:"u1",actionType:"social.publish" as const,
-    payloadHash:"a".repeat(64),status:"approved" as const,decidedByUserId:"admin1",
+    payloadHash:"a".repeat(64),summary:"Publish approved draft",status:"approved" as const,decidedByUserId:"admin1",
     decisionReason:"Reviewed",expiresAt:"2026-11-17T10:00:00.000Z",
     createdAt:"2026-11-16T09:00:00.000Z",decidedAt:"2026-11-16T10:00:00.000Z",
   };
@@ -95,7 +95,7 @@ describe("durable external action boundary", () => {
   it("requires a persisted approval bound to the exact action and payload", async () => {
     const approval = {
       id: "approval-1", workspaceId: "ws1", userId: "u1",
-      actionType: "social.publish" as const, payloadHash: "a".repeat(64),
+      actionType: "social.publish" as const, payloadHash: "a".repeat(64), summary: "Publish approved draft",
       status: "approved" as const, decidedByUserId: "admin1",
       decisionReason: "Reviewed", expiresAt: "2026-11-17T10:00:00.000Z",
       createdAt: "2026-11-16T09:00:00.000Z", decidedAt: "2026-11-16T10:00:00.000Z",

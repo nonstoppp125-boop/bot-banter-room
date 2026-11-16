@@ -1,4 +1,4 @@
-import { createD1ApprovalStore } from "./approval-store";
+import { createD1ApprovalStore, hashApprovalPayload, type ApprovalAction } from "./approval-store";
 import { createD1SessionStore, readSessionCookie } from "./session-auth";
 import { authorizeWorkspaceRole, createD1WorkspaceAccessStore } from "./workspace-store";
 
@@ -9,6 +9,7 @@ type ApprovalApiDatabase = Parameters<typeof createD1ApprovalStore>[0] &
 export type ApprovalApiEnv = { ACTION_DB?: ApprovalApiDatabase };
 
 const noStore = { "Cache-Control": "no-store" };
+const approvalActions = new Set<ApprovalAction>(["social.publish", "social.reply", "external.message", "account.change", "destructive.delete", "deployment", "financial.action"]);
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: noStore });
 
@@ -28,7 +29,7 @@ async function readSmallJson(request: Request): Promise<unknown | null> {
   }
 }
 
-/** Session-authenticated, workspace-admin-only approval inbox and decision API. */
+/** Session-authenticated approval request, inbox and decision API. */
 export async function handleApprovalRequest(
   request: Request,
   env: ApprovalApiEnv,
@@ -60,42 +61,54 @@ export async function handleApprovalRequest(
 
     const access = createD1WorkspaceAccessStore(database);
     const membership = await access.getMembership(session.workspaceId, session.userId);
-    const authorization = authorizeWorkspaceRole({
-      membership,
-      workspaceId: session.workspaceId,
-      userId: session.userId,
-      requiredRole: "admin",
-    });
-    if (!authorization.allowed) return json({ error: "Workspace administrator access required." }, 403);
-
+    if (!membership) return json({ error: "Workspace membership required." }, 403);
     const approvals = createD1ApprovalStore(database);
     if (request.method === "GET") {
+      const authorization = authorizeWorkspaceRole({
+        membership, workspaceId: session.workspaceId, userId: session.userId, requiredRole: "admin",
+      });
+      if (!authorization.allowed) return json({ error: "Workspace administrator access required." }, 403);
       const pending = await approvals.listPending({
-        workspaceId: session.workspaceId,
-        actorUserId: session.userId,
-        now,
-        limit: 50,
+        workspaceId: session.workspaceId, actorUserId: session.userId, now, limit: 50,
       });
       return json({ approvals: pending });
     }
 
     const body = await readSmallJson(request);
-    if (!isRecord(body) ||
-        typeof body["approvalId"] !== "string" ||
+    if (!isRecord(body)) return json({ error: "Invalid approval payload." }, 400);
+
+    if (body["operation"] === "request") {
+      if (typeof body["actionType"] !== "string" ||
+          !approvalActions.has(body["actionType"] as ApprovalAction) ||
+          typeof body["summary"] !== "string" || !body["summary"].trim() ||
+          body["summary"].length > 500 ||
+          !Object.prototype.hasOwnProperty.call(body, "payload")) {
+        return json({ error: "Invalid approval request payload." }, 400);
+      }
+      const payloadHash = await hashApprovalPayload(body["payload"]);
+      const expiresAt = new Date(Date.parse(now) + 24 * 60 * 60 * 1000).toISOString();
+      const id = crypto.randomUUID().replace(/-/g, "");
+      await approvals.create({
+        id, workspaceId: session.workspaceId, userId: session.userId,
+        actionType: body["actionType"] as ApprovalAction, payloadHash,
+        summary: body["summary"], expiresAt, createdAt: now,
+      });
+      return json({ id, status: "pending", expiresAt }, 201);
+    }
+
+    const authorization = authorizeWorkspaceRole({
+      membership, workspaceId: session.workspaceId, userId: session.userId, requiredRole: "admin",
+    });
+    if (!authorization.allowed) return json({ error: "Workspace administrator access required." }, 403);
+    if (typeof body["approvalId"] !== "string" ||
         (body["decision"] !== "approved" && body["decision"] !== "rejected") ||
-        typeof body["reason"] !== "string" ||
-        body["reason"].trim().length < 1 ||
+        typeof body["reason"] !== "string" || body["reason"].trim().length < 1 ||
         body["reason"].length > 1000) {
       return json({ error: "Invalid approval decision payload." }, 400);
     }
-
     const changed = await approvals.decide({
-      id: body["approvalId"],
-      workspaceId: session.workspaceId,
-      actorUserId: session.userId,
-      decision: body["decision"],
-      reason: body["reason"],
-      now,
+      id: body["approvalId"], workspaceId: session.workspaceId, actorUserId: session.userId,
+      decision: body["decision"], reason: body["reason"], now,
     });
     if (!changed) return json({ error: "Approval is no longer pending, has expired, or is unavailable." }, 409);
     return json({ approved: body["decision"] === "approved" });
