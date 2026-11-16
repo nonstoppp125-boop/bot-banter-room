@@ -123,8 +123,8 @@ export function createSocialCalendar(input: {
   const start = new Date(`${input.startDate}T00:00:00.000Z`);
   if (Number.isNaN(start.getTime()) || start.toISOString().slice(0, 10) !== input.startDate) return [];
   if (!Number.isInteger(input.days) || input.days < 1 || input.days > 366) return [];
-  const platforms = [...new Set(input.platforms.filter((platform) => VALID_PLATFORMS.has(platform)))];
-  const topics = unique(input.topics, 300);
+  const platforms = [...new Set((Array.isArray(input.platforms) ? input.platforms : []).filter((platform) => VALID_PLATFORMS.has(platform)))];
+  const topics = unique(Array.isArray(input.topics) ? input.topics : [], 300);
   if (!platforms.length || !topics.length) return [];
 
   const entries: SocialCalendarItem[] = [];
@@ -228,8 +228,8 @@ export function createSocialCampaignBrief(input: {
   kpis: string[];
   evidence?: string[];
 }) {
-  const platforms = [...new Set(input.platforms.filter((platform) => VALID_PLATFORMS.has(platform)))];
-  const kpis = unique(input.kpis, 150);
+  const platforms = [...new Set((Array.isArray(input.platforms) ? input.platforms : []).filter((platform) => VALID_PLATFORMS.has(platform)))];
+  const kpis = unique(Array.isArray(input.kpis) ? input.kpis : [], 150);
   if (!clean(input.name) || !clean(input.objective) || !clean(input.audience) ||
       !clean(input.keyMessage) || !clean(input.callToAction) || !platforms.length || !kpis.length) {
     throw new Error("Campaign brief is missing required information.");
@@ -284,7 +284,8 @@ export class SocialDraftStore {
       updatedAt: now,
     };
     if (!clean(actor, 100)) throw new Error("Actor is required.");
-    const history = this.history.get(id)!;
+    const history = this.history.get(clean(id, 100));
+    if (!history) throw new Error("Social draft not found.");
     history.push(structuredClone(next));
     return structuredClone(next);
   }
@@ -321,7 +322,13 @@ export class SocialDraftStore {
     if (!current || !["draft", "rejected"].includes(current.status)) {
       throw new Error("Only draft or rejected content can be revised.");
     }
-    return this.transition(id, "draft", editor, now, { ...changes, approvedBy: null, scheduledAt: null });
+    const safeChanges = {
+      ...(changes.caption !== undefined ? { caption: clean(changes.caption, 5000) } : {}),
+      ...(changes.hook !== undefined ? { hook: clean(changes.hook, 500) } : {}),
+      ...(changes.outline !== undefined ? { outline: unique(changes.outline, 800) } : {}),
+      ...(changes.script !== undefined ? { script: clean(changes.script, 10000) } : {}),
+    };
+    return this.transition(id, "draft", editor, now, { ...safeChanges, approvedBy: null, scheduledAt: null });
   }
 
   schedule(id: string, scheduledAt: string, actor: string, now = new Date().toISOString()): SocialDraft {
@@ -342,11 +349,15 @@ export class SocialDraftStore {
 
 export function createSocialReplyDraft(input: { platform: SocialPlatform; targetId: string; reply: string; actor: string }) {
   if (!VALID_PLATFORMS.has(input.platform)) throw new Error("Unsupported social platform.");
+  const targetId = clean(input.targetId, 200);
+  const reply = clean(input.reply, 3000);
+  const createdBy = clean(input.actor, 100);
+  if (!targetId || !reply || !createdBy) throw new Error("Reply target, content and actor are required.");
   return {
     platform: input.platform,
-    targetId: clean(input.targetId, 200),
-    reply: clean(input.reply, 3000),
-    createdBy: clean(input.actor, 100),
+    targetId,
+    reply,
+    createdBy,
     status: "pending_approval" as const,
     note: "Draft only. No comment, reply or message has been sent.",
   };

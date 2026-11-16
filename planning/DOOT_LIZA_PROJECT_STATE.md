@@ -159,3 +159,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Draft approval/rejection/revision, scheduling guards, fail-closed publisher contract, idempotency, audit, metrics, reports, historical insights, reply approval, evidence-linked prospect research and dashboard data model are implemented.
 - Official LinkedIn OAuth, publisher, live analytics, durable D1, background scheduler and dashboard UI remain unconfigured.
 - CI run `43799513815`: SUCCESS — 16 test files / 178 tests, TypeScript, production build and Wrangler validation.
+
+
+## 2026-11-16 — Group 13 Multi-Platform Social Workforce foundation
+- Added five platform-specific specialists (Instagram, Facebook, YouTube, X and TikTok) with distinct prompts and capability routing.
+- Added cross-platform content/calendar, adaptation, video storyboard, campaign brief, in-memory draft approval/versioning, scheduling-state and reply-draft foundations.
+- No social platform OAuth, publisher, analytics client, background scheduler or messaging executor is connected.
+- Verification pending CI.

@@ -157,3 +157,9 @@ Append new evidence below; never rewrite historical results.\n\n
 - Nitro-generated Wrangler configuration validation: PASS
 - LinkedIn growth tests verified approval state transitions, scheduling guards, fail-closed publishing, durable idempotency claim ordering, analytics normalization/reports, replies, lead evidence and dashboard limitations.
 - No real LinkedIn account connection, publisher, analytics client or live scheduled worker is claimed.
+
+
+## 2026-11-16 — Group 13 initial implementation
+- Added platform-specific social specialists and routing plus a cross-platform social workforce planning/draft/approval module.
+- Added unit coverage for platform routing, format constraints, calendar generation, content adaptation, storyboards, campaign briefs, approval-gated scheduling and reply drafts.
+- Verification pending GitHub Actions.
