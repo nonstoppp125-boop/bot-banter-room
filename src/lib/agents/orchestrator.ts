@@ -411,6 +411,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
         [...specialistMessages, { role: "user" as const, content: recoveryBrief }],
         taskSignal,
         model,
+        usageTotals,
       );
     },
   }));
