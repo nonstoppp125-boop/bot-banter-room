@@ -228,3 +228,7 @@ Append new evidence below; never rewrite historical results.\n\n
 
 ## 2026-11-16 — Group 18 conversation store tests
 - Added tests for user/workspace query scoping, guarded message insertion and owner-scoped soft deletion. CI verification pending.
+
+
+## 2026-11-16 — Group 19 Telegram bridge tests
+- Added tests for secret verification, private-chat/human-user checks, message-size bounds, Unicode chunking, identity lookup and duplicate update claims. CI verification pending.

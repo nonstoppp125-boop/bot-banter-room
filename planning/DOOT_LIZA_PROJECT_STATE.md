@@ -237,3 +237,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added D1 conversation store operations for user/workspace-scoped list/search, message insert/read and owner-scoped soft deletion.
 - Message inserts use an ownership/deletion predicate in SQL; message reads join the owning conversation to enforce workspace/user isolation.
 - No conversation API/UI or live D1 binding is enabled. CI verification pending.
+
+
+## 2026-11-16 — Group 19 Telegram bridge foundations
+- Repository audit found no Telegram bot runtime, command handlers, webhook route, bot token or hosting configuration; ownership/configuration remain unverified.
+- Added private-chat update normalization, webhook secret verification, D1 identity lookup, replay claim adapter and Unicode-safe 4096-code-point output chunking.
+- Added D1 Telegram identity and update-claim migration. No live bot token, webhook route or outbound Telegram API call is configured. CI verification pending.
