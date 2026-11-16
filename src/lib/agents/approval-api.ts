@@ -17,15 +17,47 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function readSmallJson(request: Request): Promise<unknown | null> {
+type ApprovalBodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 413 };
+
+async function readSmallJson(request: Request): Promise<ApprovalBodyResult> {
   const declared = request.headers.get("content-length");
-  if (declared && Number(declared) > 8192) return null;
+  if (declared !== null) {
+    if (!/^\\d+$/.test(declared)) return { ok: false, status: 400 };
+    if (Number(declared) > 8192) return { ok: false, status: 413 };
+  }
+  if (!request.body) return { ok: false, status: 400 };
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
   try {
-    const text = await request.text();
-    if (!text || new TextEncoder().encode(text).byteLength > 8192) return null;
-    return JSON.parse(text);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      totalBytes += value.byteLength;
+      if (totalBytes > 8192) {
+        void reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413 };
+      }
+      chunks.push(value);
+    }
+    if (totalBytes === 0) return { ok: false, status: 400 };
+    const bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    try {
+      return { ok: true, value: JSON.parse(new TextDecoder().decode(bytes)) };
+    } catch {
+      return { ok: false, status: 400 };
+    }
   } catch {
-    return null;
+    return { ok: false, status: 400 };
+  } finally {
+    reader.releaseLock();
   }
 }
 
@@ -42,7 +74,8 @@ export async function handleApprovalRequest(
     if (!origin || origin !== new URL(request.url).origin) {
       return json({ error: "Cross-origin approval decisions are blocked." }, 403);
     }
-    if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    const contentType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+    if (contentType !== "application/json") {
       return json({ error: "JSON content type is required." }, 415);
     }
   }
@@ -74,7 +107,14 @@ export async function handleApprovalRequest(
       return json({ approvals: pending });
     }
 
-    const body = await readSmallJson(request);
+    const parsed = await readSmallJson(request);
+    if (!parsed.ok) {
+      return json(
+        { error: parsed.status === 413 ? "Approval request body is too large." : "Invalid approval JSON payload." },
+        parsed.status,
+      );
+    }
+    const body = parsed.value;
     if (!isRecord(body)) return json({ error: "Invalid approval payload." }, 400);
 
     if (body["operation"] === "request") {
