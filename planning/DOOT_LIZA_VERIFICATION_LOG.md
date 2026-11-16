@@ -95,3 +95,14 @@ Append new evidence below; never rewrite historical results.\n\n
 - Nitro-generated Wrangler configuration validation: PASS
 - Verified provider-reported specialist/planner usage aggregation, character-based fallback, published Groq model pricing, unknown-model fail-safe and cost calculations.
 - Final synthesis allowance remains estimated; the displayed figure is not a provider invoice.
+
+
+## 2026-11-16 — Group 06 usage-based cost estimate verification
+- Code commit: `fd7dafb684783ed9a46c6a1da2fa36516636485c`
+- GitHub Actions run: `43798972433` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 175 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Cost estimate tests: published model rates, input/output arithmetic, unknown model and invalid token fail-safe.
+- Documentation CI run `43799105011`: SUCCESS.

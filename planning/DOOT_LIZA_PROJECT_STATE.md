@@ -115,3 +115,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Final streamed synthesis uses an explicit 800-output-token allowance and character-based input estimate, so total cost remains an estimate rather than an invoice-equivalent amount.
 - Verified commit: `fd7dafb684783ed9a46c6a1da2fa36516636485c`; GitHub Actions run `43798972433` SUCCESS — TypeScript, 16 test files / 175 tests, production build and Wrangler validation.
 - G06.08 implementation is complete with documented estimation limitations; G06.13 and G06.18 remain blocked on durable infrastructure and approval persistence.
+
+
+## 2026-11-16 — Group 06 usage-based cost estimate verified
+- Branch: `work/group06-manager-planner`
+- Code commit: `fd7dafb684783ed9a46c6a1da2fa36516636485c`; CI `43798972433` SUCCESS.
+- Documentation commit: `c1b0cbb61708ecd2f3a9965ca2db83c6b08c5e2a`; CI `43799105011` SUCCESS.
+- CI: TypeScript PASS; 16 test files / 175 tests PASS; production build PASS; Nitro Wrangler validation PASS.
+- Cost estimate uses provider-reported specialist/planner token usage, character-based fallback for missing usage, published Groq rates for supported model IDs, and an explicit estimate for final streaming synthesis.
+- G06.08 complete with stated estimate limitations. G06.13 durable task persistence and G06.18 persisted human approval remain infrastructure-dependent.

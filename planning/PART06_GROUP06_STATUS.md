@@ -27,6 +27,7 @@ GitHub Actions run `43798378327`: SUCCESS.
 - G06.18 — High-risk external-action intent flagged for approval; no approval UI/store/enforcement exists yet.
 - G06.19 — Formal per-subtask, evidence-integrity and approval-safety acceptance criteria; structured reviewer results are schema-checked and fail closed to needs-review when missing, malformed or unsupported.
 - G06.20 — Final synthesis receives execution counts, duration, planning mode, risk/approval state, fallback details and cost-estimate limitations; replacement execution outcomes are included.
+- G06.08 — Provider-reported specialist/planner usage plus character-based fallback and an explicit final-synthesis allowance; published rates are used only for known Groq model IDs, and unknown models return no estimate.
 - G06.08 — Groq cost estimate uses provider-reported usage for specialist/planner calls, character-based fallback when usage is missing, published pricing for known models and an explicit final-synthesis token allowance; unknown model pricing returns unavailable.
 
 ## Verification — latest commit
