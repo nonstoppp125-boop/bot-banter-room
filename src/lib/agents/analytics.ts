@@ -165,8 +165,8 @@ export function createD1AnalyticsStore(database: D1AnalyticsDatabase, workspaceI
       if (result.meta?.changes === 1) return;
       if (result.meta?.changes !== 0) throw new Error("D1 did not return an analytics write change count");
       const existing = await database.prepare(
-        "SELECT payload_json FROM analytics_snapshots WHERE id = ?",
-      ).bind(normalized.id).first<{ payload_json: string }>();
+        "SELECT payload_json FROM analytics_snapshots WHERE id = ? AND workspace_id = ?",
+      ).bind(normalized.id, workspace).first<{ payload_json: string }>();
       if (!existing || existing.payload_json !== payload) throw new Error("Analytics snapshot ID already exists with different data.");
     },
     list: async (filters = {}) => {
