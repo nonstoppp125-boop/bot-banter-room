@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLLMAssistedManagerPlan, buildManagerPlan } from "@/lib/agents/manager";
+import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan } from "@/lib/agents/manager";
 import type { AgentDefinition } from "@/lib/agents/types";
 
 const agents: AgentDefinition[] = [

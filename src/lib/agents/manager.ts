@@ -165,7 +165,7 @@ export function buildManagerPlan(
     },
     limitations: [
       "Complex multi-specialist decomposition is LLM-assisted and schema-validated; failures fall back to deterministic subtasks.",
-      "Routing, permissions, risk classification and execution budgets remain deterministic; autonomous replanning is not implemented.",
+      "Routing, permissions, risk classification and execution budgets remain deterministic; one bounded deterministic replacement pass is available after rejected specialist tasks.",
       "Token count is a rough character-based estimate, not provider billing telemetry; retries may increase actual model calls.",
       "High-risk intent is flagged for approval; this planner does not execute or approve external actions.",
       "Only registered specialists with llm:inference permission are eligible.",
