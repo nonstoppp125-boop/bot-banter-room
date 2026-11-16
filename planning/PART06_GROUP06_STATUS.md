@@ -17,10 +17,11 @@ Branch: work/group06-manager-planner
 - The D1 schema includes `agent_tasks`, `approvals` and `action_claims`; typed D1 task, approval and idempotency adapters exist. `ACTION_DB` is not provisioned in a live Cloudflare environment, so persistence is not runtime-verified.
 - Session-authenticated Cloudflare Access login/logout and the admin approval inbox UI/API are implemented on this branch. Live Access application, domain/audience configuration, D1 binding/migrations and authenticated runtime smoke remain unverified.
 - `executeVerifiedApprovedAction` verifies the persisted approval against the exact workspace, approving user, action type, payload hash and expiry, then claims a durable idempotency key before invoking its supplied executor. No production external-action executor is wired or enabled; this helper is a guarded boundary, not evidence that publishing, messaging, deletion or deployment works end-to-end.
-- Durable task storage is now exposed through session-authenticated `GET/POST /api/tasks`: POST stores a bounded Manager plan scoped to the active session's workspace/user; GET lists only that user's tasks. High-risk plans enter `needs_approval`; this API queues plans only and does not execute specialists or external actions. No background execution worker or Manager chat-to-task enqueue is wired yet.
+- Durable task storage is exposed through session-authenticated `GET/POST/PATCH /api/tasks`: POST stores a bounded Manager plan scoped to the active session's workspace/user; GET lists only that user's tasks; PATCH cancels only queued tasks using compare-and-swap. High-risk plans enter `needs_approval`; this API queues plans only and does not execute specialists or external actions.
+- Chat UI now has an explicit per-user-message `Create Manager task` action, and `/tasks` supports plan intake, listing and queued cancellation. These are user-facing queue controls, not automatic background execution.
 - Provider usage and final synthesis cost remain approximate where provider telemetry is unavailable.
 
-GROUP 06: IN PROGRESS — planner, bounded replan, cost reporting, task/approval D1 adapters, approval API/UI, session auth and fail-closed approved-action boundary are implemented. Remaining work includes background task execution and Manager chat-to-task enqueue, live D1/Access provisioning and smoke tests, plus a separately authorized real external-action executor.
+GROUP 06: IN PROGRESS — planner, bounded replan, cost reporting, task/approval D1 adapters, approval API/UI, session auth and fail-closed approved-action boundary are implemented. Remaining work includes a real queue/worker consumer, specialist execution from persisted plans, bounded retries/recovery and cooperative cancellation, live D1/Access provisioning and smoke tests, plus separately authorized real external-action executors.
 No merge to main; no production deployment.
 
 
@@ -114,3 +115,9 @@ No merge to main; no production deployment.
 - Verified task workspace route registration, authenticated chat-message enqueue, owner-scoped queued cancellation and regression coverage.
 - GitHub Actions run `43834221923`: SUCCESS — TypeScript, 47 test files / 354 tests, production build and generated Wrangler Worker config validation.
 - This CI result validates repository code only; no Cloudflare deployment, D1 migration, background worker invocation or live authenticated smoke test is claimed.
+
+
+## 2026-11-16 — Roadmap status correction
+- Reconciled earlier stale statements: explicit chat-to-Manager task enqueue and the `/tasks` workspace are now implemented and CI-verified; they are no longer listed as open work.
+- Confirmed latest recorded Group 06 task UI verification run `43834221923` succeeded (TypeScript, 47 test files / 354 tests, production build and generated Wrangler configuration validation).
+- Group 06 remains IN PROGRESS because no background queue consumer or specialist execution worker is deployed; live D1/Cloudflare Access smoke tests and external action executors remain unverified.
