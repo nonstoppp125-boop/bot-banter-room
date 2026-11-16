@@ -178,8 +178,6 @@ export interface FileRoutesByFullPath {
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/memories': typeof ApiMemoriesRoute
-  '/api/memories': typeof ApiMemoriesRoute
-  '/api/memories': typeof ApiMemoriesRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
@@ -243,9 +241,9 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  fullPaths: '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  to: '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   id: '__root__' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesById: FileRoutesById
 }
@@ -464,6 +462,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTasksRoute: ApiTasksRoute,
   ApiTasksExecuteRoute: ApiTasksExecuteRoute,
   ApiAnalyticsRoute: ApiAnalyticsRoute,
+  ApiMemoriesRoute: ApiMemoriesRoute,
   ApiAccountExportRoute: ApiAccountExportRoute,
   ApiAccountDeletionRoute: ApiAccountDeletionRoute,
   ApiOAuthStartRoute: ApiOAuthStartRoute,
