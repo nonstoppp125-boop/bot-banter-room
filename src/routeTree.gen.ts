@@ -17,6 +17,7 @@ import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
 import { Route as ApiAccountDeletionRouteImport } from './routes/api/account/deletion'
 import { Route as ApiOAuthStartRouteImport } from './routes/api/integrations/oauth/start'
+import { Route as ApiOAuthCallbackRouteImport } from './routes/api/integrations/oauth/callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,11 @@ const ApiOAuthStartRoute = ApiOAuthStartRouteImport.update({
   path: '/api/integrations/oauth/start',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOAuthCallbackRoute = ApiOAuthCallbackRouteImport.update({
+  id: '/api/integrations/oauth/callback',
+  path: '/api/integrations/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
+  '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesByTo {
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
+  '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesById {
@@ -86,14 +94,15 @@ export interface FileRoutesById {
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
+  '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/analytics'
+  fullPaths: '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/analytics'
-  id: '__root__' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/analytics'
+  to: '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/analytics'
+  id: '__root__' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/analytics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -154,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOAuthStartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/integrations/oauth/callback': {
+      id: '/api/integrations/oauth/callback'
+      path: '/api/integrations/oauth/callback'
+      fullPath: '/api/integrations/oauth/callback'
+      preLoaderRoute: typeof ApiOAuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -172,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAccountExportRoute: ApiAccountExportRoute,
   ApiAccountDeletionRoute: ApiAccountDeletionRoute,
   ApiOAuthStartRoute: ApiOAuthStartRoute,
+  ApiOAuthCallbackRoute: ApiOAuthCallbackRoute,
   AnalyticsRoute: AnalyticsRoute,
 }
 export const routeTree = rootRouteImport

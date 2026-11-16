@@ -226,29 +226,80 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
 function validateOAuthEncryptionKey(key:Uint8Array):void{
  if(!(key instanceof Uint8Array)||key.byteLength!==32)throw new Error("OAuth verifier encryption key must be exactly 32 bytes.");
 }
-function oauthAad(provider:IntegrationProviderId,userId:string):Uint8Array{
- if(!/^[A-Za-z0-9._:-]{1,120}$/.test(userId))throw new Error("OAuth user identity is invalid.");
- return new TextEncoder().encode("liza-oauth-verifier:v1:"+provider+":"+userId);
+function oauthAad(provider:IntegrationProviderId,userId:string,workspaceId:string):Uint8Array{
+ if(!/^[A-Za-z0-9._:-]{1,120}$/.test(userId)||!/^[A-Za-z0-9._:-]{1,120}$/.test(workspaceId))throw new Error("OAuth user/workspace identity is invalid.");
+ return new TextEncoder().encode("liza-oauth-verifier:v1:"+provider+":"+workspaceId+":"+userId);
 }
 function asArrayBuffer(bytes:Uint8Array):ArrayBuffer{
  const copy=new Uint8Array(bytes.byteLength);copy.set(bytes);return copy.buffer;
 }
 /** AES-256-GCM encryption for the PKCE verifier before D1 persistence. */
-export async function encryptOAuthVerifier(input:{verifier:string;key:Uint8Array;provider:IntegrationProviderId;userId:string}):Promise<Uint8Array>{
+export async function encryptOAuthVerifier(input:{verifier:string;key:Uint8Array;provider:IntegrationProviderId;userId:string;workspaceId:string}):Promise<Uint8Array>{
  validateOAuthEncryptionKey(input.key);
  if(!/^[A-Za-z0-9_-]{43,128}$/.test(input.verifier))throw new Error("PKCE verifier is invalid.");
  const iv=crypto.getRandomValues(new Uint8Array(12));
  const cryptoKey=await crypto.subtle.importKey("raw",asArrayBuffer(input.key),{name:"AES-GCM"},false,["encrypt"]);
- const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:asArrayBuffer(iv),additionalData:asArrayBuffer(oauthAad(input.provider,input.userId)),tagLength:128},cryptoKey,asArrayBuffer(new TextEncoder().encode(input.verifier))));
+ const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:asArrayBuffer(iv),additionalData:asArrayBuffer(oauthAad(input.provider,input.userId,input.workspaceId)),tagLength:128},cryptoKey,asArrayBuffer(new TextEncoder().encode(input.verifier))));
  const result=new Uint8Array(iv.length+encrypted.length);result.set(iv);result.set(encrypted,iv.length);return result;
 }
-export async function decryptOAuthVerifier(input:{blob:Uint8Array;key:Uint8Array;provider:IntegrationProviderId;userId:string}):Promise<string>{
+export async function decryptOAuthVerifier(input:{blob:Uint8Array;key:Uint8Array;provider:IntegrationProviderId;userId:string;workspaceId:string}):Promise<string>{
  validateOAuthEncryptionKey(input.key);
  if(!(input.blob instanceof Uint8Array)||input.blob.byteLength<29)throw new Error("Encrypted OAuth verifier blob is invalid.");
  const iv=asArrayBuffer(input.blob.slice(0,12)),ciphertext=asArrayBuffer(input.blob.slice(12));
  const cryptoKey=await crypto.subtle.importKey("raw",asArrayBuffer(input.key),{name:"AES-GCM"},false,["decrypt"]);
- const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:asArrayBuffer(oauthAad(input.provider,input.userId)),tagLength:128},cryptoKey,ciphertext);
+ const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:asArrayBuffer(oauthAad(input.provider,input.userId,input.workspaceId)),tagLength:128},cryptoKey,ciphertext);
  const verifier=new TextDecoder().decode(plaintext);
  if(!/^[A-Za-z0-9_-]{43,128}$/.test(verifier))throw new Error("Decrypted PKCE verifier is invalid.");
  return verifier;
+}
+
+
+export interface OAuthConnectionCredentialPayload {
+  accessToken: string;
+  refreshToken: string | null;
+  tokenType: string;
+  createdAt: string;
+}
+
+/** Encrypt provider credentials with AES-256-GCM and workspace/user/provider-bound AAD. */
+export async function encryptConnectionCredentials(input:{
+  credentials:OAuthConnectionCredentialPayload;
+  key:Uint8Array;
+  provider:IntegrationProviderId;
+  userId:string;
+  workspaceId:string;
+}):Promise<Uint8Array>{
+ validateOAuthEncryptionKey(input.key);
+ if(!/^[A-Za-z0-9._:-]{1,120}$/.test(input.userId)||!/^[A-Za-z0-9._:-]{1,120}$/.test(input.workspaceId)||
+    typeof input.credentials.accessToken!=="string"||!input.credentials.accessToken||input.credentials.accessToken.length>10000||
+    (input.credentials.refreshToken!==null&&(typeof input.credentials.refreshToken!=="string"||input.credentials.refreshToken.length>10000))||
+    !Number.isFinite(Date.parse(input.credentials.createdAt)))throw new Error("OAuth credential payload is invalid.");
+ const iv=crypto.getRandomValues(new Uint8Array(12));
+ const aad=new TextEncoder().encode("liza-connection:v1:"+input.provider+":"+input.workspaceId+":"+input.userId);
+ const cryptoKey=await crypto.subtle.importKey("raw",asArrayBuffer(input.key),{name:"AES-GCM"},false,["encrypt"]);
+ const plaintext=new TextEncoder().encode(JSON.stringify(input.credentials));
+ const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:asArrayBuffer(iv),additionalData:asArrayBuffer(aad),tagLength:128},cryptoKey,asArrayBuffer(plaintext)));
+ const result=new Uint8Array(iv.length+encrypted.length);result.set(iv);result.set(encrypted,iv.length);return result;
+}
+
+export interface D1ConnectionRecord {
+ id:string;workspaceId:string;userId:string;provider:IntegrationProviderId;scopes:string[];
+ encryptedTokenBlob:Uint8Array;tokenExpiresAt:string|null;createdAt:string;updatedAt:string;
+}
+export type D1ConnectionDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>}}};
+export function createD1ConnectionStore(database:D1ConnectionDatabase){
+ if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 connection database is required.");
+ return{
+  create:async(record:D1ConnectionRecord)=>{
+   if(!/^[A-Za-z0-9._:-]{1,120}$/.test(record.id)||!/^[A-Za-z0-9._:-]{1,120}$/.test(record.workspaceId)||
+      !/^[A-Za-z0-9._:-]{1,120}$/.test(record.userId)||!INTEGRATION_PROVIDERS[record.provider]||
+      !record.scopes.length||record.scopes.some(scope=>!INTEGRATION_PROVIDERS[record.provider].allowedScopes.includes(scope))||
+      !(record.encryptedTokenBlob instanceof Uint8Array)||record.encryptedTokenBlob.byteLength<29||
+      !Number.isFinite(Date.parse(record.createdAt))||!Number.isFinite(Date.parse(record.updatedAt))||
+      (record.tokenExpiresAt!==null&&!Number.isFinite(Date.parse(record.tokenExpiresAt))))throw new Error("Invalid encrypted connection record.");
+   const result=await database.prepare("INSERT INTO app_connections (id,workspace_id,user_id,provider,provider_account_id,scopes_json,encrypted_token_blob,token_expires_at,status,created_at,updated_at) VALUES (?,?,?,?,NULL,?,?,?,'connected',?,?)")
+    .bind(record.id,record.workspaceId,record.userId,record.provider,JSON.stringify([...new Set(record.scopes)]),record.encryptedTokenBlob,record.tokenExpiresAt,record.createdAt,record.updatedAt).run();
+   if(result.success===false||result.meta?.changes!==1)throw new Error("D1 connection persistence failed.");
+  },
+ };
 }

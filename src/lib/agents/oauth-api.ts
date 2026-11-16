@@ -104,7 +104,7 @@ export async function handleOAuthStartRequest(request: Request, env: OAuthApiEnv
     const state = generateOAuthState();
     const pkce = await generateOAuthPkcePair();
     const expiresAt = new Date(Date.parse(now) + 10 * 60 * 1000).toISOString();
-    const encryptedVerifierBlob = await encryptOAuthVerifier({ verifier: pkce.verifier, key, provider, userId: session.userId });
+    const encryptedVerifierBlob = await encryptOAuthVerifier({ verifier: pkce.verifier, key, provider, userId: session.userId, workspaceId: session.workspaceId });
     const authorizationUrl = createOAuthAuthorizationUrl({
       provider,
       authorizationEndpoint,
