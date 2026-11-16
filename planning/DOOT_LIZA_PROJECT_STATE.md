@@ -231,3 +231,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added opaque session token generation, SHA-256 token hashing, D1 session create/lookup/revoke adapter and secure __Host- cookie helpers.
 - Raw session tokens are not persisted; cookies are Secure, HttpOnly, Path=/ and SameSite=Lax.
 - Login/registration endpoints and live D1 binding remain unconfigured. CI verification pending.
+
+
+## 2026-11-16 — Group 18 conversation persistence foundations
+- Added D1 conversation store operations for user/workspace-scoped list/search, message insert/read and owner-scoped soft deletion.
+- Message inserts use an ownership/deletion predicate in SQL; message reads join the owning conversation to enforce workspace/user isolation.
+- No conversation API/UI or live D1 binding is enabled. CI verification pending.

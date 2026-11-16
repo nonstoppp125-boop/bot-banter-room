@@ -224,3 +224,7 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — Group 18 session auth tests
 - Added tests for 256-bit opaque tokens, SHA-256 hashes, secure cookie attributes, invalid cookie rejection, D1 session creation, active lookup, revocation and expiry behavior.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 18 conversation store tests
+- Added tests for user/workspace query scoping, guarded message insertion and owner-scoped soft deletion. CI verification pending.
