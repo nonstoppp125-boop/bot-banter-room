@@ -9,6 +9,8 @@ type ExecutionDatabase = D1TaskDatabase & D1SessionDatabase & Parameters<typeof 
 export type TaskExecutionEnv = AgentEnv & { ACTION_DB?: ExecutionDatabase };
 type Runner = (input: { messages: UIMessage[]; env: AgentEnv; signal: AbortSignal }) => Promise<Response>;
 
+const MAX_REQUEST_BYTES = 2_048;
+const MAX_OUTPUT_CHARS = 180_000;
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Cookie" } });
 
@@ -16,36 +18,93 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+type JsonBodyResult =
+  | { ok: true; value: unknown }
+  | { ok: false; status: 400 | 413 };
+
+/** Read the tiny task-execution command with a hard streaming byte ceiling. */
+async function readBoundedJson(request: Request): Promise<JsonBodyResult> {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength !== null) {
+    const declaredLength = Number(contentLength);
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) {
+      return { ok: false, status: 413 };
+    }
+  }
+  if (!request.body) return { ok: false, status: 400 };
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > MAX_REQUEST_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413 };
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    try {
+      return { ok: true, value: JSON.parse(new TextDecoder().decode(bytes)) };
+    } catch {
+      return { ok: false, status: 400 };
+    }
+  } catch {
+    return { ok: false, status: 400 };
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 /** Decode only AI SDK text-delta records; never persist opaque stream protocol data. */
-async function readAssistantText(response: Response): Promise<string> {
+async function readAssistantText(response: Response, signal: AbortSignal): Promise<string> {
   if (!response.ok || !response.body) throw new Error("Specialist execution did not return a readable response.");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let output = "";
   let total = 0;
+
+  const cancelOnAbort = () => { void reader.cancel().catch(() => undefined); };
+  signal.addEventListener("abort", cancelOnAbort, { once: true });
+
+  const consumeLine = (line: string) => {
+    if (!line.startsWith("0:")) return;
+    let chunk: unknown;
+    try { chunk = JSON.parse(line.slice(2)); } catch { return; }
+    if (typeof chunk !== "string") return;
+    total += chunk.length;
+    if (total > MAX_OUTPUT_CHARS) throw new Error("Task output exceeded the storage limit.");
+    output += chunk;
+  };
+
   try {
     while (true) {
+      if (signal.aborted) throw new Error("Task execution was cancelled.");
       const { done, value } = await reader.read();
       buffer += decoder.decode(value, { stream: !done });
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.startsWith("0:")) continue;
-        let chunk: unknown;
-        try { chunk = JSON.parse(line.slice(2)); } catch { continue; }
-        if (typeof chunk === "string") {
-          total += chunk.length;
-          if (total > 180_000) throw new Error("Task output exceeded the storage limit.");
-          output += chunk;
-        }
-      }
+      for (const line of lines) consumeLine(line);
       if (done) break;
     }
+    if (buffer) consumeLine(buffer);
+    if (signal.aborted) throw new Error("Task execution was cancelled.");
+    return output.trim();
   } finally {
+    signal.removeEventListener("abort", cancelOnAbort);
     reader.releaseLock();
   }
-  return output.trim();
 }
 
 /**
@@ -71,8 +130,11 @@ export async function handleTaskExecutionRequest(
   const token = readSessionCookie(request.headers.get("cookie"));
   if (!token) return json({ error: "Authentication required." }, 401);
 
-  let body: unknown;
-  try { body = await request.json(); } catch { return json({ error: "Invalid JSON payload." }, 400); }
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    return json({ error: parsed.status === 413 ? "Request body is too large." : "Invalid JSON payload." }, parsed.status);
+  }
+  const body = parsed.value;
   if (!isRecord(body) || typeof body["taskId"] !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body["taskId"])) {
     return json({ error: "A valid taskId is required." }, 400);
   }
@@ -96,6 +158,9 @@ export async function handleTaskExecutionRequest(
     }
 
     const controller = new AbortController();
+    const abortForRequest = () => controller.abort("Client disconnected.");
+    request.signal.addEventListener("abort", abortForRequest, { once: true });
+    if (request.signal.aborted) abortForRequest();
     const timeout = setTimeout(() => controller.abort("Task execution time limit reached."), 110_000);
     try {
       const message: UIMessage = {
@@ -104,7 +169,7 @@ export async function handleTaskExecutionRequest(
         parts: [{ type: "text", text: task.inputSummary }],
       };
       const response = await runner({ messages: [message], env, signal: controller.signal });
-      const output = await readAssistantText(response);
+      const output = await readAssistantText(response, controller.signal);
       if (!output) throw new Error("Specialist workflow returned no final text.");
       const completedAt = new Date().toISOString();
       const saved = await store.update({
@@ -117,16 +182,20 @@ export async function handleTaskExecutionRequest(
       return json({ task: { id: task.id, status: "completed", result: { output }, updatedAt: completedAt } });
     } catch (error) {
       const failedAt = new Date().toISOString();
-      const reason = error instanceof Error ? error.message.slice(0, 500) : "Specialist execution failed.";
+      const cancelled = controller.signal.aborted;
+      const reason = cancelled
+        ? "Task execution was cancelled or exceeded its time limit."
+        : error instanceof Error ? error.message.slice(0, 500) : "Specialist execution failed.";
       await store.update({
         id: task.id, workspaceId: session.workspaceId, userId: session.userId,
-        expectedStatus: "running", status: "failed",
+        expectedStatus: "running", status: cancelled ? "cancelled" : "failed",
         result: { error: reason, failedAt },
         updatedAt: failedAt,
       }).catch(() => false);
-      return json({ error: "Task execution failed.", detail: reason }, 502);
+      return json({ error: cancelled ? "Task execution was cancelled." : "Task execution failed.", detail: reason }, cancelled ? 504 : 502);
     } finally {
       clearTimeout(timeout);
+      request.signal.removeEventListener("abort", abortForRequest);
     }
   } catch {
     return json({ error: "Task execution request could not be completed." }, 500);
