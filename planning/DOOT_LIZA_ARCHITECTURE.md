@@ -24,4 +24,10 @@ Status: TARGET DESIGN, not verified implementation.
 - Telegram and web must share policy enforcement and audit history.
 
 ## Current architecture evidence
-See SOURCE_AUDIT_REPORT.md when completed. Do not treat this target design as existing functionality.
+
+- Source inventory and implementation baseline: `SOURCE_AUDIT_REPORT.md` and `SOURCE_INVENTORY.md`.
+- Current component, route, orchestration, data and security map: `GROUP02_ARCHITECTURE_MAP.md`.
+- Request/stream/task/OAuth/Telegram flows: `GROUP02_REQUEST_LIFECYCLE.md`.
+- Persistence, identity, workspace, approvals and operational boundaries: `GROUP02_DATA_SECURITY_MAP.md`.
+
+This document remains a target design. The Group 02 documents distinguish implemented source behavior from unprovisioned or future capabilities; do not treat target layers as deployed functionality.

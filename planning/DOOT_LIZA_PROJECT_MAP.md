@@ -62,27 +62,21 @@ Never claim unverified completion.
 
 ## CURRENT POSITION
 STAGE 1/7
-GROUP 1.1/24 — SOURCE AUDIT
+GROUP 1.3/24 — BACKEND & PROVIDER
 
-1.1.1 Repository and Git identity — COMPLETE
-1.1.2 Local/remote history comparison — COMPLETE
-1.1.3 Remote source inventory — IN PROGRESS
-1.1.4 Dependencies and runtime verification — BLOCKED
-1.1.5 Security and deployment audit — PENDING
-1.1.6 Audit report and acceptance — PENDING
-
+1.1 Source Audit — COMPLETE
+1.2 Architecture — COMPLETE
+1.3 Backend & Provider — NEXT
 
 <!-- LIVE_PROGRESS_START -->
 ## Live Progress
 - Stage 1/7 — Foundation & Core AI
-- Group 1.1 — Source Audit: audit closed; runtime blocker documented
-- Group 1.2 — Architecture: audit and target blueprint documented
-- Group 1.3 — Backend & Provider: AUDIT/DESIGN PHASE COMPLETE
-- Steps 1.3.1–1.3.6: source audit, contract design, lifecycle trace,
-  API validation audit, runtime audit, consolidated review
-- Group 1.3 implementation and runtime verification: PENDING
-- Remote main: 13 commits ahead at last recorded comparison; not merged
-- Application source: unchanged during Group 1.3 audit
+- Group 1.1 — Source Audit: COMPLETE
+- Group 1.2 — Architecture: COMPLETE (source map and target design reconciled)
+- Group 1.3 — Backend & Provider: NEXT
+- Current working branch: `work/group06-manager-planner`
+- Current remote baseline: `f9521a48e2ed9f6494d6f7b01eeaf4d80cebb10a`
+- Remote `main` remains unmerged; no merge/reset/rebase performed
 <!-- LIVE_PROGRESS_END -->\n\n
 ## Group 1.3 implementation update — 2026-11-10
 - Hardened chat request validation: non-empty bounded message batches, bounded parts, valid IDs/roles/parts, and rejection of client-supplied system/developer roles.
