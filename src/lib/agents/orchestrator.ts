@@ -501,9 +501,9 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   );
   if (review?.status === "fulfilled" && review.output.trim()) {
     notes.push(
-      `Independent quality and acceptance review (${acceptanceReview.status}):\\n` +
-      `${acceptanceReview.summary}\\n` +
-      acceptanceReview.findings.join("\\n"),
+      `Quality Reviewer notes (acceptance: ${acceptanceReview.status}):\\n` +
+      review.output.trim() +
+      (acceptanceReview.reason ? `\\nAcceptance limitation: ${acceptanceReview.reason}` : ""),
     );
   } else {
     notes.push(`Independent quality review unavailable: ${review?.error ?? "no review output"}`);
