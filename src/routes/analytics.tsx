@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Download, FileUp, RefreshCw, TrendingUp } from "lucide-react";
-import { buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
+import { buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, exportAnalyticsCsv, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
 
 export const Route = createFileRoute("/analytics")({ component: AnalyticsPage });
 
