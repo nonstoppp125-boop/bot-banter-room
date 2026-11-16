@@ -18,11 +18,21 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ inputs.confirm_deploy == true && github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
     steps:
+      - name: Require explicit Group 03 deployment approval
+        env:
+          CONFIRM_DEPLOY: ${{ inputs.confirm_deploy }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRM_DEPLOY" != "true" ]; then
+            echo "Deployment not authorized. Set confirm_deploy to true and run again."
+            exit 1
+          fi
+          echo "Explicit Group 03 deployment approval confirmed."
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
