@@ -48,6 +48,7 @@ describe("production D1 config preparation", () => {
       migrations_dir: "../../migrations",
     });
     expect(result.d1_databases.some((item) => item.binding === "OTHER_DB")).toBe(true);
+    expect(result.secrets.required).toContain("GROQ_API_KEY");
   });
 
   it("replaces an existing ACTION_DB binding instead of creating duplicates", () => {

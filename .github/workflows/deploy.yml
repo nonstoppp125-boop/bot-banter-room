@@ -105,6 +105,10 @@ jobs:
             console.error("Production deployment blocked: ACTION_DB binding is missing or incomplete.");
             process.exit(1);
           }
+          if (!Array.isArray(config.secrets?.required) || !config.secrets.required.includes("GROQ_API_KEY")) {
+            console.error("Production deployment blocked: GROQ_API_KEY must be declared as a required Worker secret.");
+            process.exit(1);
+          }
           const migrationsPath = path.resolve(path.dirname(configPath), d1[0].migrations_dir);
           if (!fs.existsSync(migrationsPath) ||
               !fs.readdirSync(migrationsPath).some((file) => file.endsWith(".sql"))) {

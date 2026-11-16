@@ -45,7 +45,14 @@ export function addProductionD1Binding(config, {
     migrations_dir: migrationsDir,
   });
 
-  return { ...config, d1_databases };
+  const requiredSecrets = new Set(Array.isArray(config.secrets?.required) ? config.secrets.required : []);
+  requiredSecrets.add("GROQ_API_KEY");
+
+  return {
+    ...config,
+    d1_databases,
+    secrets: { ...(config.secrets ?? {}), required: [...requiredSecrets] },
+  };
 }
 
 async function main() {
