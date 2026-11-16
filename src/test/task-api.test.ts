@@ -108,7 +108,9 @@ describe("authenticated Manager task API", () => {
     expect(payload.task.plan.approvalRequired).toBe(true);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ workspace_id: "workspace-1", user_id: "user-1", status: "needs_approval" });
+    expect(queries.some((query) => query.startsWith("INSERT INTO approvals"))).toBe(true);
     expect(queries.some((query) => query.startsWith("INSERT INTO agent_tasks"))).toBe(true);
+    expect((JSON.parse(String(rows[0]?.["plan_json"])) as Record<string, unknown>)["approval"]).toBeDefined();
     expect(queries.some((query) => query.includes("UPDATE agent_tasks"))).toBe(false);
   });
 
