@@ -239,6 +239,9 @@ export async function buildLLMAssistedManagerPlan(
       };
     });
 
+    subtasks.sort(
+      (left, right) => basePlan.agentIds.indexOf(left.agentId) - basePlan.agentIds.indexOf(right.agentId),
+    );
     const subtaskIds = new Set(subtasks.map((task) => task.id));
     for (const task of subtasks) {
       if (task.dependsOn.some((dependency) => !subtaskIds.has(dependency) || dependency === task.id)) {
