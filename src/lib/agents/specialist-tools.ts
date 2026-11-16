@@ -44,7 +44,33 @@ export async function invokeSpecialistTool(input: {
     if (!Array.isArray(sources) || sources.length < 1 || sources.length > 3) {
       throw new Error("Research extraction accepts one to three selected sources.");
     }
-    return extractTavilyResearchSources(sources as ResearchSource[], input.apiKey ?? "", input.signal);
+    const validatedSources: ResearchSource[] = sources.map((source) => {
+      if (
+        !record(source) ||
+        typeof source["id"] !== "string" ||
+        !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$/.test(source["id"]) ||
+        typeof source["title"] !== "string" ||
+        source["title"].length > 500 ||
+        typeof source["url"] !== "string" ||
+        source["url"].length > 2_048 ||
+        typeof source["retrievedAt"] !== "string" ||
+        typeof source["content"] !== "string" ||
+        source["content"].length > 20_000 ||
+        (source["publisher"] !== undefined && typeof source["publisher"] !== "string") ||
+        (source["publishedAt"] !== undefined && typeof source["publishedAt"] !== "string")
+      ) {
+        throw new Error("Research extraction source metadata is invalid.");
+      }
+      return source as unknown as ResearchSource;
+    });
+    const sourceIds = validatedSources.map((source) => source.id);
+    if (new Set(sourceIds).size !== sourceIds.length) {
+      throw new Error("Research extraction source IDs must be unique.");
+    }
+    if (!input.apiKey?.trim()) {
+      throw new Error("Research extraction requires a configured server-side provider key.");
+    }
+    return extractTavilyResearchSources(validatedSources, input.apiKey, input.signal);
   }
 
   if (input.toolId === "coding.validate-command") {
