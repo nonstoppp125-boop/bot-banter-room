@@ -34,7 +34,7 @@ function makeDatabase(status: "queued" | "needs_approval" = "queued", claimAllow
             },
             all: async <T = Record<string, unknown>>() => ({ success: true, results: rows as unknown as T[] }),
             run: async () => {
-              if (query.includes("SET status=?") && query.includes("status=?")) {
+              if (query.startsWith("UPDATE agent_tasks") && values.length === 6) {
                 const [nextStatus, , id, workspaceId, userId, expectedStatus] = values;
                 const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === expectedStatus);
                 if (!row || (expectedStatus === "queued" && !claimAllowed)) return { success: true, meta: { changes: 0 } };
