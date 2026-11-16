@@ -5,6 +5,7 @@ import { createD1TaskStore, type D1TaskDatabase } from "./task-store";
 import { createD1WorkspaceAccessStore } from "./workspace-store";
 import type { AgentEnv } from "./types";
 import { restoreManagerPlan } from "./manager";
+import { verifyManagerTaskApproval } from "./task-approval";
 import { listAgents } from "./registry";
 
 type ExecutionDatabase = D1TaskDatabase & D1SessionDatabase & Parameters<typeof createD1WorkspaceAccessStore>[0];
@@ -151,11 +152,17 @@ export async function handleTaskExecutionRequest(
     const store = createD1TaskStore(database);
     const task = await store.get({ id: body["taskId"], workspaceId: session.workspaceId, userId: session.userId });
     if (!task) return json({ error: "Task not found." }, 404);
-    if (task.status === "needs_approval") return json({ error: "This task requires human approval before execution." }, 409);
+    if (task.status === "needs_approval") return json({ error: "This task requires a recorded human approval decision before execution." }, 409);
     if (task.status !== "queued") return json({ error: "Only queued tasks can be executed." }, 409);
     const managerPlan = restoreManagerPlan(task.inputSummary, task.plan, listAgents());
     if (!managerPlan) return json({ error: "The saved Manager plan is invalid or no longer compatible. Create a new task plan." }, 409);
-    if (managerPlan.approvalRequired) return json({ error: "This task requires human approval before execution." }, 409);
+    if (managerPlan.approvalRequired) {
+      const approval = await verifyManagerTaskApproval(database, {
+        taskId: task.id, workspaceId: session.workspaceId, userId: session.userId,
+        inputSummary: task.inputSummary, plan: task.plan, now,
+      });
+      if (!approval.allowed) return json({ error: "Human approval verification failed: " + approval.reason }, 409);
+    }
 
     const claimedAt = new Date().toISOString();
     if (!await store.claim({ id: task.id, workspaceId: session.workspaceId, userId: session.userId, updatedAt: claimedAt })) {
