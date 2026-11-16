@@ -6,7 +6,7 @@ const STATUSES=new Set<DurableTaskStatus>(["queued","running","completed","faile
 const ALLOWED_TRANSITIONS: Readonly<Record<DurableTaskStatus, readonly DurableTaskStatus[]>> = {
  queued: ["running", "cancelled"],
  running: ["completed", "failed", "cancelled"],
- needs_approval: ["queued", "cancelled"],
+ needs_approval: ["cancelled"],
  completed: [],
  failed: ["queued"],
  cancelled: [],
@@ -31,6 +31,13 @@ export function createD1TaskStore(database:D1TaskDatabase){
    if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!Number.isFinite(Date.parse(input.updatedAt)))throw new Error("Invalid task retry.");
    const result=await database.prepare("UPDATE agent_tasks SET status = 'queued', attempt_count = attempt_count + 1, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'failed' AND attempt_count < 2").bind(input.updatedAt,input.id,input.workspaceId,input.userId).run();
    if(result.success===false)throw new Error("D1 task retry failed.");
+   return result.meta?.changes===1;
+  },
+  unlockApproved:async(input:{id:string;workspaceId:string;userId:string;approvalId:string;actionType:string;payloadHash:string;updatedAt:string})=>{
+   const actions=new Set(["social.publish","social.reply","external.message","account.change","destructive.delete","deployment","financial.action"]);
+   if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!ID.test(input.approvalId)||!actions.has(input.actionType)||!/^[a-f0-9]{64}$/.test(input.payloadHash)||!Number.isFinite(Date.parse(input.updatedAt)))throw new Error("Invalid approved task unlock.");
+   const result=await database.prepare("UPDATE agent_tasks SET status = 'queued', updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'needs_approval' AND EXISTS (SELECT 1 FROM approvals a WHERE a.id = ? AND a.workspace_id = ? AND a.status = 'approved' AND a.action_type = ? AND a.payload_hash = ? AND a.expires_at > ?)").bind(input.updatedAt,input.id,input.workspaceId,input.userId,input.approvalId,input.workspaceId,input.actionType,input.payloadHash,input.updatedAt).run();
+   if(result.success===false)throw new Error("D1 approved task unlock failed.");
    return result.meta?.changes===1;
   },
   update:async(input:{id:string;workspaceId:string;userId:string;expectedStatus:DurableTaskStatus;status:DurableTaskStatus;plan?:unknown;result?:unknown|null;updatedAt:string})=>{if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!STATUSES.has(input.expectedStatus)||!STATUSES.has(input.status)||!Number.isFinite(Date.parse(input.updatedAt)))throw new Error("Invalid task update.");if(!canTransitionTaskStatus(input.expectedStatus,input.status))throw new Error("Invalid task status transition.");const resultJson=input.result===undefined?null:input.result===null?null:serialize(input.result,200_000),planJson=input.plan===undefined?null:serialize(input.plan,100_000);const result=await database.prepare("UPDATE agent_tasks SET status=?, plan_json=COALESCE(?,plan_json), result_json=COALESCE(?,result_json), updated_at=? WHERE id=? AND workspace_id=? AND user_id=? AND status=?").bind(input.status,planJson,resultJson,input.updatedAt,input.id,input.workspaceId,input.userId,input.expectedStatus).run();if(result.success===false)throw new Error("D1 task update failed.");return result.meta?.changes===1;},
