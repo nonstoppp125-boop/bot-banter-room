@@ -298,7 +298,7 @@ export async function handleTelegramWebhookRequest(
       };
       await createD1TaskStore(database).create(task);
       const statusText = plan.approvalRequired
-        ? "This plan is approval-gated and will not execute until an approval workflow is completed."
+        ? "This plan is approval-gated and will not execute from Telegram. A task-to-approval execution bridge is not available yet; review it in the web Tasks page."
         : "Plan saved as queued. Open the Liza web Tasks page and choose Run with Manager; background execution is not enabled.";
       await sendTelegramText({
         token: botToken, chatId: message.chatId, fetcher,
