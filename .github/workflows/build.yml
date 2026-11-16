@@ -2,7 +2,7 @@ name: Doot Cloud Build
 
 on:
   push:
-    branches: [main, "automation/**"]
+    branches: [main, "automation/**", "work/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
