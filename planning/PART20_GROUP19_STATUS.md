@@ -43,4 +43,6 @@ No merge to `main`; no production deployment.
 - /link CODE consumes the token once and binds the Telegram identity to the user's active workspace membership. Unlinked users receive linking instructions.
 - Linked messages are stored in the shared D1 conversation model and answered by the default Liza Groq model; replies are chunked safely at 4096 Unicode code points. No Telegram message can trigger publishing, deployment or destructive actions.
 - Settings → Integrations now includes a one-time Telegram link-code generator.
-- Verification pending. Live bot token, webhook secret, bot ID, D1 binding/migration and Telegram setWebhook registration are not provisioned.
+- GitHub Actions run 43815548281: SUCCESS — TypeScript, 45 test files / 322 tests, production build and Nitro-generated Wrangler validation. Live bot token, webhook secret, bot ID, D1 binding/migration and Telegram setWebhook registration are not provisioned.
+
+- Telegram link-token and webhook regression tests cover hashed code persistence, same-origin enforcement, secret rejection, private identity linking and unlinked-user instructions.

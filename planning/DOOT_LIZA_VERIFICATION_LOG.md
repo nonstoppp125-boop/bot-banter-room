@@ -271,3 +271,14 @@ Append new evidence below; never rewrite historical results.\n\n
 - Production build: passed.
 - Nitro-generated Wrangler configuration validation: passed.
 - Runtime Access application, D1 migration apply/binding and authenticated browser smoke are not claimed.
+
+
+## 2026-11-16 — Telegram webhook and link flow verification
+- Commit: 03077b5dd3049c530090950ac9a54c3e5c8c3eba.
+- Run: 43815548281 — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: 45 files, 322 tests passed.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Test coverage includes link-code hashing/expiry, same-origin enforcement, webhook secret validation, private Telegram identity linking and unlinked-user response.
+- Live D1/Telegram configuration and external webhook smoke are not claimed.

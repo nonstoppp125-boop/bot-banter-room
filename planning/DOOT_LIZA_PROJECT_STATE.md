@@ -283,3 +283,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added Cloudflare Access RS256 assertion verification, user/workspace provisioning, 8-hour secure D1-backed session issuance, sign-in navigation and logout revocation.
 - Group 18 remains IN PROGRESS pending Access application/domain/audience setup, D1 binding, recovery and live authenticated smoke tests.
 - No production deployment or merge to main; local Termux worktree unchanged.
+
+
+## 2026-11-16 — Telegram bridge continuation checkpoint
+- Latest verified commit: 03077b5dd3049c530090950ac9a54c3e5c8c3eba.
+- GitHub Actions run 43815548281: SUCCESS — TypeScript, 45 test files / 322 tests, production build and Nitro-generated Wrangler validation.
+- Group 19 now has a session-authenticated one-time Telegram link-code endpoint, secret-verified webhook, replay claims, private-chat-only identity linking, shared D1 conversation persistence and default-Liza Groq reply flow.
+- Telegram bot ID/token/webhook secret, D1 binding and migration apply, webhook registration and live bot smoke remain unconfigured. No Telegram publishing/approval/destructive actions are enabled.
+- No merge to main or production deployment; local Termux branch/worktree unchanged.

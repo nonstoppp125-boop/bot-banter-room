@@ -42,3 +42,5 @@ No merge to `main`; no production deployment.
 - Live Access app, D1 provisioning, production secrets and authenticated runtime smoke remain blocked.
 
 - Added a chat-navigation Sign out action; it calls the same-origin logout route, revokes the current session and clears the host cookie. Regression tests cover logout revocation and cross-origin rejection. Verification pending.
+
+- Logout UI and session revocation regression tests verified in GitHub Actions run 43815548281: SUCCESS — 45 test files / 322 tests, TypeScript, production build and Wrangler validation.
