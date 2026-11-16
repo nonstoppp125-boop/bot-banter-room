@@ -18,3 +18,9 @@ Branch: work/group06-manager-planner
 
 GROUP 22: IN PROGRESS — health and logging foundations implemented; production infrastructure and monitoring remain unconfigured.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Production deployment guard
+
+- Manual production deployment now runs only when explicitly confirmed from `main`, checks out the selected `github.ref`, and fails closed unless the generated Worker config contains the `ACTION_DB` D1 binding with a database ID.
+- No deployment was triggered. Current source branch does not have a provisioned production D1 binding, so release remains blocked pending account-side setup.
