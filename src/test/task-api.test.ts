@@ -160,6 +160,27 @@ describe("authenticated Manager task API", () => {
     expect(state.queries.some((query) => query.includes("a.status = 'approved'") && query.includes("a.payload_hash = ?"))).toBe(true);
   });
 
+  it("refuses to unlock when the persisted task plan changes after approval", async () => {
+    const state = makeDatabase();
+    const create = await handleTaskRequest(post({ task: "Publish this LinkedIn post" }), { ACTION_DB: state.database });
+    expect(create.status).toBe(201);
+    const created = await create.json() as { task: { id: string; status: string } };
+    state.approvalRow!["status"] = "approved";
+    state.approvalRow!["decided_by_user_id"] = "workspace-admin";
+    state.approvalRow!["decision_reason"] = "Reviewed and approved";
+    state.approvalRow!["decided_at"] = new Date().toISOString();
+    const changedPlan = buildManagerPlan("Publish a different LinkedIn post", listAgents());
+    state.rows[0]!["plan_json"] = JSON.stringify(changedPlan);
+    const response = await handleTaskRequest(new Request(url, {
+      method: "PATCH",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "unlock", taskId: created.task.id }),
+    }), { ACTION_DB: state.database });
+    expect(response.status).toBe(409);
+    expect(state.rows[0]?.["status"]).toBe("needs_approval");
+    expect(state.queries.some((query) => query.includes("UPDATE agent_tasks SET status = 'queued'"))).toBe(false);
+  });
+
   it("lets the owner cancel an approval-gated task before approval", async () => {
     const state = makeDatabase();
     const create = await handleTaskRequest(post({ task: "Publish this LinkedIn post" }), { ACTION_DB: state.database });
