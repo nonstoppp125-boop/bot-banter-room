@@ -3,13 +3,20 @@ function isPrivateIpv4(host:string):boolean{
  const parts=host.split(".").map(Number);if(parts.length!==4||parts.some(n=>!Number.isInteger(n)||n<0||n>255))return false;
  const a=parts[0]!,b=parts[1]!;
  const c=parts[2]!;
- return a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&(b===168||(b===0&&c<=2)))||(a===100&&b>=64&&b<=127)||(a===198&&(b===18||b===19||(b===51&&c===100)))||(a===203&&b===0&&c===113);
+ return a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&(b===168||(b===0&&c<=2)||(b===88&&c===99)))||(a===100&&b>=64&&b<=127)||(a===198&&(b===18||b===19||(b===51&&c===100)))||(a===203&&b===0&&c===113);
 }
 function isPrivateHost(host:string):boolean{
  const value=host.toLowerCase().replace(/^\[|\]$/g,"").replace(/\.$/,"");
  if(value==="localhost"||value.endsWith(".localhost")||value.endsWith(".local")||value.endsWith(".internal")||value.endsWith(".test"))return true;
  if(/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value)&&isPrivateIpv4(value))return true;
- if(value==="::"||value==="::1"||value.startsWith("fc")||value.startsWith("fd")||value.startsWith("fe80:")||value.startsWith("::ffff:"))return true;
+ if(value.startsWith("::"))return true;
+ if(value.includes(":")){
+  const segments=value.split(":");
+  const first=Number.parseInt(segments[0]||"0",16),second=Number.parseInt(segments[1]||"0",16);
+  if(!Number.isFinite(first)||!Number.isFinite(second))return true;
+  if((first&0xfe00)===0xfc00||(first&0xffc0)===0xfe80||(first&0xff00)===0xff00||(first&0xffc0)===0xfec0)return true;
+  if(first===0x2001&&(second===0x0db8||second===0x0010||second===0x0020))return true;
+ }
  return false;
 }
 export function validateOutboundUrl(raw:string,allowedHosts:readonly string[]=[]):OutboundUrlDecision{
