@@ -56,6 +56,12 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
                 });
               }
               if (query.startsWith("UPDATE agent_tasks")) {
+                if (query.includes("updated_at < ?")) {
+                  const [resultJson, updatedAt, id, workspaceId, userId, staleBefore] = values;
+                  const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === "running" && Date.parse(String(item["updated_at"])) < Date.parse(String(staleBefore)));
+                  if (row) { row["status"] = "failed"; row["result_json"] = resultJson; row["updated_at"] = updatedAt; return { success: true, meta: { changes: 1 } }; }
+                  return { success: true, meta: { changes: 0 } };
+                }
                 if (query.includes("EXISTS (SELECT 1 FROM approvals a")) {
                   const [updatedAt, id, workspaceId, userId, approvalId, approvalWorkspace, actionType, payloadHash, expiresAt] = values;
                   const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === "needs_approval");
@@ -179,6 +185,34 @@ describe("authenticated Manager task API", () => {
     expect(response.status).toBe(409);
     expect(state.rows[0]?.["status"]).toBe("needs_approval");
     expect(state.queries.some((query) => query.includes("UPDATE agent_tasks SET status = 'queued'"))).toBe(false);
+  });
+
+  it("recovers only a stale running task owned by the caller", async () => {
+    const state = makeDatabase();
+    const staleUpdatedAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    state.rows.push({
+      id: "stale-task", workspace_id: "workspace-1", user_id: "user-1", status: "running",
+      input_summary: "Prepare a research brief", plan_json: JSON.stringify({}), result_json: null,
+      created_at: staleUpdatedAt, updated_at: staleUpdatedAt, attempt_count: 0,
+    });
+    const patch = (taskId: string) => new Request(url, {
+      method: "PATCH",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "recover", taskId }),
+    });
+    const recovered = await handleTaskRequest(patch("stale-task"), { ACTION_DB: state.database });
+    expect(recovered.status).toBe(200);
+    expect(state.rows.find((row) => row["id"] === "stale-task")?.["status"]).toBe("failed");
+    expect(String(state.rows.find((row) => row["id"] === "stale-task")?.["result_json"])).toContain("manual-stale-recovery");
+
+    state.rows.push({
+      id: "fresh-task", workspace_id: "workspace-1", user_id: "user-1", status: "running",
+      input_summary: "Prepare a current report", plan_json: JSON.stringify({}), result_json: null,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString(), attempt_count: 0,
+    });
+    const fresh = await handleTaskRequest(patch("fresh-task"), { ACTION_DB: state.database });
+    expect(fresh.status).toBe(409);
+    expect(state.rows.find((row) => row["id"] === "fresh-task")?.["status"]).toBe("running");
   });
 
   it("lets the owner cancel an approval-gated task before approval", async () => {
