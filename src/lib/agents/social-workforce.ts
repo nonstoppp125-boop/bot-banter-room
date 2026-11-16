@@ -133,7 +133,7 @@ export function createSocialCalendar(input: {
     const date = new Date(start.getTime() + day * 86_400_000);
     if (date.getUTCDay() === 0 || date.getUTCDay() === 6) continue;
     const platform = platforms[slot % platforms.length]!;
-    const format = input.formats?.[platform] ?? (platform === "youtube" ? "short-video" : platform === "x" ? "thread" : "post");
+    const format = input.formats?.[platform] ?? (platform === "youtube" || platform === "tiktok" ? "short-video" : platform === "x" ? "thread" : "post");
     if (!ALLOWED_FORMATS[platform].includes(format)) continue;
     entries.push({
       id: `social-${slot + 1}`,
