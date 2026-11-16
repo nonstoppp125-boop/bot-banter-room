@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { handleTaskExecutionRequest } from "@/lib/agents/task-execution-api";
 import { buildManagerPlan } from "@/lib/agents/manager";
 import { listAgents } from "@/lib/agents/registry";
+import { createManagerTaskApproval } from "@/lib/agents/task-approval";
 
 const token = "A".repeat(43);
 const cookie = "__Host-liza_session=" + token;
@@ -14,6 +15,7 @@ function makeDatabase(status: "queued" | "needs_approval" = "queued", claimAllow
     created_at: "2026-11-16T00:00:00.000Z", updated_at: "2026-11-16T00:00:00.000Z",
   }];
   const queries: string[] = [];
+  let approvalRow: Record<string, unknown> | null = null;
   const database = {
     prepare(query: string) {
       queries.push(query);
@@ -32,10 +34,20 @@ function makeDatabase(status: "queued" | "needs_approval" = "queued", claimAllow
                 const [id, workspaceId, userId] = values;
                 return rows.find((row) => row["id"] === id && row["workspace_id"] === workspaceId && row["user_id"] === userId) as T ?? null;
               }
+              if (query.includes("FROM approvals a JOIN workspace_members")) return approvalRow as T ?? null;
               return null;
             },
             all: async <T = Record<string, unknown>>() => ({ success: true, results: rows as unknown as T[] }),
             run: async () => {
+              if (query.startsWith("INSERT INTO approvals")) {
+                const [id, workspaceId, userId, actionType, payloadHash, summary, expiresAt, createdAt] = values;
+                approvalRow = {
+                  id, workspace_id: workspaceId, user_id: userId, action_type: actionType,
+                  payload_hash: payloadHash, summary, status: "pending", expires_at: expiresAt,
+                  created_at: createdAt, decided_by_user_id: null, decision_reason: null, decided_at: null,
+                };
+                return { success: true, meta: { changes: 1 } };
+              }
               if (query.startsWith("UPDATE agent_tasks") && values.length === 6) {
                 const [nextStatus, , id, workspaceId, userId, expectedStatus] = values;
                 const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === expectedStatus);
@@ -60,7 +72,7 @@ function makeDatabase(status: "queued" | "needs_approval" = "queued", claimAllow
       };
     },
   };
-  return { database, rows, queries };
+  return { database, rows, queries, get approvalRow() { return approvalRow; } };
 }
 
 function post(body: unknown, origin = "https://liza.example") {
@@ -132,6 +144,31 @@ describe("authenticated Manager task execution", () => {
     expect(response.status).toBe(409);
     expect(invoked).toBe(false);
     expect(rows[0]?.["status"]).toBe("queued");
+  });
+
+  it("executes an approval-gated Manager task only after verifying the persisted payload-bound approval", async () => {
+    const summary = "Publish this LinkedIn post";
+    const { database, rows, approvalRow } = makeDatabase("queued", true, summary);
+    const plan = buildManagerPlan(summary, listAgents());
+    const approval = await createManagerTaskApproval(database as never, {
+      taskId: "task-1", workspaceId: "workspace-1", userId: "user-1",
+      inputSummary: summary, plan, now: "2026-11-16T12:00:00.000Z",
+    });
+    rows[0]!["plan_json"] = JSON.stringify({ ...plan, approval });
+    expect(approvalRow).not.toBeNull();
+    approvalRow!["status"] = "approved";
+    approvalRow!["decided_by_user_id"] = "workspace-admin";
+    approvalRow!["decision_reason"] = "Reviewed and approved";
+    approvalRow!["decided_at"] = "2026-11-16T12:05:00.000Z";
+    let invoked = false;
+    const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }), env(database), async ({ managerPlan }) => {
+      invoked = true;
+      expect(managerPlan).toMatchObject({ approvalRequired: true });
+      return new Response(`0:${JSON.stringify("Approved draft prepared; nothing was published.")}\\n`, { status: 200 });
+    });
+    expect(response.status).toBe(200);
+    expect(invoked).toBe(true);
+    expect(rows[0]?.["status"]).toBe("completed");
   });
 
   it("returns conflict when another worker already claimed the task", async () => {
