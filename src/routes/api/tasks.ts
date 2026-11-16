@@ -11,6 +11,7 @@ export const Route = createFileRoute("/api/tasks")({
     handlers: {
       GET: async ({ request }) => handleTaskRequest(request, getTaskEnv(request)),
       POST: async ({ request }) => handleTaskRequest(request, getTaskEnv(request)),
+      PATCH: async ({ request }) => handleTaskRequest(request, getTaskEnv(request)),
       HEAD: async () => new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } }),
     },
   },
