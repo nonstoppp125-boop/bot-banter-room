@@ -25,6 +25,7 @@ import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
 import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks/execute'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
+import { Route as ApiMemoriesRouteImport } from './routes/api/memories'
 import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
 import { Route as ApiAccountDeletionRouteImport } from './routes/api/account/deletion'
 import { Route as ApiOAuthStartRouteImport } from './routes/api/integrations/oauth/start'
@@ -113,6 +114,11 @@ const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
   path: '/api/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMemoriesRoute = ApiMemoriesRouteImport.update({
+  id: '/api/memories',
+  path: '/api/memories',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAccountExportRoute = ApiAccountExportRouteImport.update({
   id: '/api/account/export',
   path: '/api/account/export',
@@ -165,6 +171,9 @@ export interface FileRoutesByFullPath {
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/analytics': typeof ApiAnalyticsRoute
+  '/api/memories': typeof ApiMemoriesRoute
+  '/api/memories': typeof ApiMemoriesRoute
+  '/api/memories': typeof ApiMemoriesRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
@@ -330,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/api/analytics'
       fullPath: '/api/analytics'
       preLoaderRoute: typeof ApiAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/memories': {
+      id: '/api/memories'
+      path: '/api/memories'
+      fullPath: '/api/memories'
+      preLoaderRoute: typeof ApiMemoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/account/export': {
