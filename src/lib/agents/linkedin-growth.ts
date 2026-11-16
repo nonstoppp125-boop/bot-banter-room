@@ -1,4 +1,6 @@
-import { executeApprovedAction } from "./action-policy";
+import { executeVerifiedApprovedAction } from "./action-policy";
+import type { ApprovalStore } from "./approval-store";
+import { hashApprovalPayload } from "./approval-store";
 import type { DurableActionStore } from "./action-policy";
 
 export type LinkedInDraftStatus =
@@ -295,6 +297,10 @@ export interface LinkedInPublishInput {
   apiConfigured: boolean;
   officialApiPermissionGranted: boolean;
   durableActionStore: DurableActionStore | null;
+  approvalStore: ApprovalStore | null;
+  approvalId: string;
+  workspaceId: string;
+  approverUserId: string;
   publisher: LinkedInPublisher | null;
 }
 
@@ -305,7 +311,7 @@ export async function publishApprovedLinkedInDraft(
   if (!current || !["approved", "scheduled"].includes(current.status)) {
     throw new Error("Draft must be approved before publication.");
   }
-  if (!current.approvedBy) throw new Error("Explicit user approval is missing.");
+  if (!current.approvedBy || !input.approverUserId || current.approvedBy !== input.approverUserId) throw new Error("Explicit approval by the initiating user is missing.");
   if (!input.apiConfigured || !input.officialApiPermissionGranted || !input.publisher) {
     throw new Error("LinkedIn official API connection or publishing permission is unavailable.");
   }
@@ -322,12 +328,20 @@ export async function publishApprovedLinkedInDraft(
   ) {
     throw new Error("Scheduled publication time has not arrived.");
   }
-  const key = `li-pub-${current.id}`;
+  if (!input.approvalStore || !input.approvalId || !input.workspaceId) throw new Error("Persisted approval storage is unavailable.");
+  const payloadHash = await hashApprovalPayload({ platform: "linkedin", draftId: current.id, content: current.content });
+  const key = "li-pub-" + (await hashApprovalPayload({ draftId: current.id, version: current.version })).slice(0, 32);
   const publishing = transition(input.store, current, "publishing", input.actor, now);
 
   try {
-    const result = await executeApprovedAction({
-      approvedByUser: true,
+    const result = await executeVerifiedApprovedAction({
+      approvalStore: input.approvalStore,
+      approvalId: input.approvalId,
+      actorUserId: input.approverUserId,
+      workspaceId: input.workspaceId,
+      actionType: "social.publish",
+      payloadHash,
+      now,
       idempotencyKey: key,
       store: input.durableActionStore,
       execute: () =>

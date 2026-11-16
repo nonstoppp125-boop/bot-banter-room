@@ -21,6 +21,7 @@ import {
   scheduleApprovedLinkedInDraft,
   submitLinkedInDraftForApproval,
 } from "../lib/agents/linkedin-growth";
+import { hashApprovalPayload } from "../lib/agents/approval-store";
 
 const now = "2026-11-14T10:00:00.000Z";
 
@@ -34,6 +35,14 @@ function readyDraft(store: InMemoryLinkedInGrowthStore, id = "draft-1") {
   saveLinkedInDraft(store, draft, "author");
   submitLinkedInDraftForApproval(store, id, "author", now);
   return approveLinkedInDraft(store, id, "owner", now);
+}
+
+
+async function approvalContext(store:InMemoryLinkedInGrowthStore,draftId="draft-1"){
+ const draft=store.getDraft(draftId)!;
+ const payloadHash=await hashApprovalPayload({platform:"linkedin",draftId:draft.id,content:draft.content});
+ const approval={id:"approval-"+draftId,workspaceId:"ws1",userId:"author",actionType:"social.publish" as const,payloadHash,status:"approved" as const,decidedByUserId:"owner",decisionReason:"approved",expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-14T09:00:00.000Z",decidedAt:"2026-11-14T10:00:00.000Z"};
+ return {approvalStore:{get:async(input:{id:string;workspaceId:string;actorUserId:string})=>input.id===approval.id&&input.workspaceId==="ws1"&&input.actorUserId==="owner"?approval:null},approvalId:approval.id,workspaceId:"ws1",approverUserId:"owner"};
 }
 
 describe("LinkedIn Growth workflow", () => {
@@ -96,6 +105,7 @@ describe("LinkedIn Growth workflow", () => {
     const publish = vi.fn(async () => ({ publicationId: "post-1" }));
     await expect(
       publishApprovedLinkedInDraft({
+        ...await approvalContext(store),
         store,
         draftId: "draft-1",
         actor: "owner",
@@ -115,6 +125,7 @@ describe("LinkedIn Growth workflow", () => {
     const publish = vi.fn(async () => ({ publicationId: "post-1" }));
     await expect(
       publishApprovedLinkedInDraft({
+        ...await approvalContext(store),
         store,
         draftId: "draft-1",
         actor: "owner",
@@ -163,7 +174,8 @@ describe("LinkedIn Growth workflow", () => {
       }),
     };
     const result = await publishApprovedLinkedInDraft({
-      store,
+        ...await approvalContext(store),
+        store,
       draftId: "draft-1",
       actor: "owner",
       now,
@@ -188,6 +200,7 @@ describe("LinkedIn Growth workflow", () => {
     const publisher = { publish: vi.fn(async () => ({ publicationId: "p1" })) };
     await expect(
       publishApprovedLinkedInDraft({
+        ...await approvalContext(store),
         store,
         draftId: "draft-1",
         actor: "owner",
@@ -207,6 +220,7 @@ describe("LinkedIn Growth workflow", () => {
     readyDraft(store);
     await expect(
       publishApprovedLinkedInDraft({
+        ...await approvalContext(store),
         store,
         draftId: "draft-1",
         actor: "owner",
