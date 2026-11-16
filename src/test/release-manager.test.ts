@@ -1,0 +1,9 @@
+import {describe,expect,it} from "vitest";
+import {buildReleaseManifest,evaluateReleaseCandidate} from "@/lib/agents/release-manager";
+const base={version:"1.0.0-rc.1",commitSha:"abcdef123456789",branch:"release/candidate",changeSummary:"Release candidate",artifactSha256:"a".repeat(64),qualityStatus:"passed" as const,rollbackPlan:"Restore the previous worker version and verify health.",backupEvidence:"D1 snapshot and restore drill evidence recorded.",now:"2026-11-16T10:00:00Z"};
+describe("final release manager",()=>{
+it("blocks release when quality or rollback evidence is missing",()=>{expect(evaluateReleaseCandidate({...base,qualityStatus:"blocked"}).status).toBe("blocked");expect(evaluateReleaseCandidate({...base,backupEvidence:""}).deploymentAllowed).toBe(false);});
+it("requires explicit human approval after technical gates pass",()=>{expect(evaluateReleaseCandidate({...base,approval:null}).status).toBe("ready-for-human-approval");});
+it("binds approval to the exact candidate commit and never deploys",()=>{const approval={approved:true,approvedByUserId:"user-1",approvedAt:"2026-11-16T10:01:00Z",commitSha:base.commitSha,scope:"production" as const,reason:"Approved after review"};expect(evaluateReleaseCandidate({...base,approval})).toMatchObject({status:"approved-for-promotion",deploymentAllowed:false,deploymentPerformed:false});expect(evaluateReleaseCandidate({...base,approval:{...approval,commitSha:"wrong"}}).status).toBe("blocked");});
+it("creates an immutable-style release manifest with artifact digest",()=>{expect(buildReleaseManifest({version:base.version,commitSha:base.commitSha,artifactSha256:base.artifactSha256,builtAt:base.now,changeSummary:base.changeSummary})).toMatchObject({version:base.version,artifactSha256:base.artifactSha256,deploymentPerformed:false});});
+});

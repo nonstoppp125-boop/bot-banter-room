@@ -77,8 +77,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#ffffff" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#ffffff", media: "(prefers-color-scheme: light)" },
+      { name: "theme-color", content: "#0b1220", media: "(prefers-color-scheme: dark)" },
       { name: "apple-mobile-web-app-title", content: "Liza" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
@@ -107,8 +108,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+  }, []);
+
   return (
-    <html lang="en">
+    <html lang="bn">
       <head>
         <HeadContent />
       </head>

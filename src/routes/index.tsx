@@ -50,7 +50,7 @@ function Index() {
 
   const composer = (
     <PromptInput className="composer" onSubmit={(msg) => send(msg.text)}>
-      <PromptInputTextarea autoFocus placeholder="যেকোনো কিছু জিজ্ঞেস করুন" className="min-h-12 px-5 pt-4 text-[15px]" />
+      <PromptInputTextarea autoFocus placeholder="যেকোনো কিছু জিজ্ঞেস করুন" aria-label="বার্তা লিখুন" className="min-h-12 px-5 pt-4 text-[15px]" />
       <PromptInputFooter className="px-3 pb-3">
         <PromptInputTools />
         <PromptInputSubmit status={status} onStop={stop} className="rounded-full" />
@@ -115,7 +115,7 @@ function Index() {
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
-          <div className="mx-auto w-full max-w-3xl px-4 pb-3">
+          <div className="safe-area-bottom mx-auto w-full max-w-3xl px-4 pb-3">
             {composer}
             <p className="mt-2 text-center text-xs text-muted-foreground">
               Liza ভুল করতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।

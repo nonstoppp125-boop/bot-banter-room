@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,10 +29,16 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesByTo {
@@ -47,7 +54,7 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat' | '/analytics'
+  fullPaths: '/' | '/api/chat' | '/api/health' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/api/chat' | '/analytics'
   id: '__root__' | '/' | '/api/chat' | '/analytics'
@@ -56,6 +63,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
 }
 
@@ -75,6 +83,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -88,6 +103,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiHealthRoute: ApiHealthRoute,
   AnalyticsRoute: AnalyticsRoute,
 }
 export const routeTree = rootRouteImport
