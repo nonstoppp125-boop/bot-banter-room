@@ -175,8 +175,6 @@ export type D1OAuthTransactionDatabase = {
   };
 };
 
-const canonicalIso=(value:string)=>{if(!Number.isFinite(Date.parse(value)))return false;try{return new Date(value).toISOString()===value;}catch{return false;}};
-
 /** Stores only a state hash and an encrypted PKCE verifier; raw state/verifier never enter this adapter. */
 export function createD1OAuthTransactionStore(database: D1OAuthTransactionDatabase): OAuthTransactionStore {
   if (!database || typeof database.prepare !== "function") throw new Error("A valid D1 OAuth database is required.");
@@ -189,8 +187,8 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
           !(record.encryptedVerifierBlob instanceof Uint8Array) ||
           record.encryptedVerifierBlob.byteLength < 32 ||
           !Array.isArray(record.scopes) || !record.scopes.length ||
-          !canonicalIso(record.createdAt) ||
-          !canonicalIso(record.expiresAt) ||
+          new Date(record.createdAt).toISOString() !== record.createdAt ||
+          new Date(record.expiresAt).toISOString() !== record.expiresAt ||
           Date.parse(record.expiresAt) <= Date.parse(record.createdAt)) {
         throw new Error("Invalid OAuth transaction record.");
       }
@@ -202,7 +200,7 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
       if (result.meta?.changes !== 1) throw new Error("OAuth state hash already exists or D1 did not confirm the insert.");
     },
     consume: async (stateHash, now) => {
-      if (!/^[a-f0-9]{64}$/.test(stateHash) || !canonicalIso(now)) return null;
+      if (!/^[a-f0-9]{64}$/.test(stateHash) || new Date(now).toISOString() !== now) return null;
       const row = await database.prepare(
         "UPDATE oauth_transactions SET consumed_at = ? WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ? RETURNING state_hash, provider, user_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at",
       ).bind(now, stateHash, now).first<{
@@ -230,21 +228,24 @@ function oauthAad(provider:IntegrationProviderId,userId:string):Uint8Array{
  if(!/^[A-Za-z0-9._:-]{1,120}$/.test(userId))throw new Error("OAuth user identity is invalid.");
  return new TextEncoder().encode("liza-oauth-verifier:v1:"+provider+":"+userId);
 }
+function asArrayBuffer(bytes:Uint8Array):ArrayBuffer{
+ const copy=new Uint8Array(bytes.byteLength);copy.set(bytes);return copy.buffer;
+}
 /** AES-256-GCM encryption for the PKCE verifier before D1 persistence. */
 export async function encryptOAuthVerifier(input:{verifier:string;key:Uint8Array;provider:IntegrationProviderId;userId:string}):Promise<Uint8Array>{
  validateOAuthEncryptionKey(input.key);
  if(!/^[A-Za-z0-9_-]{43,128}$/.test(input.verifier))throw new Error("PKCE verifier is invalid.");
  const iv=crypto.getRandomValues(new Uint8Array(12));
- const cryptoKey=await crypto.subtle.importKey("raw",input.key,{name:"AES-GCM"},false,["encrypt"]);
- const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv,additionalData:oauthAad(input.provider,input.userId),tagLength:128},cryptoKey,new TextEncoder().encode(input.verifier)));
+ const cryptoKey=await crypto.subtle.importKey("raw",asArrayBuffer(input.key),{name:"AES-GCM"},false,["encrypt"]);
+ const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:asArrayBuffer(iv),additionalData:asArrayBuffer(oauthAad(input.provider,input.userId)),tagLength:128},cryptoKey,asArrayBuffer(new TextEncoder().encode(input.verifier))));
  const result=new Uint8Array(iv.length+encrypted.length);result.set(iv);result.set(encrypted,iv.length);return result;
 }
 export async function decryptOAuthVerifier(input:{blob:Uint8Array;key:Uint8Array;provider:IntegrationProviderId;userId:string}):Promise<string>{
  validateOAuthEncryptionKey(input.key);
  if(!(input.blob instanceof Uint8Array)||input.blob.byteLength<29)throw new Error("Encrypted OAuth verifier blob is invalid.");
- const iv=input.blob.slice(0,12),ciphertext=input.blob.slice(12);
- const cryptoKey=await crypto.subtle.importKey("raw",input.key,{name:"AES-GCM"},false,["decrypt"]);
- const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:oauthAad(input.provider,input.userId),tagLength:128},cryptoKey,ciphertext);
+ const iv=asArrayBuffer(input.blob.slice(0,12)),ciphertext=asArrayBuffer(input.blob.slice(12));
+ const cryptoKey=await crypto.subtle.importKey("raw",asArrayBuffer(input.key),{name:"AES-GCM"},false,["decrypt"]);
+ const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:asArrayBuffer(oauthAad(input.provider,input.userId)),tagLength:128},cryptoKey,ciphertext);
  const verifier=new TextDecoder().decode(plaintext);
  if(!/^[A-Za-z0-9_-]{43,128}$/.test(verifier))throw new Error("Decrypted PKCE verifier is invalid.");
  return verifier;

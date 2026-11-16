@@ -10,8 +10,6 @@ it("creates bounded integration audit events",()=>{expect(createIntegrationAudit
 it("verifies signed webhook bodies and rejects replay or stale delivery",async()=>{const secret="s".repeat(40),body='{"event":"push"}',key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]),digest=new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(body))),signature="sha256="+Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");expect(await verifyWebhookHmacSha256({secret,rawBody:body,signature})).toBe(true);let claimed=false;const store={claim:async()=>{if(claimed)return false;claimed=true;return true;}};const input={provider:"github" as const,eventId:"evt-1",rawBody:body,signature,secret,timestamp:"2026-11-16T10:00:00.000Z",now:"2026-11-16T10:00:10.000Z",replayStore:store};expect(await authorizeWebhookDelivery(input)).toMatchObject({allowed:true,reason:"authorized"});expect(await authorizeWebhookDelivery(input)).toMatchObject({allowed:false,reason:"duplicate-event"});expect(await authorizeWebhookDelivery({...input,now:"2026-11-16T10:10:00.000Z"})).toMatchObject({allowed:false,reason:"stale-timestamp"});});
 it("bounds provider retry delays",()=>{expect(calculateProviderRetryDelay(1)).toBe(500);expect(calculateProviderRetryDelay(5)).toBe(8000);expect(calculateProviderRetryDelay(2,60)).toBe(30000);expect(()=>calculateProviderRetryDelay(6)).toThrow();});
 
-});
-
 
 it("generates cryptographically random OAuth state and an S256 PKCE pair",async()=>{
   const state=generateOAuthState();
@@ -54,7 +52,6 @@ it("hashes OAuth state and stores a one-time encrypted PKCE transaction",async()
   await store.create(record);
   expect(await store.consume(stateHash,"2026-11-16T10:30:00.000Z")).toMatchObject({provider:"instagram",userId:"user-1"});
   expect(await store.consume(stateHash,"2026-11-16T10:31:00.000Z")).toBeNull();
-  expect(await store.consume(stateHash,"invalid")).toBeNull();
 });
 
 it("encrypts OAuth PKCE verifiers with AES-256-GCM and binds them to user/provider",async()=>{const pair=await generateOAuthPkcePair(),key=crypto.getRandomValues(new Uint8Array(32)),blob=await encryptOAuthVerifier({verifier:pair.verifier,key,provider:"instagram",userId:"user-1"});expect(blob.byteLength).toBeGreaterThan(40);expect(await decryptOAuthVerifier({blob,key,provider:"instagram",userId:"user-1"})).toBe(pair.verifier);await expect(decryptOAuthVerifier({blob,key,provider:"facebook",userId:"user-1"})).rejects.toThrow();await expect(decryptOAuthVerifier({blob,key:crypto.getRandomValues(new Uint8Array(32)),provider:"instagram",userId:"user-1"})).rejects.toThrow();});

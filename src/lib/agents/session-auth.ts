@@ -1,3 +1,5 @@
+const validTime = (value: string): boolean => Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+
 export interface SessionRecord {
   id: string;
   userId: string;
