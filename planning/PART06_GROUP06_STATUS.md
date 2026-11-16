@@ -61,3 +61,10 @@ No merge to main; no production deployment.
 - Added tests for allowed transitions and rejection before any database update.
 - This does not add a worker or approval-to-execution bridge; high-risk tasks remain blocked pending a separately verified approval execution path.
 - GitHub Actions run for the previous task API commit: `43820226995` — SUCCESS (TypeScript, tests, production build and generated Wrangler config validation). This new change requires its own CI run.
+
+
+## 2026-11-16 — Bounded task request parsing
+- Task API request parsing now reads the request stream incrementally and cancels once the 24 KB limit is exceeded, rather than buffering an unbounded body before checking its size.
+- Oversized payloads return 413; malformed/empty JSON returns 400.
+- Added streamed-body, declared-size and malformed-JSON regression tests.
+- Task execution remains queued-only; no background worker or external action is enabled.
