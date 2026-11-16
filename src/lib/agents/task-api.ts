@@ -132,7 +132,7 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
     }
 
     if (request.method === "PATCH") {
-      if (!isRecord(body) || (body["action"] !== "cancel" && body["action"] !== "retry" && body["action"] !== "unlock") || typeof body["taskId"] !== "string") {
+      if (!isRecord(body) || (body["action"] !== "cancel" && body["action"] !== "retry" && body["action"] !== "unlock" && body["action"] !== "recover") || typeof body["taskId"] !== "string") {
         return json({ error: "A taskId and supported cancel/retry/unlock action are required." }, 400);
       }
       const store = createD1TaskStore(database);
@@ -142,6 +142,20 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
         userId: session.userId,
       });
       if (!task) return json({ error: "Task not found." }, 404);
+      if (body["action"] === "recover") {
+        if (task.status !== "running") return json({ error: "Only running tasks can be recovered." }, 409);
+        const recoveredAt = new Date().toISOString();
+        const staleBefore = new Date(Date.parse(recoveredAt) - 5 * 60 * 1000).toISOString();
+        if (Date.parse(task.updatedAt) >= Date.parse(staleBefore)) {
+          return json({ error: "Task execution is not stale yet. Wait at least five minutes after its last state update." }, 409);
+        }
+        const recovered = await store.recoverStale({
+          id: task.id, workspaceId: session.workspaceId, userId: session.userId,
+          staleBefore, updatedAt: recoveredAt,
+        });
+        if (!recovered) return json({ error: "Task state changed or its execution is no longer stale." }, 409);
+        return json({ task: { ...task, status: "failed", result: { error: "Manually recovered after stale execution." }, updatedAt: recoveredAt } });
+      }
       if (body["action"] === "unlock") {
         if (task.status !== "needs_approval") return json({ error: "Only approval-gated tasks can be unlocked." }, 409);
         const verification = await verifyManagerTaskApproval(database, {
