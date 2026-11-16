@@ -41,5 +41,7 @@ No merge to main; no production deployment.
 - Added `POST /api/integrations/oauth/start`; requires active session, same-origin JSON request, server-configured provider client/endpoint/redirect and a 256-bit encryption secret.
 - Scope selection is server-side and limited to provider allowlists; unapproved/empty-scope providers fail closed.
 - OAuth state is stored as SHA-256 only; PKCE verifier is AES-256-GCM encrypted with provider/user-bound additional authenticated data. Transactions expire after 10 minutes and are one-time consumable by the existing D1 store.
-- GitHub Actions run `43810871797`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+- GitHub Actions run `43811004266`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
 - Callback, token exchange, encrypted access-token persistence, refresh/revocation and UI remain unimplemented; no provider account is connected.
+
+- Final verification refresh: run `43811004266` passed TypeScript, unit/integration tests, production build and Wrangler validation.
