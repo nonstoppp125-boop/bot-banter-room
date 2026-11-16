@@ -1,7 +1,7 @@
 import { redactSensitiveText } from "./security-boundaries";
 export type OperationalLogLevel="debug"|"info"|"warn"|"error";
 export interface StructuredLogEvent{timestamp:string;level:OperationalLogLevel;event:string;requestId:string|null;fields:Record<string,string|number|boolean|null>;}
-const SECRET_KEY=/(token|secret|password|authorization|cookie|credential|private.?key)/i;
+const SECRET_KEY=/(token|secret|password|authorization|cookie|credential|api.?key|private.?key)/i;
 export function createStructuredLogEvent(input:{timestamp:string;level:OperationalLogLevel;event:string;requestId?:string|null;fields?:Record<string,unknown>}):StructuredLogEvent{
  if(!Number.isFinite(Date.parse(input.timestamp))||!["debug","info","warn","error"].includes(input.level)||!/^[a-z0-9._:-]{2,100}$/i.test(input.event))throw new Error("Invalid structured log event.");
  const fields:Record<string,string|number|boolean|null>={};
