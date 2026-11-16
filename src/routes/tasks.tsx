@@ -71,7 +71,7 @@ function TasksPage() {
       if (!response.ok) throw new Error(data.error || "Task could not be submitted.");
       setTaskText("");
       setNotice(data.task?.status === "needs_approval"
-        ? "Task saved as approval-gated. The task-to-approval execution bridge is not enabled yet."
+        ? "Approval request created. A workspace admin can decide it in Approvals; then verify and unlock it here."
         : "Task plan saved to the durable queue. Background execution is not enabled yet.");
       await load();
     } catch (cause) {
@@ -126,6 +126,23 @@ function TasksPage() {
     }
   };
 
+  const unlock = async (taskId: string) => {
+    setSubmitting(true); setError(null); setNotice(null);
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "PATCH", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ action: "unlock", taskId }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Approval has not been verified or this account cannot unlock the task.");
+      setNotice("Approval verified. The task is queued; explicitly choose Run with Manager to execute it.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Task could not be unlocked.");
+    } finally { setSubmitting(false); }
+  };
+
   const retry = async (taskId: string) => {
     setSubmitting(true); setError(null); setNotice(null);
     try {
@@ -153,7 +170,7 @@ function TasksPage() {
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Submit a bounded task to Manager planning and review its saved status.</p>
         </header>
         <div className="mb-5 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-          <strong>Execution status:</strong> Low-risk queued tasks can be run on demand through the Manager specialist workflow. This is a synchronous user-triggered Worker request, not an always-on background queue. High-risk tasks remain blocked; task-to-approval execution linkage is not enabled yet.
+          <strong>Execution status:</strong> Low-risk queued tasks can be run on demand through the Manager specialist workflow. This is a synchronous user-triggered Worker request, not an always-on background queue. High-risk tasks require an approval decision in Approvals. After approval, verify and unlock the task here before running it.
         </div>
         {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">{error}</p>}
         {notice && <p role="status" className="mb-4 rounded-xl border border-border bg-muted p-3 text-sm">{notice}</p>}
@@ -183,6 +200,7 @@ function TasksPage() {
                   <p className="text-xs text-muted-foreground">Created {new Date(task.createdAt).toLocaleString()}</p>
                   <div className="flex flex-wrap gap-2">
                     {task.status === "queued" && <button type="button" onClick={() => void execute(task.id)} disabled={submitting} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">{submitting ? "Running…" : "Run with Manager"}</button>}
+                    {task.status === "needs_approval" && <button type="button" onClick={() => void unlock(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Verify approval & unlock</button>}
                     {task.status === "failed" && <button type="button" onClick={() => void retry(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Retry (max 2)</button>}
                     {task.status === "queued" && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel queued task</button>}
                   </div>
