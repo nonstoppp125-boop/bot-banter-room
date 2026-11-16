@@ -8,7 +8,7 @@ const lock = JSON.parse(fs.readFileSync(path.join(root, "package-lock.json"), "u
 const direct = { ...manifest.dependencies, ...manifest.devDependencies };
 const sourceFiles = [];
 const configFiles = [
-  "vite.config.ts", "vitest.config.ts", "eslint.config.js", "tsconfig.json",
+  "vite.config.ts", "vitest.config.ts", "eslint.config.js", "tsconfig.json", "src/styles.css",
   "wrangler.json", "bunfig.toml", "components.json", ".github/workflows/build.yml",
   ".github/workflows/deploy.yml", ".github/dependabot.yml"
 ];
