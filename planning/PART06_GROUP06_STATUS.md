@@ -25,7 +25,7 @@ GitHub Actions run `43797912343`: SUCCESS.
 - G06.16 — Planner makes at most one LLM decomposition call per request; no recursive planning loop.
 - G06.17 — Specialist fan-out capped at four, 45-second per-attempt timeout and two-attempt maximum.
 - G06.18 — High-risk external-action intent flagged for approval; no approval UI/store/enforcement exists yet.
-- G06.19 — Independent quality reviewer examines specialist outputs and explicit failure evidence; formal acceptance criteria remain open.
+- G06.19 — Formal per-subtask, evidence-integrity and approval-safety acceptance criteria; structured reviewer results are schema-checked and fail closed to needs-review when missing, malformed or unsupported.
 - G06.20 — Final synthesis receives execution counts, duration, planning mode, risk/approval state, fallback details and cost-estimate limitations; replacement execution outcomes are included.
 
 ## Verification — latest commit
@@ -42,7 +42,6 @@ GitHub Actions run `43797912343`: SUCCESS.
 - G06.08 — Pricing-based execution cost estimate. Current character-based token estimate is approximate; USD cost is explicitly unavailable without provider pricing and complete usage telemetry.
 - G06.13 — Durable task-state persistence across requests/restarts.
 - G06.18 — User-facing approval request, persisted decision and fail-closed enforcement for consequential actions.
-- G06.19 — Explicit deliverable acceptance criteria and acceptance verification.
 
 ## Status
 

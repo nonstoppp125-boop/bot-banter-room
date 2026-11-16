@@ -1,6 +1,7 @@
 import { convertToModelMessages, generateText, streamText, type UIMessage } from "ai";
 
 import { groqModel } from "./groq";
+import { buildDeliverableAcceptanceCriteria, evaluateDeliverableAcceptance } from "./acceptance";
 import {
   buildLinkedInContentWriterInstruction,
   isLinkedInContentRequest,
@@ -455,6 +456,10 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   // A failed specialist must not silently bypass the independent quality review.
 
   // Phase 2: review actual specialist outputs and explicit failure states.
+  const acceptanceCriteria = buildDeliverableAcceptanceCriteria(
+    plannedSubtasks,
+    managerPlan.approvalRequired,
+  );
   const reviewMessages = [
     ...specialistMessages,
     {
@@ -464,7 +469,13 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
         "Review only the evidence actually supplied. Identify unsupported claims, " +
         "contradictions, omissions, and uncertainty. Do not treat failed or missing " +
         "specialist output as evidence.\\n\\n" +
-        reviewEvidence.join("\\n\\n"),
+        reviewEvidence.join("\\n\\n") +
+        "\\n\\nACCEPTANCE REVIEW JSON CONTRACT:\\n" +
+        "Evaluate every criterion below against the supplied execution evidence. " +
+        "Return JSON only: {\\"summary\\":string,\\"findings\\":string[],\\"criteria\\":[{\\"id\\":string,\\"status\\":\\"pass\\"|\\"fail\\"|\\"unknown\\",\\"evidence\\":string}]}. " +
+        "Include every criterion exactly once. Evidence must point to concrete supplied output or execution status; never invent evidence. " +
+        "Use unknown when evidence is insufficient.\\n" +
+        JSON.stringify(acceptanceCriteria),
     },
   ];
 
@@ -484,8 +495,18 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   if (signal.aborted) return new Response(null, { status: 499 });
 
   const review = reviewWorkflow.results["quality-review"];
+  const acceptanceReview = evaluateDeliverableAcceptance(
+    review?.status === "fulfilled" ? review.output : "",
+    acceptanceCriteria,
+  );
   if (review?.status === "fulfilled" && review.output.trim()) {
-    notes.push(`Quality Reviewer notes:\\n${review.output.trim()}`);
+    notes.push(
+      `Independent quality and acceptance review (${acceptanceReview.status}):\\n` +
+      `${acceptanceReview.summary}\\n` +
+      acceptanceReview.findings.join("\\n"),
+    );
+  } else {
+    notes.push(`Independent quality review unavailable: ${review?.error ?? "no review output"}`);
   }
 
   // If every specialist and the independent reviewer failed, use the safe default path.
@@ -505,6 +526,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     `Execution duration: ${specialistWorkflow.metrics.durationMs + (replanWorkflow?.metrics.durationMs ?? 0)} ms` ,
     `Attempts used: ${[specialistWorkflow, replanWorkflow].filter(Boolean).reduce((sum, workflow) => sum + Object.values(workflow!.metrics.byAgent).reduce((agentSum, item) => agentSum + item.attempts, 0), 0)}` ,
     `Independent quality review: ${review?.status ?? "missing"}` ,
+    `Deliverable acceptance: ${acceptanceReview.status} (${acceptanceReview.criteria.filter((item) => item.status === "pass").length}/${acceptanceCriteria.length} criteria passed)` ,
     `Estimated input tokens: ${managerPlan.estimatedInputTokens} (rough character-based estimate)` ,
     "USD cost estimate: unavailable because provider pricing and complete token-usage telemetry are not configured.",
     ...(managerPlan.planningFallbackReason ? [`Planner fallback: ${managerPlan.planningFallbackReason}`] : []),

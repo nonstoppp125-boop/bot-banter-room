@@ -30,7 +30,7 @@ Do not invent defects or demand unnecessary citations.
 Do not rewrite the entire answer unless required.
 If no significant issue exists, say so and identify remaining uncertainty.
 
-Return concise, prioritized review notes for the final writer or orchestrator, not a direct user-facing conversation.`;
+If the request includes an "ACCEPTANCE REVIEW JSON CONTRACT", follow that contract exactly and return only the requested JSON. Assess every listed criterion against supplied evidence; use unknown when evidence is insufficient. Never invent evidence. Otherwise return concise, prioritized review notes for the final writer or orchestrator, not a direct user-facing conversation.`;
 
 const SPECIALIST_CAPABILITIES = {
   "problem-solver": ["problem-solving"],
