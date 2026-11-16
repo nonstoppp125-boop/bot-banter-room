@@ -19,28 +19,6 @@ const row = (overrides: Partial<AnalyticsIngestionInput> = {}) => normalizeAnaly
   id:"snapshot-1",platform:"linkedin",accountId:"account-1",entityId:"post-1",entityType:"post",
   metricName:"impressions",value:1000,periodStart:"2026-11-01",periodEnd:"2026-11-07",
   capturedAt:"2026-11-08T10:00:00.000Z",source:"official-api",...overrides,
-
-  it("scopes durable analytics writes and reads to one workspace", async () => {
-    const calls: Array<{ query: string; values: unknown[] }> = [];
-    const database = {
-      prepare: (query: string) => ({
-        bind: (...values: unknown[]) => ({
-          run: async () => { calls.push({ query, values }); return { success: true, meta: { changes: 1 } }; },
-          first: async () => null,
-          all: async () => { calls.push({ query, values }); return { success: true, results: [] }; },
-        }),
-      }),
-    };
-    const store = createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "workspace-a");
-    await store.append(row());
-    await store.list();
-    expect(calls[0]?.query).toContain("workspace_id");
-    expect(calls[0]?.values.at(-1)).toBe("workspace-a");
-    expect(calls[1]?.query).toContain("WHERE workspace_id = ?");
-    expect(calls[1]?.values[0]).toBe("workspace-a");
-    expect(() => createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "../other")).toThrow("workspace");
-  });
-
 });
 describe("unified analytics",()=>{
   it("normalizes aliases and preserves provenance",()=>{const v=row({metricName:"comment_count",value:12,limitations:["reporting delay"]});expect(v.metric).toBe("comments");expect(v.source).toBe("official-api");expect(v.limitations).toEqual(["reporting delay"]);});
@@ -91,7 +69,7 @@ describe("unified analytics",()=>{
     await store.append(row());
     await store.list();
     expect(calls[0]?.query).toContain("workspace_id");
-    expect(calls[0]?.values.at(-1)).toBe("workspace-a");
+    expect(calls[0]?.values[calls[0]!.values.length - 1]).toBe("workspace-a");
     expect(calls[1]?.query).toContain("WHERE workspace_id = ?");
     expect(calls[1]?.values[0]).toBe("workspace-a");
     expect(() => createD1AnalyticsStore(database as unknown as Parameters<typeof createD1AnalyticsStore>[0], "../other")).toThrow("workspace");
