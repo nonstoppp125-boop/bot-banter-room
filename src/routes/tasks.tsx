@@ -89,13 +89,15 @@ function TasksPage() {
     setError(null);
     setNotice(null);
     try {
-      const response = await fetch("/api/tasks/execute", {
+      const executionRequest = fetch("/api/tasks/execute", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ taskId }),
         signal: controller.signal,
       });
+      await load();
+      const response = await executionRequest;
       const data = await response.json() as { error?: string; detail?: string; task?: { status?: string } };
       if (!response.ok) throw new Error(data.detail || data.error || "Task execution failed.");
       setNotice("Manager specialists completed the task and saved the result.");
