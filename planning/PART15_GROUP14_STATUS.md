@@ -71,3 +71,6 @@ No merge to main; no production deployment.
 - Regression coverage includes cursor pagination, malformed cursor rejection, admin-only deletion, cross-origin protection, workspace scoping and dimension/legacy CSV round-trips.
 - GitHub Actions run `43868496941`: SUCCESS — TypeScript, 51 test files / 387 tests, production build and generated Wrangler Worker config validation.
 - Still open: official platform analytics ingestion, live D1 migration/runtime verification, and additional report/retention policy decisions. Migration 0014 has not been applied to a live database.
+
+- Follow-up verification: GitHub Actions run `43868496941` SUCCESS — TypeScript, 51 test files / 387 tests, production build and generated Wrangler Worker config validation.
+- Added keyset pagination, admin-only soft deletion, migration 0014, and dimension-aware CSV round-tripping with legacy CSV compatibility.
