@@ -41,8 +41,8 @@ describe("session authentication foundations",()=>{
           if(query.startsWith("UPDATE")){
             const [revokedAt,tokenHash]=values;
             const row=rows.get(String(tokenHash));
-            if(!row||row.revoked_at!==null)return{success:true,meta:{changes:0}};
-            row.revoked_at=revokedAt;
+            if(!row||row["revoked_at"]!==null)return{success:true,meta:{changes:0}};
+            row["revoked_at"]=revokedAt;
             return{success:true,meta:{changes:1}};
           }
           return{success:false};
@@ -50,7 +50,7 @@ describe("session authentication foundations",()=>{
         first:async <T=Record<string,unknown>>() => {
           const [tokenHash,now]=values;
           const row=rows.get(String(tokenHash));
-          if(!query.startsWith("SELECT")||!row||row.revoked_at!==null||String(row.expires_at)<=String(now))return null;
+          if(!query.startsWith("SELECT")||!row||row["revoked_at"]!==null||String(row["expires_at"])<=String(now))return null;
           return row as T;
         },
       })}),
