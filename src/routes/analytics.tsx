@@ -59,8 +59,8 @@ function AnalyticsPage() {
           <button className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-accent" onClick={()=>{setRecords([]);setFileName("");setError(null);}}><RefreshCw className="size-3.5"/> Clear session</button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard label="Impressions" value={summary.totals.impressions?.toLocaleString()??"—"} detail="Imported snapshots"/>
-          <MetricCard label="Reach" value={summary.totals.reach?.toLocaleString()??"—"} detail="Imported snapshots"/>
+          <MetricCard label="Impressions" value={summary.totals['impressions']?.toLocaleString()??"—"} detail="Imported snapshots"/>
+          <MetricCard label="Reach" value={summary.totals['reach']?.toLocaleString()??"—"} detail="Imported snapshots"/>
           <MetricCard label="Engagement rate" value={engagement.rate===null?"—":engagement.rate.toFixed(2)+"%"} detail={engagement.denominatorMetric+" denominator; not cross-platform adjusted"}/>
           <MetricCard label="Data freshness" value={freshness.status} detail={freshness.latestCapturedAt??"No capture timestamp"}/>
         </div>

@@ -93,8 +93,8 @@ describe("unified analytics", () => {
   it("does not invent absent metrics", () => {
     const summary = createExecutiveAnalyticsSummary([row()]);
     expect(summary.snapshotCount).toBe(1);
-    expect(summary.totals.impressions).toBe(1000);
-    expect(summary.totals.comments).toBeNull();
+    expect(summary.totals['impressions']).toBe(1000);
+    expect(summary.totals['comments']).toBeNull();
     expect(summary.note).toContain("not inferred");
   });
 });
