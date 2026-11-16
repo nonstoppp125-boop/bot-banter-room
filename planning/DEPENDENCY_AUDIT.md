@@ -54,3 +54,10 @@ Parsed tracked lockfile v3: 837 package entries across 789 package names. 35 pac
 - Make changes only when evidence identifies a safe improvement, then rerun locked install, audit, typecheck, tests and build.
 
 **Status: PARTIAL — dependency inventory and CI evidence recorded; usage, duplicates, full audit and license review remain open.**
+
+## Group 01 dependency-use disposition
+
+- G01.12 remains **OPEN**. The manifest and lockfile inventory is complete, and the lockfile snapshot identifies 35 package names with multiple resolved versions. Those are transitive multiplicities, not proof of removable duplicate direct dependencies.
+- A complete repository-wide import/config usage graph has not yet been established. Therefore no package is labelled unused and none has been removed.
+- A successful configured production-only audit is not a substitute for dependency-use analysis or a full audit of development dependencies.
+- Safe completion requires mapping all static imports, dynamic imports, config/plugin references and package scripts for all 84 direct dependencies, then reviewing duplicate resolution paths and license/maintenance data.

@@ -3,7 +3,7 @@
 Audit refresh: 2026-11-16  
 Repository: `nonstoppp125-boop/bot-banter-room`  
 Branch audited: `work/group06-manager-planner`  
-Branch HEAD: `2d3ff40d081394adb7d151b0ac26a67fd91012d6`
+Branch HEAD: `044cd0df660cb39919129d1c6c3d04289c01e9f7`
 
 ## Executive result
 
@@ -34,13 +34,13 @@ See `SOURCE_INVENTORY.md` and `BINARY_ASSET_INVENTORY.md` for details.
 ## Git comparison
 
 - Remote `main`: `77b9b0c07fe80782c6df6f701c1699acb2932826`
-- Working branch: `2d3ff40d081394adb7d151b0ac26a67fd91012d6`
+- Working branch: `044cd0df660cb39919129d1c6c3d04289c01e9f7`
 - Compare: diverged; working branch ahead by 489 commits and behind by 1; merge base `3f0b138105ab3781e920b8853c41ae0d188735ec`.
 - No merge, reset, rebase or deployment was performed.
 
 ## CI evidence
 
-GitHub Actions run `43881236656` completed successfully for exact current branch HEAD `2d3ff40d081394adb7d151b0ac26a67fd91012d6`:
+GitHub Actions run `43881236656` completed successfully for exact current branch HEAD `044cd0df660cb39919129d1c6c3d04289c01e9f7`:
 - Configured production dependency audit completed successfully (`npm audit --omit=dev --audit-level=high`). This excludes development dependencies and does not establish zero advisories below the high threshold.
 - TypeScript: PASS.
 - Tests: 53 files / 410 tests PASS.
@@ -81,3 +81,17 @@ The successful run is tied to that exact code commit. It does not automatically 
 **Remote branch comparison: verified.**  
 **Source-level CI baseline: verified for exact commit `be8dca681998c0c1a618b1af858a6866de63b739`.**  
 **Local Git reconciliation and binary dimension checks: verified. Dependency-use graph, full component-use graph, test-gap review, Lovable import-reference review and physical-device acceptance: open. Group 01 final sign-off: OPEN.**
+
+
+## Test coverage-gap review (G01.23)
+
+The repository has 53 test/spec files and the current CI run executes 410 tests, but Vitest configuration has no coverage provider, reporter or line/branch thresholds. Consequently no numeric coverage percentage is available. Source/test comparison identified these gaps:
+
+1. `.github/workflows/build.yml` does not invoke the existing `npm run lint` script.
+2. `src/test/app-routing.test.tsx` asserts the `/` route only; it does not exercise the complete route tree.
+3. `src/test/pwa.test.ts` inspects manifest/service-worker source strings; it does not perform browser install, offline, update or cache lifecycle tests.
+4. `src/test/operations.test.ts` tests `createPublicHealthResponse`, but the `/api/health` route's GET/HEAD handlers are not directly exercised.
+5. Cloudflare D1, Access, OAuth, Telegram and provider integration tests mostly use mocks; they do not prove live account configuration, deployed bindings, webhook registration or real provider behavior.
+6. Physical Android/iOS installation, viewport rendering, keyboard/screen-reader behavior and low-bandwidth performance are not covered by CI.
+
+These are recorded as audit findings, not claims that the existing 410 tests are inadequate; many critical request validation, authorization, approval, privacy, OAuth replay and failure paths do have tests.
