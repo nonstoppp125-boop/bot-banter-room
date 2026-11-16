@@ -299,3 +299,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Group 17 now exposes authenticated data export and a privacy page for 30-day account deletion scheduling/cancellation; pending request lookup is scoped to the active user.
 - Deletion execution remains disabled pending scheduled worker, workspace disposition and live D1 review.
 - No production deployment or merge to main; local Termux worktree unchanged.
+
+
+## 2026-11-16 — Latest Group 06 task workflow checkpoint
+
+- Working branch remains `work/group06-manager-planner`; no branch switch, merge to `main`, or production deployment.
+- Latest task workflow commit: `1b71748e1c5940aa0b5adf4e27084bc22358853b`.
+- Verified CI run `43834221923`: SUCCESS — TypeScript, 47 test files / 354 tests, production build and generated Wrangler Worker config validation.
+- Added atomic queued-task claims, a Manager task workspace, explicit chat-message-to-task enqueue, and owner-scoped queued cancellation.
+- These are durable task intake and management capabilities only. Background worker execution, live D1/Cloudflare configuration and runtime smoke tests remain unverified.
+- Current Group 06 status and implementation details: `planning/PART06_GROUP06_STATUS.md`.
