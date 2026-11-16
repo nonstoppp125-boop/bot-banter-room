@@ -27,6 +27,14 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Static dependency usage inventory
+        run: npm run audit:dependencies -- "${RUNNER_TEMP}/dependency-usage-report.md"
+      - name: Upload dependency usage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-usage-report
+          path: ${{ runner.temp }}/dependency-usage-report.md
+          if-no-files-found: error
       - name: Audit production dependencies
         run: npm run security:audit
       - name: TypeScript

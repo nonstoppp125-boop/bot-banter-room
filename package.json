@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit --pretty false",
     "security:audit": "npm audit --omit=dev --audit-level=high",
-    "check:ci": "npm run typecheck && npm test && npm run build"
+    "check:ci": "npm run typecheck && npm test && npm run build",
+    "audit:dependencies": "node scripts/audit-dependencies.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1",
