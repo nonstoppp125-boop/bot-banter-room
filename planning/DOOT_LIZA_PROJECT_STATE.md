@@ -337,3 +337,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Memory retrieval remains optional and fail-soft; no automatic extraction or secret storage is enabled.
 - Verification: GitHub Actions run `43867055849` SUCCESS — TypeScript, 51 test files / 381 tests, production build and generated Wrangler Worker config validation.
 - Live D1 binding, production authentication and runtime smoke tests remain unverified; this is source/CI completion, not a live deployment.
+
+
+## 2026-11-16 — Analytics data lifecycle and CSV completion batch
+
+- Added migration `0014_analytics_retention_controls.sql`; D1 analytics now supports workspace-scoped keyset pagination and admin-only soft deletion.
+- Analytics API/UI support bounded pages, validated continuation cursors, Load more and explicit per-record delete; local Clear view is clearly separate.
+- Canonical CSV export/import now preserves campaign, audience and content-pillar dimensions and still imports the legacy 11-column format.
+- Verification: GitHub Actions run `43868496941` SUCCESS — TypeScript, 51 test files / 387 tests, production build and generated Wrangler Worker config validation.
+- Live D1 migration 0014, official provider ingestion and production runtime verification remain unverified.
