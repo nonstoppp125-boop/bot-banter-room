@@ -64,10 +64,10 @@ async function readTaskBody(request: Request): Promise<TaskBodyResult> {
  * This API queues plans only; it never executes specialists or external actions.
  */
 export async function handleTaskRequest(request: Request, env: TaskApiEnv): Promise<Response> {
-  if (request.method !== "GET" && request.method !== "POST") {
+  if (request.method !== "GET" && request.method !== "POST" && request.method !== "PATCH") {
     return json({ error: "Method not allowed." }, 405);
   }
-  if (request.method === "POST") {
+  if (request.method === "POST" || request.method === "PATCH") {
     const origin = request.headers.get("origin");
     if (!origin || origin !== new URL(request.url).origin) {
       return json({ error: "Cross-origin task creation is blocked." }, 403);
@@ -90,7 +90,7 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
     const membership = await createD1WorkspaceAccessStore(database).getMembership(session.workspaceId, session.userId);
     if (!membership) return json({ error: "Workspace membership required." }, 403);
     let body: unknown = null;
-    if (request.method === "POST") {
+    if (request.method === "POST" || request.method === "PATCH") {
       const parsed = await readTaskBody(request);
       if (!parsed.ok) {
         return json(
@@ -121,6 +121,32 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
       };
       await createD1TaskStore(database).create(task);
       return json({ task }, 201);
+    }
+
+    if (request.method === "PATCH") {
+      if (!isRecord(body) || body["action"] !== "cancel" || typeof body["taskId"] !== "string") {
+        return json({ error: "A taskId and cancel action are required." }, 400);
+      }
+      const store = createD1TaskStore(database);
+      const task = await store.get({
+        id: body["taskId"],
+        workspaceId: session.workspaceId,
+        userId: session.userId,
+      });
+      if (!task) return json({ error: "Task not found." }, 404);
+      if (task.status !== "queued") {
+        return json({ error: "Only queued tasks can be cancelled." }, 409);
+      }
+      const cancelled = await store.update({
+        id: task.id,
+        workspaceId: session.workspaceId,
+        userId: session.userId,
+        expectedStatus: "queued",
+        status: "cancelled",
+        updatedAt: new Date().toISOString(),
+      });
+      if (!cancelled) return json({ error: "Task status changed; refresh and try again." }, 409);
+      return json({ task: { ...task, status: "cancelled", updatedAt: new Date().toISOString() } });
     }
 
     const tasks = await createD1TaskStore(database).list({
