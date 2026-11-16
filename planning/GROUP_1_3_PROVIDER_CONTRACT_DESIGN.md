@@ -1,104 +1,37 @@
-# Group 1.3 — Provider Contract & Failure Handling
+# Group 03 — Provider Contract Design and Implementation Decision
 
-Status: DESIGN PROPOSAL — NOT IMPLEMENTED
-Baseline: remote main (origin/main)
+## Current implementation
 
-## 1. Objective
-Decouple agent logic from vendor-specific SDK calls through a stable provider contract.
+The current application deliberately uses a narrow server-side Groq adapter:
 
-## 2. Proposed contract
+- `groqModel(apiKey, model?)` creates `createOpenAI({ baseURL, apiKey, fetch })` and returns the Responses API model.
+- The fetch wrapper captures only Groq rate-limit headers and 429 status; it preserves the provider response stream unchanged.
+- Provider request limits are centralized in `request-policy.ts`.
+- Pricing is centralized in `pricing.ts`.
+- Tavily is a separate research tool provider, not a text-generation provider.
 
-```ts
-type ProviderMessage = {
-  role: "system" | "user" | "assistant";
-  content: string;
-};
+## Decision
 
-type ProviderRequest = {
-  model?: string;
-  messages: ProviderMessage[];
-  temperature?: number;
-  maxOutputTokens?: number;
-  signal?: AbortSignal;
-};
+Do not introduce a speculative generic multi-provider abstraction before a second provider is selected. A provider interface that is not exercised by two real implementations risks hiding incompatible streaming, structured-output, usage, tool-call, cancellation and privacy semantics.
 
-type ProviderResult = {
-  text: string;
-  model: string;
-  provider: string;
-  usage?: { inputTokens?: number; outputTokens?: number };
-};
+When a second provider is approved, introduce a contract that explicitly covers:
 
-interface LLMProvider {
-  readonly id: string;
-  generate(request: ProviderRequest): Promise<ProviderResult>;
-}
-```
+1. text generation and streaming response;
+2. structured output and tool-call capability flags;
+3. abort/cancellation and per-request timeout;
+4. provider-reported usage and unknown usage handling;
+5. model ID and price metadata;
+6. quota/rate-limit headers and retry-after;
+7. provider-specific error normalization;
+8. data retention/training policy metadata;
+9. provider routing/fallback as an explicit caller decision, never silent automatic failover.
 
-This is a proposal, not a description of the existing implementation.
-Reconcile it with actual SDK types and current application behavior before coding.
+## Not implemented yet
 
-## 3. Error taxonomy
-- CONFIGURATION: missing or invalid server credentials.
-- AUTHENTICATION: provider rejects credentials.
-- RATE_LIMIT: provider throttles the request.
-- TIMEOUT: bounded request deadline exceeded.
-- CANCELLED: caller aborts the request.
-- INVALID_REQUEST: malformed or unsupported input.
-- PROVIDER_UNAVAILABLE: transient upstream failure.
-- INVALID_RESPONSE: malformed provider response.
-- INTERNAL: unexpected application failure.
+- Multi-provider routing or automatic failover.
+- Durable provider usage/quota storage and dashboard.
+- Provider health checks against live accounts.
+- Production Worker streaming with real Groq credentials.
+- Cloudflare D1 provisioning and production deployment.
 
-Never expose API keys, authorization headers, or sensitive upstream payloads.
-
-## 4. Reliability policy
-1. Bound input size, output size, and request duration.
-2. Propagate AbortSignal through the full request path.
-3. Retry only transient failures when the operation is safe.
-4. Use bounded attempts, exponential backoff, and jitter.
-5. Respect Retry-After when available.
-6. Do not retry authentication or invalid-request failures.
-7. Do not silently switch provider or model.
-8. Normalize public errors; retain safe server diagnostics.
-9. Record provider, model, latency, outcome, and usage when available.
-
-## 5. Streaming
-Confirm the current chat route's streaming behavior before changing interfaces.
-If required, define a typed streaming contract and test cancellation and interruption.
-Do not silently replace streaming with a non-streaming response.
-
-## 6. Provider verification matrix
-| Scenario | Expected behavior |
-|---|---|
-| Valid request | Normalized result |
-| Missing credentials | Safe configuration error |
-| Invalid credentials | Authentication error; no retry |
-| Rate limit | Normalized rate-limit error |
-| Timeout | Bounded failure |
-| Caller cancellation | Abort propagated |
-| Transient 5xx | Bounded retry only if safe |
-| Invalid response | Normalized provider error |
-| Secret in upstream error | Secret never reaches client |
-| Missing usage metadata | Usage omitted safely |
-| Streaming interruption | Explicit stream failure |
-| Oversized input | Rejected before provider call |
-
-## 7. Implementation gates
-- [ ] Reconcile proposal with existing source interfaces.
-- [ ] Confirm SDK generation and streaming capabilities.
-- [ ] Confirm cancellation and timeout semantics.
-- [ ] Define public error response schema.
-- [ ] Add provider contract tests.
-- [ ] Add adapter without breaking current chat API.
-- [ ] Verify Groq on a supported runtime.
-- [ ] Implement fallback only when explicitly configured.
-
-## 8. Constraints
-- Provider credentials remain server-side.
-- No hidden paid-provider fallback.
-- Enforce per-user and global usage limits.
-- Model output alone never authorizes external actions.
-- Human approval remains mandatory for consequential actions.
-
-## 9. Current limitations
-No implementation, test, build, deployment, or live API call was performed.
+This document is a design decision, not a claim that the generic interface already exists.
