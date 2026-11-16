@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({ meta: [{ title: "Manager Tasks — Liza" }, { name: "robots", content: "noindex,nofollow" }] }),
@@ -51,7 +52,7 @@ function TasksPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const task = taskText.trim();
     if (!task || submitting) return;
