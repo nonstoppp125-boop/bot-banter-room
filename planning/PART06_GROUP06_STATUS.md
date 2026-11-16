@@ -188,3 +188,10 @@ No merge to main; no production deployment.
 - Telegram `/task` now creates the same persisted approval metadata for high-risk plans; `/approvals` can decide it. Unlock and explicit specialist execution still occur through the authenticated web Tasks page.
 - CI run `43871570424` verified its exact head commit: TypeScript PASS, 51 test files / 395 tests PASS, production build PASS and generated Wrangler Worker config PASS. Later commits on this branch require fresh CI evidence.
 - Remaining: durable background queue consumer, crash/lease recovery, automated retry scheduling, live D1/Access provisioning and runtime smoke tests. External publishers/messengers/deletion executors remain separate and disabled.
+
+
+## 2026-11-16 — Latest execution and approval regression verification
+
+- GitHub Actions run `43874290438` verified exact code commit `5ee043fde774f32a4784ba51c07e12ab05bc46a0`: TypeScript PASS, 51 test files / 400 tests PASS, production build PASS and generated Wrangler Worker config PASS.
+- Coverage includes persisted-plan execution, payload-bound approval/unlock, high-risk execution re-verification, two-attempt manual retry, Telegram task intake/approval, and cooperative request-abort cancellation.
+- This does not verify live Cloudflare D1, Access, Telegram webhook or provider-side external actions. Background queue scheduling/crash recovery and external action executors remain open.
