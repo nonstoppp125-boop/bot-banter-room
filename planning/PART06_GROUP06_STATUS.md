@@ -13,7 +13,7 @@ Implemented:
 - G06.09 — Adds low/medium/high risk classification.
 - G06.10 — Selects registered specialist agents from matched capabilities.
 - G06.11 — Filters candidates to the existing `llm:inference` permission.
-- G06.17 — Caps specialist fan-out at four and sets a 45-second workflow budget.
+- G06.17 — Caps specialist fan-out at four and sets a 45-second per-task timeout.
 - G06.18 — Flags explicit publishing, messaging, destructive, deployment and financial intents for human approval.
 - Integrated the plan into the multi-agent orchestrator.
 - Added seven focused Manager planning tests.
