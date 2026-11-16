@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Download, FileUp, RefreshCw, TrendingUp } from "lucide-react";
 import { buildAnalyticsTrendReport, calculateEngagementRate, createExecutiveAnalyticsSummary, exportAnalyticsCsv, generateAnalyticsRecommendations, getAnalyticsFreshness, parseAnalyticsCsv, type AnalyticsSnapshot } from "@/lib/agents/analytics";
@@ -17,6 +17,17 @@ function AnalyticsPage() {
   const [records,setRecords]=useState<AnalyticsSnapshot[]>([]);
   const [error,setError]=useState<string|null>(null);
   const [fileName,setFileName]=useState("");
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{
+    let active=true;
+    void fetch("/api/analytics",{credentials:"same-origin"}).then(async response=>{
+      if(!response.ok) throw new Error(response.status===401?"Sign in to load saved workspace analytics.":"Could not load saved analytics.");
+      const payload=await response.json() as {records?:AnalyticsSnapshot[]};
+      if(active) setRecords(Array.isArray(payload.records)?payload.records:[]);
+    }).catch(error=>{if(active)setError(error instanceof Error?error.message:"Could not load saved analytics.");})
+      .finally(()=>{if(active)setLoading(false);});
+    return ()=>{active=false;};
+  },[]);
   const summary=createExecutiveAnalyticsSummary(records);
   const engagement=calculateEngagementRate(records);
   const freshness=getAnalyticsFreshness(records);
@@ -28,7 +39,14 @@ function AnalyticsPage() {
     try {
       if(file.size>2_000_000) throw new Error("CSV exceeds the 2 MB limit.");
       const parsed=parseAnalyticsCsv(await file.text());
-      setRecords(parsed);
+      if(parsed.length>100) throw new Error("Import is limited to 100 records per upload.");
+      const response=await fetch("/api/analytics",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({records:parsed})});
+      const payload=await response.json() as {error?:string};
+      if(!response.ok) throw new Error(payload.error??"Could not save analytics to this workspace.");
+      const saved=await fetch("/api/analytics",{credentials:"same-origin"});
+      if(!saved.ok) throw new Error("Import saved, but analytics refresh failed.");
+      const savedPayload=await saved.json() as {records?:AnalyticsSnapshot[]};
+      setRecords(Array.isArray(savedPayload.records)?savedPayload.records:[]);
       setFileName(file.name);
     } catch(e) {
       setError(e instanceof Error?e.message:"Could not import analytics CSV.");
@@ -48,10 +66,10 @@ function AnalyticsPage() {
         </label>
       </header>
       {error&&<p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
-      {!records.length ? <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center">
+      {loading ? <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center"><p className="text-sm text-muted-foreground">Loading saved workspace analytics…</p></section> : !records.length ? <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center">
         <TrendingUp className="mx-auto mb-4 size-9 text-muted-foreground"/>
         <h2 className="text-lg font-medium">No analytics data imported</h2>
-        <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">No sample or fabricated metrics are displayed. Import a CSV previously exported in Liza's canonical analytics format. Data stays in this browser session and is not uploaded.</p>
+        <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">No sample or fabricated metrics are displayed. Import a CSV previously exported in Liza's canonical analytics format. Records are saved to your authenticated workspace; imported provenance is marked unverified.</p>
         <label className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent">
           <FileUp className="size-4"/> Choose CSV
           <input className="sr-only" type="file" accept=".csv,text/csv" onChange={e=>void importFile(e.target.files?.[0])}/>
@@ -89,7 +107,7 @@ function AnalyticsPage() {
           {records.length>200&&<p className="p-3 text-xs text-muted-foreground">Showing first 200 of {records.length} records.</p>}
         </section>
       </>}
-      <p className="mt-6 text-xs text-muted-foreground">Import is local-only and session-scoped. CSV provenance is user-supplied and is not independently authenticated. No platform API is connected.</p>
+      <p className="mt-6 text-xs text-muted-foreground">Workspace-scoped persistence is enabled. CSV provenance is user-supplied and is not independently authenticated. No platform API is connected.</p>
     </div>
   </main>;
 }
