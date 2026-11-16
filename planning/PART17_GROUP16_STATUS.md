@@ -15,7 +15,7 @@ Branch: work/group06-manager-planner
 - APP20 — Unit tests cover allowlists, callback validation, webhook authenticity/replay, retry bounds, ownership and audit metadata.
 
 ## Remaining / blocked
-- APP03–APP11 — No OAuth callback endpoint, durable state/PKCE verifier storage, token encryption, refresh, revocation or connection UI.
+- APP03–APP11 — No OAuth callback endpoint, token exchange/encryption/refresh/revocation or connection UI; PKCE verifier encryption helper and durable state store contract now exist.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.

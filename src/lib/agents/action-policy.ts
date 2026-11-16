@@ -1,4 +1,4 @@
-import { verifyApprovalForAction, type ApprovalAction, type ApprovalStore } from "./approval-store";
+import { verifyApprovalForAction, type ApprovalAction, type ApprovalRecord } from "./approval-store";
 /**
  * Fail-closed authorization contract for future external-action executors.
  * This module does not execute actions or provide durable idempotency storage.
@@ -136,9 +136,7 @@ export function createD1ActionStore(database: D1ActionDatabase): DurableActionSt
 
 /** Verify the persisted approval against this exact action before claiming its idempotency key. */
 export async function executeVerifiedApprovedAction<T>(input:{
-  approvalStore:ApprovalStore|null;
-  approvalId:string;
-  actorUserId:string;
+  approval:ApprovalRecord|null;
   workspaceId:string;
   actionType:ApprovalAction;
   payloadHash:string;
@@ -147,15 +145,8 @@ export async function executeVerifiedApprovedAction<T>(input:{
   store:DurableActionStore|null;
   execute:()=>Promise<T>;
 }):Promise<{executed:true;result:T}>{
-  if(!input.approvalStore)throw new Error("Persisted approval storage is unavailable.");
-  const approval=await input.approvalStore.get({
-    id:input.approvalId,
-    workspaceId:input.workspaceId,
-    actorUserId:input.actorUserId,
-  });
-  if(!approval||approval.decidedByUserId!==input.actorUserId)throw new Error("External action blocked: persisted approval not found for the approving user.");
   const decision=verifyApprovalForAction({
-    approval,
+    approval:input.approval,
     workspaceId:input.workspaceId,
     actionType:input.actionType,
     payloadHash:input.payloadHash,

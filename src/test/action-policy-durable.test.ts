@@ -10,7 +10,7 @@ describe("durable external action boundary", () => {
         store: { claim: vi.fn(async () => true) },
         execute: async () => "done",
       }),
-    ).rejects.toThrow(/approval/i);
+    ).rejects.toThrow(/payload/i);
 
     await expect(
       executeApprovedAction({

@@ -219,3 +219,31 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
     },
   };
 }
+
+
+function validateOAuthEncryptionKey(key:Uint8Array):void{
+ if(!(key instanceof Uint8Array)||key.byteLength!==32)throw new Error("OAuth verifier encryption key must be exactly 32 bytes.");
+}
+function oauthAad(provider:IntegrationProviderId,userId:string):Uint8Array{
+ if(!/^[A-Za-z0-9._:-]{1,120}$/.test(userId))throw new Error("OAuth user identity is invalid.");
+ return new TextEncoder().encode("liza-oauth-verifier:v1:"+provider+":"+userId);
+}
+/** AES-256-GCM encryption for the PKCE verifier before D1 persistence. */
+export async function encryptOAuthVerifier(input:{verifier:string;key:Uint8Array;provider:IntegrationProviderId;userId:string}):Promise<Uint8Array>{
+ validateOAuthEncryptionKey(input.key);
+ if(!/^[A-Za-z0-9_-]{43,128}$/.test(input.verifier))throw new Error("PKCE verifier is invalid.");
+ const iv=crypto.getRandomValues(new Uint8Array(12));
+ const cryptoKey=await crypto.subtle.importKey("raw",input.key,{name:"AES-GCM"},false,["encrypt"]);
+ const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv,additionalData:oauthAad(input.provider,input.userId),tagLength:128},cryptoKey,new TextEncoder().encode(input.verifier)));
+ const result=new Uint8Array(iv.length+encrypted.length);result.set(iv);result.set(encrypted,iv.length);return result;
+}
+export async function decryptOAuthVerifier(input:{blob:Uint8Array;key:Uint8Array;provider:IntegrationProviderId;userId:string}):Promise<string>{
+ validateOAuthEncryptionKey(input.key);
+ if(!(input.blob instanceof Uint8Array)||input.blob.byteLength<29)throw new Error("Encrypted OAuth verifier blob is invalid.");
+ const iv=input.blob.slice(0,12),ciphertext=input.blob.slice(12);
+ const cryptoKey=await crypto.subtle.importKey("raw",input.key,{name:"AES-GCM"},false,["decrypt"]);
+ const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:oauthAad(input.provider,input.userId),tagLength:128},cryptoKey,ciphertext);
+ const verifier=new TextDecoder().decode(plaintext);
+ if(!/^[A-Za-z0-9_-]{43,128}$/.test(verifier))throw new Error("Decrypted PKCE verifier is invalid.");
+ return verifier;
+}
