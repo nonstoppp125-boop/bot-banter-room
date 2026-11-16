@@ -3,25 +3,27 @@
 Date: 2026-11-16  
 Repository: `nonstoppp125-boop/bot-banter-room`  
 Branch: `work/group06-manager-planner`  
-Inspected commit: `d25dc6ff96e6047060080e43d7d0c697b7f06b9a`
+Inspected branch commit: `b33234bbda5ba80b41d17c86c06df694326e140f`
 
 ## Scope
-Tracked blobs in the remote GitHub branch only. This does not inspect the user's Termux checkout, local untracked/ignored files, local secrets, deployed Worker state, or Cloudflare account resources.
+
+This is a tracked-file snapshot of the remote GitHub branch only. It does not inspect the user's local Termux checkout, local untracked/ignored files, local secrets, deployed Worker state, or Cloudflare account resources.
 
 ## Current counts
 
 | Measure | Count |
 |---|---:|
-| Tracked files | 307 |
-| Files under `src/` | 198 |
-| Test/spec files by filename | 51 |
-| Route files under `src/routes/` | 29 |
+| Tracked files | 311 |
+| Files under `src/` | 201 |
+| Test/spec files by filename | 53 |
+| Route files under `src/routes/` | 30 |
 | SQL migrations | 15 |
 | Group status documents | 21 |
 | Tracked image/icon assets | 5 |
 | Tracked legacy backup snapshots | 2 |
 
 ## Route inventory
+
 - `src/routes/README.md`
 - `src/routes/__root.tsx`
 - `src/routes/analytics.tsx`
@@ -46,6 +48,7 @@ Tracked blobs in the remote GitHub branch only. This does not inspect the user's
 - `src/routes/api/telegram/link-token.ts`
 - `src/routes/api/telegram/webhook.ts`
 - `src/routes/index.tsx`
+- `src/routes/linkedin-studio.tsx`
 - `src/routes/settings.approvals.tsx`
 - `src/routes/settings.integrations.tsx`
 - `src/routes/settings.memory.tsx`
@@ -53,6 +56,7 @@ Tracked blobs in the remote GitHub branch only. This does not inspect the user's
 - `src/routes/tasks.tsx`
 
 ## Migration inventory
+
 - `migrations/0001_action_claims.sql` (234 bytes)
 - `migrations/0002_linkedin_growth.sql` (1587 bytes)
 - `migrations/0003_analytics_snapshots.sql` (798 bytes)
@@ -70,7 +74,9 @@ Tracked blobs in the remote GitHub branch only. This does not inspect the user's
 - `migrations/0015_agent_task_retry_budget.sql` (177 bytes)
 
 ## Test inventory
+
 - `src/test/acceptance.test.ts`
+- `src/test/accessibility-contract.test.ts`
 - `src/test/account-deletion-api.test.ts`
 - `src/test/action-policy-durable.test.ts`
 - `src/test/analytics-api.test.ts`
@@ -94,6 +100,7 @@ Tracked blobs in the remote GitHub branch only. This does not inspect the user's
 - `src/test/linkedin-content-studio.test.ts`
 - `src/test/linkedin-growth.test.ts`
 - `src/test/linkedin-intelligence.test.ts`
+- `src/test/linkedin-studio-route.test.ts`
 - `src/test/liza-prompt.test.ts`
 - `src/test/manager.test.ts`
 - `src/test/memory-api.test.ts`
@@ -122,13 +129,23 @@ Tracked blobs in the remote GitHub branch only. This does not inspect the user's
 - `src/test/telegram-conversation-store.test.ts`
 - `src/test/workspace-store.test.ts`
 
+## Tracked visual assets
+
+- `public/favicon.ico`
+- `public/icons/doot-180.png`
+- `public/icons/doot-192.png`
+- `public/icons/doot-512.png`
+- `public/icons/doot-maskable-512.png`
+
 ## Tracked legacy backup snapshots
+
 - `src/routes/api/chat.ts.bak`
 - `src/routes/api/chat.ts.before-env-fix`
 
 These are historical snapshots, not active route files. Their legacy provider setup was inspected as source text. They have not been deleted because local counterparts and historical purpose are not verified.
 
 ## Audit follow-ups
+
 - Compare the remote snapshot with the local Termux checkout before syncing; preserve local modifications.
 - Inspect local ignored/untracked files and hidden configuration locally.
 - Decide backup disposition only after local reconciliation.
