@@ -366,3 +366,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - High-risk task plans remain blocked; Telegram does not execute tasks or claim background processing.
 - Verification: GitHub Actions run `43870462130` SUCCESS — TypeScript, 51 test files / 395 tests, production build and generated Wrangler Worker config validation.
 - Live bot credentials, webhook registration and D1 provisioning remain external blockers.
+
+
+## 2026-11-16 — Latest verified task approval boundary
+
+- Added a dedicated D1 task-unlock operation that requires an approved, unexpired approval row with matching workspace, action type and SHA-256 payload hash; generic task updates cannot unlock approval-gated work.
+- High-risk Manager execution now re-verifies persisted approval before the synchronous specialist workflow. The workflow does not publish, message, delete, deploy or perform financial actions.
+- Verification: GitHub Actions run `43872309252` SUCCESS — 51 test files / 397 tests, TypeScript, production build and generated Wrangler Worker config validation.
+- Overall project remains in progress. Live D1/Access/Telegram/provider configuration, background queue worker, external-action executors, mobile-device verification and final release acceptance remain unverified or blocked.
