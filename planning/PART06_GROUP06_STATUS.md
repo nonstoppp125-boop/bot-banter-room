@@ -133,3 +133,12 @@ No merge to main; no production deployment.
 - GitHub Actions run `43841185448`: SUCCESS — TypeScript check, 48 test files / 363 tests, production build and generated Wrangler Worker configuration validation.
 - Remaining: durable background queue/worker, deterministic execution of persisted plan JSON, retry/recovery after worker interruption, user-visible cooperative cancellation, live D1/Access provisioning and smoke tests, and separately authorized external-action executors.
 - Group 06 remains IN PROGRESS; no merge to `main` and no production deployment.
+
+
+## 2026-11-16 — Bounded manual retry and release-safety gate
+
+- Added migration `0015_agent_task_retry_budget.sql` with a maximum of two atomic retry attempts per failed task.
+- Failed low-risk tasks can be explicitly requeued by their authenticated owner; stale or high-risk saved plans are rejected. Requeued tasks still require the user to click Run with Manager; no background worker is claimed.
+- Added `/tasks` retry control and regression tests for retry budget, plan integrity and high-risk refusal.
+- GitHub Actions run `43869406584`: SUCCESS — TypeScript, 51 test files / 390 tests, production build and generated Wrangler Worker config validation.
+- Remaining: actual queue consumer/background worker, crash recovery, live D1/Access provisioning and external action executors.
