@@ -174,6 +174,90 @@ export function buildManagerPlan(
 }
 
 
+/**
+ * Restores a persisted plan while recomputing all authority-bearing fields from
+ * the current registry and task text. Stored plans may refine objectives and
+ * dependency order, but cannot add agents, permissions, risk decisions or budgets.
+ */
+export function restoreManagerPlan(
+  taskText: string,
+  storedPlan: unknown,
+  agents: readonly AgentDefinition[],
+): ManagerPlan | null {
+  if (typeof storedPlan !== "object" || storedPlan === null || Array.isArray(storedPlan)) return null;
+  const value = storedPlan as Record<string, unknown>;
+  const basePlan = buildManagerPlan(taskText, agents);
+  if (
+    value["summary"] !== basePlan.summary ||
+    (value["planningMode"] !== "deterministic" && value["planningMode"] !== "llm-assisted") ||
+    !Array.isArray(value["subtasks"]) ||
+    value["subtasks"].length < 1 ||
+    value["subtasks"].length > MAX_SPECIALISTS
+  ) return null;
+
+  const allowed = new Set(basePlan.agentIds);
+  const seen = new Set<string>();
+  const subtasks: ManagerSubtask[] = [];
+  for (const item of value["subtasks"]) {
+    if (typeof item !== "object" || item === null || Array.isArray(item)) return null;
+    const task = item as Record<string, unknown>;
+    const agentId = task["agentId"];
+    const objective = task["objective"];
+    const dependencies = task["dependsOn"];
+    if (
+      typeof agentId !== "string" ||
+      task["id"] !== agentId ||
+      !allowed.has(agentId) ||
+      seen.has(agentId) ||
+      typeof objective !== "string" ||
+      objective.trim().length === 0 ||
+      objective.length > 500 ||
+      !Array.isArray(dependencies) ||
+      dependencies.some((dependency) => typeof dependency !== "string")
+    ) return null;
+
+    seen.add(agentId);
+    const required = basePlan.subtasks.find((candidate) => candidate.agentId === agentId)?.dependsOn ?? [];
+    subtasks.push({
+      id: agentId,
+      agentId,
+      objective: objective.trim(),
+      dependsOn: [...new Set([...required, ...(dependencies as string[])])],
+    });
+  }
+
+  const selected = new Set(subtasks.map((task) => task.agentId));
+  if (subtasks.some((task) =>
+    task.dependsOn.some((dependency) => !selected.has(dependency) || dependency === task.agentId)
+  )) return null;
+
+  const byId = new Map(subtasks.map((task) => [task.agentId, task] as const));
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (id: string): boolean => {
+    if (visiting.has(id)) return false;
+    if (visited.has(id)) return true;
+    visiting.add(id);
+    for (const dependency of byId.get(id)?.dependsOn ?? []) {
+      if (!visit(dependency)) return false;
+    }
+    visiting.delete(id);
+    visited.add(id);
+    return true;
+  };
+  if (![...byId.keys()].every(visit)) return null;
+
+  subtasks.sort((left, right) => basePlan.agentIds.indexOf(left.agentId) - basePlan.agentIds.indexOf(right.agentId));
+  const planningMode = value["planningMode"];
+  return {
+    ...basePlan,
+    subtasks,
+    agentIds: subtasks.map((task) => task.agentId),
+    planningMode,
+    estimatedModelCalls: basePlan.estimatedModelCalls + (planningMode === "llm-assisted" ? 1 : 0),
+  };
+}
+
 export type ManagerPlanGenerator = (input: {
   taskText: string;
   candidateAgentIds: readonly string[];
