@@ -54,3 +54,14 @@ No merge to `main`; no production deployment.
 - Webhook callback processing claims update IDs, verifies the signature, retrieves the persisted approval through the owner/admin-only store and uses the D1 pending/expiry-checked decision transition.
 - Decisions only record approval/rejection; they do not publish, message externally, deploy or delete. Proactive approval notifications remain disabled.
 - Requires TELEGRAM_APPROVAL_CALLBACK_SECRET in addition to the Telegram webhook and bot configuration. Verification pending.
+
+
+## 2026-11-16 — Telegram Manager task intake and memory continuity
+
+- Added private-chat `/task DESCRIPTION` to create a Manager plan in the same workspace-scoped `agent_tasks` store used by the web Tasks page, and `/tasks` to list recent tasks.
+- Low-risk plans are saved as queued; high-risk plans remain `needs_approval` and cannot execute through Telegram. Telegram does not claim background execution; users must open web Tasks and explicitly run low-risk work.
+- Linked Telegram replies now retrieve up to six relevant user-authored memories from the mapped workspace, labelled as untrusted reference data. Memory lookup is fail-soft.
+- Bot `/start` and `/help` text now advertises the task commands.
+- Approval callback flow is implemented and separately verified; the task-to-approval execution bridge is still unavailable.
+- GitHub Actions run `43870462130`: SUCCESS — TypeScript, 51 test files / 395 tests, production build and generated Wrangler Worker config validation.
+- Live Telegram bot credentials, webhook registration, D1 provisioning and end-to-end Telegram runtime smoke tests remain unverified.
