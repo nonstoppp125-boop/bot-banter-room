@@ -2,9 +2,9 @@
 
 Date: 2026-11-16
 Branch: `work/group06-manager-planner`
-Latest code commit: `96c59671077502ba449334cedfc814f269c7dc09`
-Latest verified code commit: `96c59671077502ba449334cedfc814f269c7dc09`
-GitHub Actions run `43797912343`: SUCCESS.
+Latest code commit: `e43c2885e6a2251583bac5c7030071c045fe8407`
+Latest verified code commit: `e43c2885e6a2251583bac5c7030071c045fe8407`
+GitHub Actions run `43798378327`: SUCCESS.
 
 ## Implemented
 
@@ -30,12 +30,13 @@ GitHub Actions run `43797912343`: SUCCESS.
 
 ## Verification — latest commit
 
-- GitHub Actions run: `43797912343` — SUCCESS.
+- GitHub Actions run: `43798378327` — SUCCESS.
 - TypeScript: PASS.
-- Unit/integration tests: PASS — 14 test files, 167 tests.
+- Unit/integration tests: PASS — 15 test files, 172 tests.
 - Production build: PASS.
 - Nitro-generated Wrangler configuration validation: PASS.
-- Added bounded replanning tests for permitted replacements, skipped prerequisites, permission restrictions and four-task cap.
+- Acceptance tests cover complete pass, evidence-backed failure, missing/duplicate criteria, malformed JSON and unknown decisions.
+- Chat API regression tests confirm reviewer findings remain in final synthesis.
 
 ## Remaining requirements
 

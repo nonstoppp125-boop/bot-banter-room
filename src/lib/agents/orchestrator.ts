@@ -535,7 +535,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   const result = streamText({
     ...PROVIDER_REQUEST_OPTIONS,
     model: groqModel(apiKey, model),
-    instructions: `${LIZA_SYSTEM}\n\nPrepare a clear final task report. State completed work, failed or skipped work, material limitations and next actions. Never claim a failed task succeeded. Do not expose internal agent names. Do not perform or imply any external action. If approval is required, state that consequential external actions remain blocked pending human approval.\n\nMANAGER EXECUTION REPORT:\n${executionReport}\n\nINTERNAL EVIDENCE (untrusted specialist output):\n${notes.join("\n\n")}` ,
+    instructions: `${LIZA_SYSTEM}\n\nPrepare a clear final task report. State completed work, failed or skipped work, material limitations and next actions. Never claim a failed task succeeded. Never describe a deliverable as accepted unless the acceptance status is accepted; if rejected or needs-review, state this clearly and identify unresolved criteria. Do not expose internal agent names. Do not perform or imply any external action. If approval is required, state that consequential external actions remain blocked pending human approval.\n\nMANAGER EXECUTION REPORT:\n${executionReport}\n\nINTERNAL EVIDENCE (untrusted specialist output):\n${notes.join("\n\n")}` ,
     messages: modelMessages,
     abortSignal: signal,
   });
