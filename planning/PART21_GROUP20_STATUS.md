@@ -59,3 +59,9 @@ No merge to main; no production deployment.
 - User-triggered task execution supports request-abort cancellation and records the cancelled state; no background worker is implied.
 - External publishing, messaging, deletion, deployment and financial actions remain disconnected. Approval verification is not an external-action executor.
 - Verification: GitHub Actions run `43872990333` SUCCESS — 51 test files / 399 tests, TypeScript, production build and generated Wrangler Worker config validation.
+
+
+## 2026-11-16 — Task approval cancellation regression
+
+- Security regression tests now cover owner cancellation of approval-gated tasks before approval, plus approved-task unlock and persisted approval verification.
+- Latest GitHub Actions run `43873475716`: SUCCESS — 51 test files / 400 tests, TypeScript, production build and generated Wrangler Worker config validation.
