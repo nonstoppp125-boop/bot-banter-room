@@ -39,3 +39,16 @@ export function createD1ApprovalStore(database:D1ApprovalDatabase){
   },
  };
 }
+
+export function verifyApprovalForAction(input:{approval:ApprovalRecord|null;workspaceId:string;actionType:ApprovalAction;payloadHash:string;now:string}):{allowed:boolean;reason:string}{
+ const approval=input.approval;
+ if(!approval)return{allowed:false,reason:"Approval record not found."};
+ if(!iso(input.now))return{allowed:false,reason:"Action verification timestamp is invalid."};
+ if(approval.status!=="approved"||!approval.decidedByUserId||!approval.decidedAt)return{allowed:false,reason:"Approval is not finally approved."};
+ if(approval.workspaceId!==input.workspaceId)return{allowed:false,reason:"Approval belongs to a different workspace."};
+ if(approval.actionType!==input.actionType)return{allowed:false,reason:"Approval action type does not match."};
+ if(approval.payloadHash!==input.payloadHash||!/^[a-f0-9]{64}$/.test(input.payloadHash))return{allowed:false,reason:"Approved payload hash does not match the requested action."};
+ if(Date.parse(approval.expiresAt)<=Date.parse(input.now))return{allowed:false,reason:"Approval has expired."};
+ if(Date.parse(approval.decidedAt)>Date.parse(input.now))return{allowed:false,reason:"Approval decision timestamp is in the future."};
+ return{allowed:true,reason:"Persisted approval matches workspace, action, payload and expiry."};
+}

@@ -31,3 +31,8 @@ No merge to main; no production deployment.
 ## 2026-11-16 — Persisted approval decision contract
 - Added D1 approval request and decision primitives. Decisions require active workspace owner/admin membership, pending state and unexpired request; action payload is represented by SHA-256 hash.
 - No publisher/messaging/destructive executor consumes approval records yet. CI verification pending.
+
+
+## 2026-11-16 — Payload-bound approval verification
+- Added an approval verifier that requires approved status, workspace match, exact action type, exact SHA-256 payload hash, decision identity/timestamp and unexpired approval.
+- This is a pre-action authorization primitive; no external executor is connected. CI verification pending.
