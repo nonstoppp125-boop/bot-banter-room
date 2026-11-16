@@ -161,7 +161,7 @@ describe("platform captions and evidence-gated repurposing", () => {
     const { createSocialRepurposeBrief } = await import("@/lib/agents/social-workforce");
     const base = {
       sourcePlatform: "instagram" as const,
-      targetPlatforms: ["youtube", "x"],
+      targetPlatforms: ["youtube", "x"] as ("youtube" | "x")[],
       topic: "SQL basics",
       coreMessage: "Teach one query pattern.",
       audience: "New analysts",
