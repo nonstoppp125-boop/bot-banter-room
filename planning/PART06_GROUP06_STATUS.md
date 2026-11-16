@@ -76,3 +76,11 @@ No merge to main; no production deployment.
 - Durable task transition tests verify forward-only execution and fail-closed approval/terminal states.
 - GitHub Actions run `43822202298` passed TypeScript, all tests (46 files / 336 tests), production build and Nitro-generated Wrangler validation.
 - Cloudflare Workers build check was still running at the time of this status update; production deployment is not claimed.
+
+
+## 2026-11-16 — Atomic queued-task claim primitive
+
+- Added a D1 compare-and-swap claim operation that moves one specific task from `queued` to `running` only when task ID, workspace ID, user ID and current status all match.
+- The claim returns false when another worker already claimed the task (zero changed rows), preventing two workers from successfully claiming the same queued record.
+- Added tests for the exact owner/workspace/status predicate and invalid-identity rejection before database access.
+- This is a concurrency-safe worker building block, not a deployed background worker. No queue/cron binding or automatic specialist execution is claimed; those remain open pending runtime architecture and deployment configuration.
