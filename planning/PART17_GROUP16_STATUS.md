@@ -17,12 +17,14 @@ Branch: work/group06-manager-planner
 ## Remaining / blocked
 - APP03 — Session-authenticated OAuth start endpoint now validates provider scope allowlists and exact registered HTTPS redirect URI, creates PKCE S256, encrypts the verifier with AES-256-GCM, and stores only a state hash plus encrypted verifier in D1, bound to the active workspace and user via migration `0011_oauth_workspace_binding.sql`.
 - APP04–APP05 — OAuth callback consumes state once, verifies user/workspace/redirect binding, enforces provider token-host allowlists, exchanges the code with PKCE and persists access/refresh credentials only as AES-256-GCM encrypted D1 blobs.
-- APP06–APP11 — Token refresh/revocation, connection listing/disconnect UI, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
+- APP06 — User-triggered `POST /api/integrations/refresh` loads only the active user's workspace connection, decrypts its refresh token server-side, enforces provider token-host/scope allowlists and re-encrypts rotated credentials.
+- APP07 — `POST /api/integrations/disconnect` clears the locally stored encrypted token and marks the owned connection revoked. Provider-side token revocation is not yet called; the API states that explicitly.
+- APP08–APP11 — Connection listing/disconnect UI, background refresh scheduling, remote provider revocation, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.
 
-GROUP 16: IN PROGRESS — secure OAuth start/callback and encrypted connection persistence are implemented; refresh/revocation, UI, provider approval and live account verification remain.
+GROUP 16: IN PROGRESS — secure OAuth start/callback, encrypted credential persistence, user-triggered refresh and local disconnect APIs are implemented; remote revocation, UI and live account verification remain.
 No merge to main; no production deployment.
 
 
@@ -57,3 +59,11 @@ No merge to main; no production deployment.
 - Added tests for successful exchange, encrypted persistence, replay rejection, workspace mismatch and token-host allowlist enforcement.
 - GitHub Actions run `43811831485`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
 - Refresh/revocation, UI, live D1 provisioning, provider client credentials and live account smoke tests remain open.
+
+
+## 2026-11-16 — Refresh and local disconnect APIs
+- Added `POST /api/integrations/refresh`, scoped by active session user/workspace. It decrypts refresh credentials only server-side, enforces provider token-host and scope allowlists, and persists rotated tokens only as AES-256-GCM ciphertext.
+- Added `POST /api/integrations/disconnect`, which clears the local encrypted token and marks only the active user's workspace connection revoked. It does not claim provider-side revocation; the response warns that remote revocation may still be needed.
+- Added regression tests for refresh ownership, encrypted token persistence, missing refresh tokens, provider-host restrictions and local disconnect scoping.
+- GitHub Actions run `43812612109`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+- Background refresh, remote provider revocation, UI, live D1 and provider credentials remain open.
