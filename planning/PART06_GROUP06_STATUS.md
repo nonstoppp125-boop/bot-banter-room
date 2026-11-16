@@ -14,13 +14,21 @@ Branch: work/group06-manager-planner
 - G06.20 — Final synthesis receives execution summary, review status and cost-estimate limitations.
 
 ## Remaining / blocked
-- D1 database provisioning and ACTION_DB binding are not configured; adapters are not live.
-- Request, inbox and decision API routes are wired; an admin approval inbox UI is now available. Authentication/login flow and live D1 remain open.
-- No external publishing, messaging, destructive action or deployment executor is enabled.
+- The D1 schema includes `agent_tasks`, `approvals` and `action_claims`; typed D1 task, approval and idempotency adapters exist. `ACTION_DB` is not provisioned in a live Cloudflare environment, so persistence is not runtime-verified.
+- Session-authenticated Cloudflare Access login/logout and the admin approval inbox UI/API are implemented on this branch. Live Access application, domain/audience configuration, D1 binding/migrations and authenticated runtime smoke remain unverified.
+- `executeVerifiedApprovedAction` verifies the persisted approval against the exact workspace, approving user, action type, payload hash and expiry, then claims a durable idempotency key before invoking its supplied executor. No production external-action executor is wired or enabled; this helper is a guarded boundary, not evidence that publishing, messaging, deletion or deployment works end-to-end.
+- Durable task storage is an adapter only; no session-authenticated task lifecycle API or background execution worker is wired into the Manager workflow yet.
 - Provider usage and final synthesis cost remain approximate where provider telemetry is unavailable.
 
-GROUP 06: IN PROGRESS — planner, replan, cost and approval API foundations implemented; live D1 provisioning, login and UI integration remain blocked.
+GROUP 06: IN PROGRESS — planner, bounded replan, cost reporting, task/approval D1 adapters, approval API/UI, session auth and fail-closed approved-action boundary are implemented. Remaining work includes Manager-to-task-store lifecycle wiring, live D1/Access provisioning and smoke tests, plus a separately authorized real external-action executor.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Status reconciliation
+- Corrected stale blockers: Cloudflare Access session endpoints and the approval inbox UI/API are present on this branch; they are no longer listed as unimplemented login/UI work.
+- Kept runtime D1/Access provisioning and live smoke tests explicitly blocked because repository code and CI cannot prove account-side configuration.
+- Clarified that the approved-action helper is an authorization/idempotency boundary only; no production side-effect executor is connected.
+- Latest previously verified CI evidence at checkpoint: run `43815989375` passed TypeScript, 45 test files / 324 tests, production build and Nitro-generated Wrangler validation. Later branch commits still require their own CI evidence.
 
 
 ## 2026-11-16 — Approval API integration
