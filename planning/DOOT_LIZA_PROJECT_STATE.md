@@ -391,3 +391,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Latest source verification: GitHub Actions run `43873475716` SUCCESS — TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation.
 - Added `planning/PRODUCTION_ENVIRONMENT_CHECKLIST.md` to make external provisioning and final release gates explicit.
 - The current work branch is still not merged or deployed. Live D1/Access/Telegram/OAuth configuration and external-action executors remain unavailable; production completion is not claimed.
+
+
+## 2026-11-16 — Dependency audit release blocker
+
+- Added `planning/SECURITY_DEPENDENCY_AUDIT.md` with the 2026-11-16 npm audit results and safe remediation plan.
+- The manual deployment workflow retains a high-severity audit gate. No force upgrades or production deployment were performed.
