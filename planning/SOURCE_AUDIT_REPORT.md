@@ -31,9 +31,9 @@ See `SOURCE_INVENTORY.md` and `BINARY_ASSET_INVENTORY.md` for the file-level inv
 
 ## CI evidence
 
-- Last inspected successful baseline run: GitHub Actions run `43876023880`, commit `a6ff67f719f212a7641e68643e906d334be92a34`.
-- Verified steps: production dependency audit, TypeScript, 51 test files / 401 tests, production build, and generated Wrangler configuration validation.
-- Newer code changes (including stale task recovery and accessibility contract tests) are being verified in a newer run; the older successful run must not be treated as verification of those later commits.
+- Latest inspected successful run: GitHub Actions run `43877578308`, exact head commit `c9456b5ab2f6a0cb70662adce2aa255bf8ccc312`.
+- Verified steps: production dependency audit reported 0 vulnerabilities; TypeScript PASS; 52 test files / 407 tests PASS; production build PASS; generated Wrangler configuration validation PASS.
+- This CI verifies source/build contracts, not real Cloudflare D1/Access, Telegram/OAuth/provider accounts, background worker deployment or production behavior.
 
 ## Findings and limitations
 
