@@ -15,7 +15,7 @@ Branch: work/group06-manager-planner
 - APP20 — Unit tests cover allowlists, callback validation, webhook authenticity/replay, retry bounds, ownership and audit metadata.
 
 ## Remaining / blocked
-- APP03–APP11 — No OAuth callback endpoint, token exchange/encryption/refresh/revocation or connection UI; PKCE verifier encryption helper and durable state store contract now exist.
+- APP03–APP11 — No OAuth callback endpoint, token exchange/refresh/revocation or connection UI; AES-256-GCM PKCE verifier encryption and durable one-time state storage contracts now exist.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.
@@ -34,3 +34,9 @@ No merge to main; no production deployment.
 - Added D1 OAuth transaction store contract that persists only a SHA-256 state hash and an encrypted PKCE verifier blob; consume uses a single conditional UPDATE/RETURNING to enforce one-time use and expiry.
 - Added state hashing and a test proving a transaction can be consumed only once. The D1 binding and encryption key remain unprovisioned; no OAuth flow is live.
 - Verification pending.
+
+
+## 2026-11-16 — PKCE verifier encryption
+- Added AES-256-GCM encryption/decryption for PKCE verifiers with provider/user-bound additional authenticated data; key length is fixed at 32 bytes.
+- Durable D1 transaction stores only the encrypted verifier blob and state hash. Encryption-key provisioning and OAuth callback runtime remain blocked.
+- CI verification pending.
