@@ -44,6 +44,17 @@ Commit: e2cc5a4eb01d427d6f8e27bdb0a6f34219541fdf
 - Generated Wrangler configuration validation passed.
 - Static dependency report and configured production dependency audit passed.
 
+## Updated external configuration checkpoint — 2026-11-16
+
+User-confirmed setup completed after the original snapshot:
+- Cloudflare D1 database `doot-production-db` exists; database UUID was entered into GitHub Environment secrets.
+- GitHub Environment `production` contains all four required secret names: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_NAME`, and `CLOUDFLARE_D1_DATABASE_ID`. Values are intentionally not read or logged.
+- Cloudflare Worker `bot-banter-room` has the `GROQ_API_KEY` runtime secret; dashboard reported it as encrypted and the dashboard deployment as Ready.
+
+This clears the previously recorded missing-secret/D1-provisioning prerequisite at the account-setup level. It does **not** prove that the GitHub Actions runner can authenticate, that remote migrations apply successfully, that the generated config deploys, or that the live Worker passes smoke tests.
+
+The current feature branch is `work/group06-manager-planner`; the production workflow is intentionally gated to `main` and `confirm_deploy=true`. The current `main` branch does not contain this deployment workflow or the production D1 configuration helper. Therefore a Group-03-only release integration into `main` must be prepared and reviewed before the workflow can run. No merge, remote migration, or production deployment has been performed.
+
 ## Remaining external prerequisites
 
 The production deploy workflow uses the GitHub Environment named production. It requires these environment secrets:
