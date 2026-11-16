@@ -121,3 +121,15 @@ No merge to main; no production deployment.
 - Reconciled earlier stale statements: explicit chat-to-Manager task enqueue and the `/tasks` workspace are now implemented and CI-verified; they are no longer listed as open work.
 - Confirmed latest recorded Group 06 task UI verification run `43834221923` succeeded (TypeScript, 47 test files / 354 tests, production build and generated Wrangler configuration validation).
 - Group 06 remains IN PROGRESS because no background queue consumer or specialist execution worker is deployed; live D1/Cloudflare Access smoke tests and external action executors remain unverified.
+
+
+## 2026-11-16 — On-demand Manager execution and request hardening
+
+- Confirmed the existing authenticated `POST /api/tasks/execute` route and `/tasks` “Run with Manager” control. It claims a queued task atomically, invokes the registered Manager/specialist workflow using the saved task summary, and persists only the decoded assistant text result.
+- Execution is synchronous and explicitly user-triggered; it is not an always-on queue consumer. The persisted `plan_json` is not yet replayed as a fixed execution plan; the workflow re-runs Manager routing from the saved input summary.
+- High-risk `needs_approval` tasks remain blocked. This route does not execute external actions and is not an approval-to-publish bridge.
+- Hardened the execution endpoint with a 2 KB streamed request-body ceiling, malformed-JSON rejection, stream final-chunk handling, output-size enforcement, request-disconnect propagation, and cancelled-state persistence on timeout/disconnect.
+- Added regression coverage for oversized/malformed input and a final text delta without a trailing newline.
+- GitHub Actions run `43841185448`: SUCCESS — TypeScript check, 48 test files / 363 tests, production build and generated Wrangler Worker configuration validation.
+- Remaining: durable background queue/worker, deterministic execution of persisted plan JSON, retry/recovery after worker interruption, user-visible cooperative cancellation, live D1/Access provisioning and smoke tests, and separately authorized external-action executors.
+- Group 06 remains IN PROGRESS; no merge to `main` and no production deployment.
