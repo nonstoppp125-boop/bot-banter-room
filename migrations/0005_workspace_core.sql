@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY NOT NULL,
   workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-  created_by_user_id TEXT NOT NULL REFERENCES users(id),
+  created_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS publications (
 
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY NOT NULL,
-  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  workspace_id TEXT REFERENCES workspaces(id) ON DELETE SET NULL,
   user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   actor_type TEXT NOT NULL,
   action TEXT NOT NULL,

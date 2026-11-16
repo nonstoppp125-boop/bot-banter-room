@@ -21,3 +21,10 @@ Branch: work/group06-manager-planner
 
 GROUP 17: IN PROGRESS — schema, access, export and deletion policy foundations implemented; live persistence and recovery remain unverified.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Data portability and deletion safety review
+- Export now includes user-created projects and messages belonging to the user's conversations in shared workspaces, while redacting API keys, OAuth state and PKCE material.
+- Account deletion no longer deletes shared projects; project creator attribution is nullable with ON DELETE SET NULL.
+- Audit events now survive workspace deletion with workspace_id and user_id anonymized via ON DELETE SET NULL.
+- Verification pending.

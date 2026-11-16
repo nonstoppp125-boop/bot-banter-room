@@ -1,17 +1,20 @@
 export interface ExportDataset{users:Record<string,unknown>[];workspaces:Record<string,unknown>[];projects:Record<string,unknown>[];conversations:Record<string,unknown>[];messages:Record<string,unknown>[];memories:Record<string,unknown>[];agentTasks:Record<string,unknown>[];approvals:Record<string,unknown>[];appConnections:Record<string,unknown>[];socialAccounts:Record<string,unknown>[];contentDrafts:Record<string,unknown>[];publications:Record<string,unknown>[];analyticsSnapshots:Record<string,unknown>[];auditEvents:Record<string,unknown>[];}
-const SENSITIVE_KEYS=/(token|secret|password|credential|authorization|cookie|private.?key|verifier|session)/i;
+const SENSITIVE_KEYS=/(token|secret|password|credential|authorization|cookie|private.?key|verifier|session|api.?key|oauth.?state|pkce)/i;
 function safeRecord(record:Record<string,unknown>):Record<string,unknown>{return Object.fromEntries(Object.entries(record).filter(([key])=>!SENSITIVE_KEYS.test(key)).map(([key,value])=>[key,value]));}
 function belongs(record:Record<string,unknown>,userId:string,workspaceIds:Set<string>):boolean{
- return record["userId"]===userId||record["user_id"]===userId||(typeof record["workspaceId"]==="string"&&workspaceIds.has(record["workspaceId"]))||(typeof record["workspace_id"]==="string"&&workspaceIds.has(record["workspace_id"]));
+ return record["userId"]===userId||record["user_id"]===userId||record["createdByUserId"]===userId||record["created_by_user_id"]===userId||(typeof record["workspaceId"]==="string"&&workspaceIds.has(record["workspaceId"]))||(typeof record["workspace_id"]==="string"&&workspaceIds.has(record["workspace_id"]));
 }
 export function buildUserDataExport(input:{userId:string;exportedAt:string;datasets:ExportDataset}){
  if(!/^[A-Za-z0-9._:-]{1,120}$/.test(input.userId)||!Number.isFinite(Date.parse(input.exportedAt)))throw new Error("Invalid data export identity or timestamp.");
  const ownedWorkspaces=input.datasets.workspaces.filter(row=>row["ownerUserId"]===input.userId||row["owner_user_id"]===input.userId);
  const workspaceIds=new Set(ownedWorkspaces.map(row=>String(row["id"])));
+ const ownedConversations=input.datasets.conversations.filter(row=>belongs(row,input.userId,workspaceIds));
+ const conversationIds=new Set(ownedConversations.map(row=>String(row["id"])));
  const filter=(rows:Record<string,unknown>[])=>rows.filter(row=>belongs(row,input.userId,workspaceIds)).map(safeRecord);
+ const filterMessages=(rows:Record<string,unknown>[])=>rows.filter(row=>belongs(row,input.userId,workspaceIds)||(typeof row["conversation_id"]==="string"&&conversationIds.has(row["conversation_id"]))).map(safeRecord);
  const exported={
   users:input.datasets.users.filter(row=>row["id"]===input.userId).map(safeRecord),workspaces:ownedWorkspaces.map(safeRecord),projects:filter(input.datasets.projects),
-  conversations:filter(input.datasets.conversations),messages:filter(input.datasets.messages),memories:filter(input.datasets.memories),
+  conversations:ownedConversations.map(safeRecord),messages:filterMessages(input.datasets.messages),memories:filter(input.datasets.memories),
   agentTasks:filter(input.datasets.agentTasks),approvals:filter(input.datasets.approvals),appConnections:filter(input.datasets.appConnections),
   socialAccounts:filter(input.datasets.socialAccounts),contentDrafts:filter(input.datasets.contentDrafts),publications:filter(input.datasets.publications),
   analyticsSnapshots:filter(input.datasets.analyticsSnapshots),auditEvents:filter(input.datasets.auditEvents),
@@ -34,7 +37,7 @@ export function buildAccountDeletionPlan(userId:string,workspaceDisposition?:{ki
   {sql:"UPDATE sessions SET revoked_at = ? WHERE user_id = ?",parameters:["<now>",userId]},
   {sql:"UPDATE app_connections SET status = 'revoked', encrypted_token_blob = NULL, revoked_at = ?, updated_at = ? WHERE user_id = ?",parameters:["<now>","<now>",userId]},
   {sql:"UPDATE audit_events SET user_id = NULL, actor_type = 'deleted_user' WHERE user_id = ?",parameters:[userId]},
-  {sql:"DELETE FROM projects WHERE created_by_user_id = ?",parameters:[userId]},
+  
  ];
  if(!workspaceDisposition)blockers.push("Owned workspaces must be explicitly deleted or transferred before account deletion.");
  else if(workspaceDisposition.kind==="delete")statements.push({sql:"DELETE FROM workspaces WHERE owner_user_id = ?",parameters:[userId]});
