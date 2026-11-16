@@ -19,7 +19,7 @@ Branch: work/group06-manager-planner
 - APP04–APP05 — OAuth callback consumes state once, verifies user/workspace/redirect binding, enforces provider token-host allowlists, exchanges the code with PKCE and persists access/refresh credentials only as AES-256-GCM encrypted D1 blobs.
 - APP06 — User-triggered `POST /api/integrations/refresh` loads only the active user's workspace connection, decrypts its refresh token server-side, enforces provider token-host/scope allowlists and re-encrypts rotated credentials.
 - APP07 — `POST /api/integrations/disconnect` clears the locally stored encrypted token and marks the owned connection revoked. Provider-side token revocation is not yet called; the API states that explicitly.
-- APP08–APP11 — Connection listing/connect/disconnect UI is now added; background refresh scheduling, remote provider revocation, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
+- APP08–APP11 — Connection listing/connect/manual-refresh/disconnect UI is now added; background refresh scheduling, remote provider revocation, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.
@@ -78,3 +78,9 @@ No merge to main; no production deployment.
 - Live D1, provider credentials/secrets, remote revocation and live account smoke tests remain blocked by unprovisioned runtime configuration.
 
 - `/settings/integrations` is included in the generated route registry and exposed from the chat navigation.
+
+
+## 2026-11-16 — Manual token refresh control
+- Added a user-triggered refresh control and safe token-expiry metadata to `/settings/integrations`; the UI calls the workspace-scoped refresh API and never receives token material.
+- Automatic background refresh remains disabled until scheduling/runtime provisioning is approved.
+- Verification pending.

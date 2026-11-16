@@ -80,6 +80,25 @@ function IntegrationsPage() {
     }
   };
 
+  const refreshConnection = async (connection: Connection) => {
+    setBusy(connection.id); setError(null); setNotice(null);
+    try {
+      const response = await fetch("/api/integrations/refresh", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ connectionId: connection.id }),
+      });
+      const data = await response.json() as { error?: string; refreshed?: boolean };
+      if (!response.ok) throw new Error(data.error || "Token refresh failed.");
+      setNotice("Provider credentials refreshed and encrypted.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Token refresh failed.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const disconnect = async (connection: Connection) => {
     if (!window.confirm("Disconnect " + connection.provider + "? Local credentials will be cleared.")) return;
     setBusy(connection.id); setError(null); setNotice(null);
@@ -121,8 +140,11 @@ function IntegrationsPage() {
             <div className="divide-y divide-border rounded-xl border border-border">
               {connections.map((connection) => (
                 <div key={connection.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                  <div><p className="font-medium">{providers.find((provider) => provider.id === connection.provider)?.name || connection.provider}</p><p className="mt-1 text-xs text-muted-foreground">{connection.scopes.join(" · ")}</p></div>
-                  <button onClick={() => void disconnect(connection)} disabled={busy !== null} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent disabled:opacity-50">{busy === connection.id ? "Disconnecting…" : "Disconnect"}</button>
+                  <div><p className="font-medium">{providers.find((provider) => provider.id === connection.provider)?.name || connection.provider}</p><p className="mt-1 text-xs text-muted-foreground">{connection.scopes.join(" · ")}</p><p className="mt-1 text-[11px] text-muted-foreground">{connection.tokenExpiresAt ? "Token expires: " + new Date(connection.tokenExpiresAt).toLocaleString() : "Token expiry not reported"}</p></div>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => void refreshConnection(connection)} disabled={busy !== null} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent disabled:opacity-50">{busy === connection.id ? "Working…" : "Refresh token"}</button>
+                    <button onClick={() => void disconnect(connection)} disabled={busy !== null} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-accent disabled:opacity-50">{busy === connection.id ? "Working…" : "Disconnect"}</button>
+                  </div>
                 </div>
               ))}
             </div>}
@@ -138,7 +160,7 @@ function IntegrationsPage() {
             ))}
           </div>
         </section>
-        <p className="mt-8 text-xs text-muted-foreground">Disconnect clears local encrypted credentials. If the provider supports remote revocation, also revoke this app from that provider’s security settings.</p>
+        <p className="mt-8 text-xs text-muted-foreground">Refresh is user-triggered; automatic background refresh is not enabled. Disconnect clears local encrypted credentials. If the provider supports remote revocation, also revoke this app from that provider’s security settings.</p>
       </div>
     </main>
   );
