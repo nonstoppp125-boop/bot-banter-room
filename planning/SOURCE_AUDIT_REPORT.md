@@ -31,9 +31,9 @@ See `SOURCE_INVENTORY.md` and `BINARY_ASSET_INVENTORY.md` for the file-level inv
 
 ## CI evidence
 
-- Latest inspected successful run: GitHub Actions run `43877578308`, exact head commit `c9456b5ab2f6a0cb70662adce2aa255bf8ccc312`.
-- Verified steps: production dependency audit reported 0 vulnerabilities; TypeScript PASS; 52 test files / 407 tests PASS; production build PASS; generated Wrangler configuration validation PASS.
-- This CI verifies source/build contracts, not real Cloudflare D1/Access, Telegram/OAuth/provider accounts, background worker deployment or production behavior.
+- Latest inspected successful run: GitHub Actions run `43878285889`, exact code commit `be8dca681998c0c1a618b1af858a6866de63b739`.
+- Verified steps: production dependency audit reported 0 vulnerabilities; TypeScript PASS; 53 test files / 410 tests PASS; production build PASS; generated Wrangler configuration validation PASS.
+- This CI includes the draft-only LinkedIn Content Studio route and verifies source/build contracts, not real Cloudflare D1/Access, Telegram/OAuth/provider accounts, background worker deployment or production behavior.
 
 ## Findings and limitations
 
