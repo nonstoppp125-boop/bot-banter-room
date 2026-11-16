@@ -6,9 +6,11 @@ describe("workspace approval persistence",()=>{
   let query="";let values:unknown[]=[];
   const database={prepare:(sql:string)=>({bind:(...args:unknown[])=>({run:async()=>{query=sql;values=args;return{success:true,meta:{changes:1}};},first:async<T=Record<string,unknown>>()=>null as T|null,all:async<T=Record<string,unknown>>()=>({success:true,results:[] as T[]})})})};
   const store=createD1ApprovalStore(database);
-  await store.create({id:"approval-1",workspaceId:"ws1",userId:"u1",actionType:"social.publish",payloadHash:"a".repeat(64),expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-16T10:00:00.000Z"});
+  await store.create({id:"approval-1",workspaceId:"ws1",userId:"u1",actionType:"social.publish",payloadHash:"a".repeat(64),summary:"Publish the approved LinkedIn draft.",expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-16T10:00:00.000Z"});
   expect(query).toContain("workspace_members");
   expect(values[4]).toBe("a".repeat(64));
+  expect(query).toContain("summary");
+  expect(values[5]).toBe("Publish the approved LinkedIn draft.");
  });
  it("allows only owner/admin decisions and only pending unexpired approvals",async()=>{
   let query="";let values:unknown[]=[];
