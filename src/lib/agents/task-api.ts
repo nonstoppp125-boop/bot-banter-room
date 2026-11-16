@@ -72,7 +72,8 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
     if (!origin || origin !== new URL(request.url).origin) {
       return json({ error: "Cross-origin task creation is blocked." }, 403);
     }
-    if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    const contentType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+    if (contentType !== "application/json") {
       return json({ error: "JSON content type is required." }, 415);
     }
   }
