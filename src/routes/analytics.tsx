@@ -18,7 +18,10 @@ function AnalyticsPage() {
   const [error,setError]=useState<string|null>(null);
   const [fileName,setFileName]=useState("");
   const [loading,setLoading]=useState(true);
-  const [nextCursor,setNextCursor]=useState<string|null>(null);\n  const [hasMore,setHasMore]=useState(false);\n  const [loadingMore,setLoadingMore]=useState(false);\n  const [notice,setNotice]=useState<string|null>(null);
+  const [nextCursor,setNextCursor]=useState<string|null>(null);
+  const [hasMore,setHasMore]=useState(false);
+  const [loadingMore,setLoadingMore]=useState(false);
+  const [notice,setNotice]=useState<string|null>(null);
   useEffect(()=>{
     let active=true;
     void fetch("/api/analytics?limit=200",{credentials:"same-origin"}).then(async response=>{
@@ -98,7 +101,8 @@ function AnalyticsPage() {
           <input className="sr-only" type="file" accept=".csv,text/csv" onChange={e=>void importFile(e.target.files?.[0])}/>
         </label>
       </header>
-      {error&&<p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}\n      {notice&&<p role="status" className="mb-4 rounded-lg border border-border bg-muted p-3 text-sm">{notice}</p>}
+      {error&&<p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
+      {notice&&<p role="status" className="mb-4 rounded-lg border border-border bg-muted p-3 text-sm">{notice}</p>}
       {loading ? <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center"><p className="text-sm text-muted-foreground">Loading saved workspace analytics…</p></section> : !records.length ? <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center">
         <TrendingUp className="mx-auto mb-4 size-9 text-muted-foreground"/>
         <h2 className="text-lg font-medium">No analytics data imported</h2>
