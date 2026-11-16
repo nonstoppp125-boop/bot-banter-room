@@ -349,3 +349,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 
 - Follow-up verification: GitHub Actions run `43868496941` SUCCESS — TypeScript, 51 test files / 387 tests, production build and generated Wrangler Worker config validation.
 - Added keyset pagination, admin-only soft deletion, migration 0014, and dimension-aware CSV round-tripping with legacy CSV compatibility.
+
+
+## 2026-11-16 — Task recovery and deployment safety
+
+- Added migration `0015_agent_task_retry_budget.sql`; failed low-risk tasks can be owner-requeued with an atomic maximum-two retry budget. High-risk/stale plans remain blocked.
+- Updated production deployment workflow to require explicit confirmation on `main`, use the selected ref, and verify an `ACTION_DB` D1 binding before deploy.
+- Verification: GitHub Actions run `43869406584` SUCCESS — TypeScript, 51 test files / 390 tests, production build and generated Wrangler Worker config validation.
+- No deployment or external action was performed. Background queue worker, live D1/Access and provider integrations remain open.
