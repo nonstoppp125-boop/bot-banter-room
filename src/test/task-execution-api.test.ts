@@ -191,6 +191,30 @@ describe("authenticated Manager task execution", () => {
     expect(rows[0]?.["status"]).toBe("failed");
   });
 
+  it("propagates user cancellation and persists the cancelled task state", async () => {
+    const { database, rows } = makeDatabase();
+    const client = new AbortController();
+    let announceStarted!: () => void;
+    const started = new Promise<void>((resolve) => { announceStarted = resolve; });
+    const request = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ taskId: "task-1" }),
+      signal: client.signal,
+    });
+    const execution = handleTaskExecutionRequest(request, env(database), async ({ signal }) => {
+      announceStarted();
+      return await new Promise<Response>((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(new Error("execution aborted")), { once: true });
+      });
+    });
+    await started;
+    client.abort();
+    const response = await execution;
+    expect(response.status).toBe(504);
+    expect(rows[0]?.["status"]).toBe("cancelled");
+  });
+
   it("rejects cross-origin execution before touching D1", async () => {
     const { database, queries } = makeDatabase();
     const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }, "https://evil.example"), env(database), async () => new Response());
