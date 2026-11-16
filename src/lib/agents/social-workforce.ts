@@ -470,3 +470,110 @@ export const SOCIAL_INTEGRATION_READINESS: Readonly<Record<SocialPlatform, Socia
 export function getSocialIntegrationReadiness(platform: SocialPlatform): SocialIntegrationReadiness {
   return SOCIAL_INTEGRATION_READINESS[platform];
 }
+
+
+export function buildPlatformCaption(input: {
+  platform: SocialPlatform;
+  hook?: string;
+  body: string;
+  callToAction?: string;
+  hashtags?: string[];
+}): { platform: SocialPlatform; text: string; structure: string[] } {
+  if (!VALID_PLATFORMS.has(input.platform)) throw new Error("Unsupported social platform.");
+  const hook = clean(input.hook, 500);
+  const body = clean(input.body, 5000);
+  const callToAction = clean(input.callToAction, 500);
+  const hashtags = unique(Array.isArray(input.hashtags) ? input.hashtags : [], 80)
+    .map((tag) => tag.startsWith("#") ? tag : `#${tag.replace(/[^\p{L}\p{N}_]/gu, "")}`)
+    .filter((tag) => tag.length > 1);
+  if (!body) throw new Error("Caption body is required.");
+
+  const selectedHashtags = input.platform === "x" ? hashtags.slice(0, 2) : hashtags.slice(0, 8);
+  const parts: string[] = [];
+  if (input.platform === "instagram") {
+    if (hook) parts.push(hook);
+    parts.push(body);
+    if (callToAction) parts.push(callToAction);
+    if (selectedHashtags.length) parts.push(selectedHashtags.join(" "));
+  } else if (input.platform === "facebook") {
+    parts.push(body);
+    if (callToAction) parts.push(callToAction);
+    if (selectedHashtags.length) parts.push(selectedHashtags.slice(0, 3).join(" "));
+  } else if (input.platform === "youtube") {
+    if (hook) parts.push(hook);
+    parts.push(body);
+    if (callToAction) parts.push(callToAction);
+    if (selectedHashtags.length) parts.push(selectedHashtags.join(" "));
+  } else if (input.platform === "x") {
+    parts.push([hook, body].filter(Boolean).join(" — "));
+    if (callToAction) parts.push(callToAction);
+    if (selectedHashtags.length) parts.push(selectedHashtags.join(" "));
+  } else {
+    if (hook) parts.push(hook);
+    parts.push(body);
+    if (callToAction) parts.push(callToAction);
+    if (selectedHashtags.length) parts.push(selectedHashtags.join(" "));
+  }
+
+  return {
+    platform: input.platform,
+    text: parts.join("\n\n"),
+    structure:
+      input.platform === "instagram" ? ["hook", "caption", "call-to-action", "hashtags"] :
+      input.platform === "facebook" ? ["community-copy", "call-to-action", "hashtags"] :
+      input.platform === "youtube" ? ["description-hook", "description", "call-to-action", "hashtags"] :
+      input.platform === "x" ? ["concise-post", "call-to-action", "limited-hashtags"] :
+      ["video-hook", "short-caption", "call-to-action", "hashtags"],
+  };
+}
+
+export function createSocialRepurposeBrief(input: {
+  sourcePlatform: SocialPlatform;
+  targetPlatforms: SocialPlatform[];
+  topic: string;
+  coreMessage: string;
+  audience: string;
+  observations: number;
+  engagementRate: number;
+  comparisonBaseline: number;
+  periodStart: string;
+  periodEnd: string;
+  metricSource: string;
+}) {
+  const topic = clean(input.topic, 300);
+  const coreMessage = clean(input.coreMessage, 2000);
+  const audience = clean(input.audience, 300);
+  const metricSource = clean(input.metricSource, 300);
+  if (!topic || !coreMessage || !audience || !metricSource) throw new Error("Repurpose brief is missing required evidence or content.");
+  if (!Number.isInteger(input.observations) || input.observations < 0 ||
+      !Number.isFinite(input.engagementRate) || input.engagementRate < 0 ||
+      !Number.isFinite(input.comparisonBaseline) || input.comparisonBaseline < 0) {
+    throw new Error("Repurpose metrics must be finite, non-negative values.");
+  }
+  if (!validTimestamp(input.periodStart) || !validTimestamp(input.periodEnd) ||
+      Date.parse(input.periodStart) > Date.parse(input.periodEnd)) {
+    throw new Error("Repurpose evidence period is invalid.");
+  }
+  const eligible = input.observations >= 3 && input.engagementRate > input.comparisonBaseline;
+  const targets = [...new Set((Array.isArray(input.targetPlatforms) ? input.targetPlatforms : [])
+    .filter((platform) => VALID_PLATFORMS.has(platform) && platform !== input.sourcePlatform))];
+  return {
+    sourcePlatform: input.sourcePlatform,
+    targetPlatforms: targets,
+    topic,
+    coreMessage,
+    audience,
+    status: eligible && targets.length ? "eligible-for-human-review" as const : "insufficient-evidence" as const,
+    evidence: {
+      observations: input.observations,
+      engagementRate: input.engagementRate,
+      comparisonBaseline: input.comparisonBaseline,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+      metricSource,
+    },
+    interpretation: "Descriptive comparison only. This does not establish causation or guarantee similar performance on another platform.",
+    requiresHumanReview: true as const,
+    autoRepurpose: false as const,
+  };
+}

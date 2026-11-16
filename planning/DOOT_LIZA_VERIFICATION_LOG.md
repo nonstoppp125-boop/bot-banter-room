@@ -178,3 +178,8 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — Group 13 official API feasibility registry
 - Added typed readiness metadata for Instagram, Facebook Pages, YouTube, X and TikTok, plus tests ensuring all integrations remain disconnected and publishing disabled.
 - Added official-source API feasibility audit. CI verification pending.
+
+
+## 2026-11-16 — Group 13 caption and repurposing tests
+- Added tests for platform caption structure, hashtag bounds, empty-body rejection, minimum evidence observations and human-review-only repurposing.
+- CI verification pending.

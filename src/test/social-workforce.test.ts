@@ -134,3 +134,47 @@ describe("official social API feasibility registry", () => {
     expect(SOCIAL_INTEGRATION_READINESS.tiktok.publishingConstraints).toContain("private visibility");
   });
 });
+
+
+describe("platform captions and evidence-gated repurposing", () => {
+  it("formats captions with platform-specific structure and bounded hashtags", async () => {
+    const { buildPlatformCaption } = await import("@/lib/agents/social-workforce");
+    const instagram = buildPlatformCaption({
+      platform: "instagram",
+      hook: "Learn SQL faster",
+      body: "One query at a time.",
+      callToAction: "Save this lesson.",
+      hashtags: ["sql", "#analytics", "data", "sql"],
+    });
+    expect(instagram.structure).toContain("hook");
+    expect(instagram.text).toContain("#sql");
+    const x = buildPlatformCaption({
+      platform: "x",
+      body: "A concise data lesson.",
+      hashtags: ["sql", "analytics", "business", "data"],
+    });
+    expect(x.text.match(/#/g)?.length).toBe(2);
+    expect(() => buildPlatformCaption({ platform: "youtube", body: "  " })).toThrow(/required/);
+  });
+
+  it("requires a minimum evidence sample and labels repurposing as review-only", async () => {
+    const { createSocialRepurposeBrief } = await import("@/lib/agents/social-workforce");
+    const base = {
+      sourcePlatform: "instagram" as const,
+      targetPlatforms: ["youtube", "x"] as const,
+      topic: "SQL basics",
+      coreMessage: "Teach one query pattern.",
+      audience: "New analysts",
+      engagementRate: 0.08,
+      comparisonBaseline: 0.05,
+      periodStart: "2026-10-01T00:00:00.000Z",
+      periodEnd: "2026-10-31T23:59:59.000Z",
+      metricSource: "owner-supplied monthly report",
+    };
+    expect(createSocialRepurposeBrief({ ...base, observations: 2 }).status).toBe("insufficient-evidence");
+    const eligible = createSocialRepurposeBrief({ ...base, observations: 5 });
+    expect(eligible.status).toBe("eligible-for-human-review");
+    expect(eligible.autoRepurpose).toBe(false);
+    expect(eligible.interpretation).toContain("does not establish causation");
+  });
+});

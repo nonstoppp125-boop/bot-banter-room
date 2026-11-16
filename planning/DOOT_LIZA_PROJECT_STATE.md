@@ -180,3 +180,8 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added typed platform readiness registry in `social-workforce.ts`; it records account requirements, OAuth scopes, publishing constraints and quota behavior without claiming account connection.
 - All integrations remain disconnected and live publishing disabled. OAuth app setup, provider approvals, encrypted token persistence, server-side human approval and actual API integration remain blocked.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 13 captions and repurposing
+- Added platform-specific caption structures and evidence-gated repurposing briefs with sample-size threshold, supplied baseline/source/period, non-causal interpretation and mandatory human review.
+- No automatic cross-posting or publication is enabled. CI verification pending.

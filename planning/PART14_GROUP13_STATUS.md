@@ -53,3 +53,10 @@ No merge to `main`; no production deployment.
 - Added a typed runtime readiness registry with account eligibility, authorization, publishing constraints, quota notes and official source URLs.
 - All five integrations remain `not-connected`; live publishing remains explicitly disabled. OAuth, provider approval, durable encrypted tokens and server-side approval enforcement are still blockers.
 - Feasibility tests added; CI verification pending.
+
+
+## 2026-11-16 — Group 13 caption and repurposing controls
+- S14: added platform-structured caption formatting for Instagram, Facebook, YouTube, X and TikTok.
+- S29: added evidence-gated repurposing briefs. Eligibility requires at least three observations and an explicitly supplied comparison baseline; output remains human-review-only and makes no causal claim.
+- These helpers do not publish, schedule, retrieve platform metrics or auto-repurpose content.
+- CI verification pending.
