@@ -19,7 +19,7 @@ import {
   searchTavilyResearch,
 } from "./research";
 import { DEFAULT_AGENT_ID, getAgent, getSpecialist, listAgents } from "./registry";
-import type { AgentEnv, AgentRunInput } from "./types";
+import type { AgentEnv, AgentRunInput, SpecialistGenerationResult } from "./types";
 
 const MAX_MESSAGES = 100;
 const MAX_PARTS_PER_MESSAGE = 200;
@@ -149,7 +149,7 @@ type UsageTotals = {
 
 function addUsage(
   totals: UsageTotals,
-  usage: { inputTokens?: number; outputTokens?: number },
+  usage: { inputTokens: number | undefined; outputTokens: number | undefined },
   inputChars: number,
   outputChars: number,
 ): void {
@@ -187,7 +187,7 @@ async function generateSpecialist(
   }
   if (!agent.generate) throw new Error(`Specialist ${id} has no generator`);
   const output = await agent.generate({ apiKey, model, messages, signal });
-  if (usageTotals) addUsage(usageTotals, {}, JSON.stringify(messages).length, output.length);
+  if (usageTotals) addUsage(usageTotals, { inputTokens: undefined, outputTokens: undefined }, JSON.stringify(messages).length, output.length);
   return output;
 }
 
@@ -572,11 +572,11 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     `Independent quality review: ${review?.status ?? "missing"}` ,
     `Deliverable acceptance: ${acceptanceReview.status} (${acceptanceReview.criteria.filter((item) => item.status === "pass").length}/${acceptanceCriteria.length} criteria passed)` ,
     `Provider-reported calls: ${usageTotals.providerReportedCalls}; character-estimated calls: ${usageTotals.estimatedCalls}` ,
-    `Estimated input tokens: ${usageTotals.inputTokens + Math.ceil((LIZA_SYSTEM.length + executionReport.length + notes.join("\\n\\n").length + JSON.stringify(modelMessages).length) / 4)}` ,
-    `Estimated output tokens: ${usageTotals.outputTokens + 800} (includes an 800-token final synthesis allowance)` ,
+    `Estimated input tokens: ${usageTotals.inputTokens + finalSynthesisInputEstimate}` ,
+    `Estimated output tokens: ${usageTotals.outputTokens + finalSynthesisOutputEstimate} (includes an 800-token final synthesis allowance)` ,
     (() => {
-      const inputEstimate = usageTotals.inputTokens + Math.ceil((LIZA_SYSTEM.length + executionReport.length + notes.join("\\n\\n").length + JSON.stringify(modelMessages).length) / 4);
-      const outputEstimate = usageTotals.outputTokens + 800;
+      const inputEstimate = usageTotals.inputTokens + finalSynthesisInputEstimate;
+      const outputEstimate = usageTotals.outputTokens + finalSynthesisOutputEstimate;
       const cost = estimateGroqCostUsd(model || "openai/gpt-oss-20b", inputEstimate, outputEstimate);
       return cost === null
         ? `USD cost estimate unavailable: no verified price for model ${model || "openai/gpt-oss-20b"}.`

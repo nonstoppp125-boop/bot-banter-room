@@ -32,7 +32,7 @@ export type SpecialistInput = {
 
 export type SpecialistGenerationResult = {
   text: string;
-  usage: { inputTokens?: number; outputTokens?: number };
+  usage: { inputTokens: number | undefined; outputTokens: number | undefined };
 };
 
 /** A mountable agent. Chat agents stream via `run`; specialists return text via `generate`. */
