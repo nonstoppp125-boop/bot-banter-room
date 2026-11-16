@@ -48,14 +48,15 @@ export function clearSessionCookie(): string {
 }
 export function readSessionCookie(cookieHeader: string | null | undefined): string | null {
   if (typeof cookieHeader !== "string" || cookieHeader.length > 8192) return null;
+  let found: string | null = null;
   for (const part of cookieHeader.split(";")) {
     const [name, ...rest] = part.trim().split("=");
     if (name === "__Host-liza_session") {
-      const value = rest.join("=");
-      return TOKEN.test(value) ? value : null;
+      if (found !== null) return null;
+      found = rest.join("=");
     }
   }
-  return null;
+  return found !== null && TOKEN.test(found) ? found : null;
 }
 export function createD1SessionStore(database: D1SessionDatabase): SessionStore {
   if (!database || typeof database.prepare !== "function") throw new Error("A valid D1 session database is required.");
@@ -75,7 +76,7 @@ export function createD1SessionStore(database: D1SessionDatabase): SessionStore 
       if (result.success === false || result.meta?.changes !== 1) throw new Error("D1 session creation failed.");
     },
     getActive: async (rawToken, now) => {
-      if (!Number.isFinite(Date.parse(now))) throw new Error("Session lookup timestamp is invalid.");
+      if (!validTime(now)) throw new Error("Session lookup timestamp is invalid.");
       const tokenHash = await hashSessionToken(rawToken);
       const row = await database.prepare(
         "SELECT id, user_id, workspace_id, expires_at, created_at FROM sessions WHERE token_hash = ? AND revoked_at IS NULL AND expires_at > ? LIMIT 1",
@@ -88,7 +89,7 @@ export function createD1SessionStore(database: D1SessionDatabase): SessionStore 
       } : null;
     },
     revoke: async (rawToken, now) => {
-      if (!Number.isFinite(Date.parse(now))) throw new Error("Session revocation timestamp is invalid.");
+      if (!validTime(now)) throw new Error("Session revocation timestamp is invalid.");
       const tokenHash = await hashSessionToken(rawToken);
       const result = await database.prepare(
         "UPDATE sessions SET revoked_at = ? WHERE token_hash = ? AND revoked_at IS NULL",

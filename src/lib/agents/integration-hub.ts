@@ -187,8 +187,8 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
           !(record.encryptedVerifierBlob instanceof Uint8Array) ||
           record.encryptedVerifierBlob.byteLength < 32 ||
           !Array.isArray(record.scopes) || !record.scopes.length ||
-          !Number.isFinite(Date.parse(record.createdAt)) ||
-          !Number.isFinite(Date.parse(record.expiresAt)) ||
+          new Date(record.createdAt).toISOString() !== record.createdAt ||
+          new Date(record.expiresAt).toISOString() !== record.expiresAt ||
           Date.parse(record.expiresAt) <= Date.parse(record.createdAt)) {
         throw new Error("Invalid OAuth transaction record.");
       }
@@ -200,7 +200,7 @@ export function createD1OAuthTransactionStore(database: D1OAuthTransactionDataba
       if (result.meta?.changes !== 1) throw new Error("OAuth state hash already exists or D1 did not confirm the insert.");
     },
     consume: async (stateHash, now) => {
-      if (!/^[a-f0-9]{64}$/.test(stateHash) || !Number.isFinite(Date.parse(now))) return null;
+      if (!/^[a-f0-9]{64}$/.test(stateHash) || new Date(now).toISOString() !== now) return null;
       const row = await database.prepare(
         "UPDATE oauth_transactions SET consumed_at = ? WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ? RETURNING state_hash, provider, user_id, redirect_uri, encrypted_verifier_blob, scopes_json, expires_at, created_at",
       ).bind(now, stateHash, now).first<{

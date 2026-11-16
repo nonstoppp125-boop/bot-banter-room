@@ -25,6 +25,7 @@ describe("session authentication foundations",()=>{
     expect(cookie).toContain("SameSite=Lax");
     expect(readSessionCookie("other=x; "+cookie)).toBe(token);
     expect(readSessionCookie("__Host-liza_session=bad")).toBeNull();
+    expect(readSessionCookie("__Host-liza_session="+token+"; __Host-liza_session="+token)).toBeNull();
     expect(clearSessionCookie()).toContain("Max-Age=0");
     expect(()=>createSessionCookie(token,3_000_000)).toThrow();
   });
