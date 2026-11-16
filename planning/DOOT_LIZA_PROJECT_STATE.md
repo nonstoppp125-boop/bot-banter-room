@@ -309,3 +309,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added atomic queued-task claims, a Manager task workspace, explicit chat-message-to-task enqueue, and owner-scoped queued cancellation.
 - These are durable task intake and management capabilities only. Background worker execution, live D1/Cloudflare configuration and runtime smoke tests remain unverified.
 - Current Group 06 status and implementation details: `planning/PART06_GROUP06_STATUS.md`.
+
+
+## 2026-11-16 — Group 06 task workflow reconciliation
+- Latest verified task workflow CI: `43834221923` SUCCESS (TypeScript, 47 test files / 354 tests, production build and generated Wrangler configuration validation).
+- Explicit chat-message-to-Manager enqueue, `/tasks` plan intake/listing, and owner-scoped queued cancellation are implemented and verified.
+- Corrected Group 06 status: these UI/intake features are complete; background queue consumption and persisted-plan specialist execution remain unimplemented. Live Cloudflare D1/Access configuration and production smoke tests remain unverified.
+- Group 06 status correction commit: `245b47fb50ec9f41dd867b36295b4b7862963fd5`.
+- No deployment, merge to `main`, or external action execution was performed.
