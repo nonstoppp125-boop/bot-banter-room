@@ -17,10 +17,10 @@ function AnalyticsPage() {
   const [records,setRecords]=useState<AnalyticsSnapshot[]>([]);
   const [error,setError]=useState<string|null>(null);
   const [fileName,setFileName]=useState("");
-  const [loading,setLoading]=useState(true);
+  const [loading,setLoading]=useState(true);\n  const [nextCursor,setNextCursor]=useState<string|null>(null);\n  const [hasMore,setHasMore]=useState(false);\n  const [loadingMore,setLoadingMore]=useState(false);\n  const [notice,setNotice]=useState<string|null>(null);
   useEffect(()=>{
     let active=true;
-    void fetch("/api/analytics",{credentials:"same-origin"}).then(async response=>{
+    void fetch("/api/analytics?limit=200",{credentials:"same-origin"}).then(async response=>{
       if(!response.ok) throw new Error(response.status===401?"Sign in to load saved workspace analytics.":"Could not load saved analytics.");
       const payload=await response.json() as {records?:AnalyticsSnapshot[]};
       if(active) setRecords(Array.isArray(payload.records)?payload.records:[]);
@@ -48,7 +48,7 @@ function AnalyticsPage() {
       const response=await fetch("/api/analytics",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({records:parsed})});
       const payload=await response.json() as {error?:string};
       if(!response.ok) throw new Error(payload.error??"Could not save analytics to this workspace.");
-      const saved=await fetch("/api/analytics",{credentials:"same-origin"});
+      const saved=await fetch("/api/analytics?limit=200",{credentials:"same-origin"});
       if(!saved.ok) throw new Error("Import saved, but analytics refresh failed.");
       const savedPayload=await saved.json() as {records?:AnalyticsSnapshot[]};
       setRecords(Array.isArray(savedPayload.records)?savedPayload.records:[]);
@@ -56,6 +56,33 @@ function AnalyticsPage() {
     } catch(e) {
       setError(e instanceof Error?e.message:"Could not import analytics CSV.");
     }
+  }
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true); setError(null);
+    try {
+      const response = await fetch("/api/analytics?limit=200&cursor=" + encodeURIComponent(nextCursor), { credentials: "same-origin" });
+      const payload = await response.json() as { records?: AnalyticsSnapshot[]; nextCursor?: string | null; hasMore?: boolean; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Could not load the next analytics page.");
+      setRecords((current) => [...current, ...(Array.isArray(payload.records) ? payload.records : [])]);
+      setNextCursor(payload.nextCursor ?? null); setHasMore(payload.hasMore === true);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not load the next analytics page."); }
+    finally { setLoadingMore(false); }
+  }
+  async function deleteRecord(record: AnalyticsSnapshot) {
+    if (!window.confirm("Delete this saved analytics record from the workspace?")) return;
+    setError(null); setNotice(null);
+    try {
+      const response = await fetch("/api/analytics", {
+        method: "DELETE", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ ids: [record.id] }),
+      });
+      const payload = await response.json() as { error?: string; deleted?: number };
+      if (!response.ok) throw new Error(payload.error || "Analytics record could not be deleted. Workspace administrator access may be required.");
+      setRecords((current) => current.filter((item) => item.id !== record.id));
+      setNotice(payload.deleted ? "Analytics record deleted from the workspace." : "No matching active record was found.");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Analytics record could not be deleted."); }
   }
   return <main className="min-h-dvh bg-background px-4 py-5 sm:px-8">
     <div className="mx-auto max-w-6xl">
@@ -70,7 +97,7 @@ function AnalyticsPage() {
           <input className="sr-only" type="file" accept=".csv,text/csv" onChange={e=>void importFile(e.target.files?.[0])}/>
         </label>
       </header>
-      {error&&<p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
+      {error&&<p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}\n      {notice&&<p role="status" className="mb-4 rounded-lg border border-border bg-muted p-3 text-sm">{notice}</p>}
       {loading ? <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center"><p className="text-sm text-muted-foreground">Loading saved workspace analytics…</p></section> : !records.length ? <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center">
         <TrendingUp className="mx-auto mb-4 size-9 text-muted-foreground"/>
         <h2 className="text-lg font-medium">No analytics data imported</h2>
@@ -116,10 +143,10 @@ function AnalyticsPage() {
         <section className="mt-6 overflow-hidden rounded-xl border border-border">
           <h2 className="border-b border-border p-4 font-medium">Imported metric records</h2>
           <div className="overflow-x-auto"><table className="w-full text-left text-sm">
-            <thead className="bg-muted/50 text-xs text-muted-foreground"><tr>{["Platform","Entity","Metric","Value","Period","Source"].map(label=><th key={label} className="px-3 py-3 font-medium">{label}</th>)}</tr></thead>
-            <tbody>{records.slice(0,200).map(row=><tr key={row.id} className="border-t border-border"><td className="px-3 py-3">{row.platform}</td><td className="px-3 py-3">{row.entityType}: {row.entityId}</td><td className="px-3 py-3">{row.metric}</td><td className="px-3 py-3 tabular-nums">{row.value.toLocaleString()}</td><td className="px-3 py-3 whitespace-nowrap">{row.periodStart} – {row.periodEnd}</td><td className="px-3 py-3">{row.source}</td></tr>)}</tbody>
+            <thead className="bg-muted/50 text-xs text-muted-foreground"><tr>{["Platform","Entity","Metric","Value","Period","Source","Manage"].map(label=><th key={label} className="px-3 py-3 font-medium">{label}</th>)}</tr></thead>
+            <tbody>{records.map(row=><tr key={row.id} className="border-t border-border"><td className="px-3 py-3">{row.platform}</td><td className="px-3 py-3">{row.entityType}: {row.entityId}</td><td className="px-3 py-3">{row.metric}</td><td className="px-3 py-3 tabular-nums">{row.value.toLocaleString()}</td><td className="px-3 py-3 whitespace-nowrap">{row.periodStart} – {row.periodEnd}</td><td className="px-3 py-3">{row.source}</td><td className="px-3 py-3"><button onClick={()=>void deleteRecord(row)} className="text-xs text-destructive underline">Delete</button></td></tr>)}</tbody>
           </table></div>
-          {records.length>200&&<p className="p-3 text-xs text-muted-foreground">Showing first 200 of {records.length} records.</p>}
+          {hasMore&&<div className="border-t border-border p-3 text-center"><button onClick={()=>void loadMore()} disabled={loadingMore} className="rounded-lg border border-border px-4 py-2 text-sm disabled:opacity-50">{loadingMore?"Loading…":"Load more records"}</button></div>}
         </section>
       </>}
       <p className="mt-6 text-xs text-muted-foreground">Workspace-scoped persistence is enabled. CSV provenance is user-supplied and is not independently authenticated. No platform API is connected.</p>
