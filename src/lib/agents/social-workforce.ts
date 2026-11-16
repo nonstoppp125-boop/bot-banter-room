@@ -577,3 +577,94 @@ export function createSocialRepurposeBrief(input: {
     autoRepurpose: false as const,
   };
 }
+
+
+export interface SocialMetricSnapshot {
+  platform: SocialPlatform;
+  impressions?: number | null;
+  engagements?: number | null;
+  clicks?: number | null;
+  followers?: number | null;
+  publishedPosts?: number | null;
+  collectedAt: string;
+  periodStart: string;
+  periodEnd: string;
+  source: string;
+  metricDefinition: string;
+}
+
+function validNonNegativeMetric(value: number | null | undefined): boolean {
+  return value === undefined || value === null || (Number.isFinite(value) && value >= 0);
+}
+
+export function createCrossPlatformSocialReport(input: {
+  snapshots: SocialMetricSnapshot[];
+  generatedAt: string;
+  staleAfterHours?: number;
+}) {
+  if (!validTimestamp(input.generatedAt)) throw new Error("Report generation timestamp is invalid.");
+  const staleAfterHours = input.staleAfterHours ?? 48;
+  if (!Number.isFinite(staleAfterHours) || staleAfterHours < 1 || staleAfterHours > 24 * 30) {
+    throw new Error("Staleness threshold must be between 1 hour and 30 days.");
+  }
+  const snapshots = Array.isArray(input.snapshots) ? input.snapshots : [];
+  for (const snapshot of snapshots) {
+    if (!VALID_PLATFORMS.has(snapshot.platform) ||
+        !validTimestamp(snapshot.collectedAt) ||
+        !validTimestamp(snapshot.periodStart) ||
+        !validTimestamp(snapshot.periodEnd) ||
+        Date.parse(snapshot.periodStart) > Date.parse(snapshot.periodEnd) ||
+        Date.parse(snapshot.collectedAt) > Date.parse(input.generatedAt) ||
+        !clean(snapshot.source, 300) || !clean(snapshot.metricDefinition, 500) ||
+        ![snapshot.impressions, snapshot.engagements, snapshot.clicks, snapshot.followers, snapshot.publishedPosts].every(validNonNegativeMetric)) {
+      throw new Error("Social metric snapshot contains invalid values or provenance.");
+    }
+    if (snapshot.engagements != null && snapshot.impressions == null) {
+      throw new Error("Engagement rate requires an impressions denominator.");
+    }
+    if (snapshot.clicks != null && snapshot.impressions == null) {
+      throw new Error("Click-through rate requires an impressions denominator.");
+    }
+  }
+
+  const platforms = [...new Set(snapshots.map((snapshot) => snapshot.platform))];
+  const summaries = platforms.map((platform) => {
+    const rows = snapshots.filter((snapshot) => snapshot.platform === platform);
+    const sum = (key: "impressions" | "engagements" | "clicks" | "followers" | "publishedPosts") => {
+      const values = rows.map((row) => row[key]).filter((value): value is number => value != null);
+      return values.length ? values.reduce((total, value) => total + value, 0) : null;
+    };
+    const impressions = sum("impressions");
+    const engagements = sum("engagements");
+    const clicks = sum("clicks");
+    const latestCollectedAt = rows.map((row) => row.collectedAt).sort().at(-1)!;
+    const ageHours = (Date.parse(input.generatedAt) - Date.parse(latestCollectedAt)) / 3_600_000;
+    return {
+      platform,
+      snapshotCount: rows.length,
+      impressions,
+      engagements,
+      clicks,
+      followers: sum("followers"),
+      publishedPosts: sum("publishedPosts"),
+      engagementRate: impressions && engagements != null ? (engagements / impressions) * 100 : null,
+      clickThroughRate: impressions && clicks != null ? (clicks / impressions) * 100 : null,
+      latestCollectedAt,
+      freshness: ageHours <= staleAfterHours ? "fresh" as const : "stale" as const,
+      ageHours: Math.round(ageHours * 100) / 100,
+      sources: [...new Set(rows.map((row) => clean(row.source, 300)))],
+      metricDefinitions: [...new Set(rows.map((row) => clean(row.metricDefinition, 500)))],
+    };
+  });
+  const uniqueDefinitions = [...new Set(snapshots.map((snapshot) => clean(snapshot.metricDefinition, 500)))];
+  return {
+    generatedAt: input.generatedAt,
+    snapshotCount: snapshots.length,
+    platforms: summaries,
+    comparisonCaveat: uniqueDefinitions.length > 1
+      ? "Metric definitions differ across supplied sources; cross-platform rates are not directly comparable until definitions are reconciled."
+      : "Even with matching supplied definitions, platform-native measurement differences may remain; treat comparisons as directional.",
+    missingDataPolicy: "Missing values remain null; they are never converted to zero.",
+    sourcePolicy: "All metrics are caller-supplied snapshots. This function does not fetch or verify platform analytics.",
+  };
+}

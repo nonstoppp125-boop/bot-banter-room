@@ -185,3 +185,8 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 ## 2026-11-16 — Group 13 captions and repurposing
 - Added platform-specific caption structures and evidence-gated repurposing briefs with sample-size threshold, supplied baseline/source/period, non-causal interpretation and mandatory human review.
 - No automatic cross-posting or publication is enabled. CI verification pending.
+
+
+## 2026-11-16 — Group 13 analytics foundation
+- Added normalized caller-supplied social metric snapshots, weighted engagement/click-through rates, source/definition provenance, missing-data preservation and freshness indicators.
+- No live analytics ingestion is claimed. CI verification pending.

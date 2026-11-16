@@ -60,3 +60,11 @@ No merge to `main`; no production deployment.
 - S29: added evidence-gated repurposing briefs. Eligibility requires at least three observations and an explicitly supplied comparison baseline; output remains human-review-only and makes no causal claim.
 - These helpers do not publish, schedule, retrieve platform metrics or auto-repurpose content.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 13 offline analytics foundation
+- Added caller-supplied metric snapshot normalization and cross-platform aggregation for impressions, engagements, clicks, followers and published posts.
+- Engagement and click-through rates use weighted totals and explicit impressions denominators; missing values remain null.
+- Added source/metric-definition provenance, data freshness indicators and a warning when metric definitions differ.
+- This is an offline adapter foundation only; no platform analytics API is connected or queried.
+- CI verification pending.

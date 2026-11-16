@@ -183,3 +183,8 @@ Append new evidence below; never rewrite historical results.\n\n
 ## 2026-11-16 — Group 13 caption and repurposing tests
 - Added tests for platform caption structure, hashtag bounds, empty-body rejection, minimum evidence observations and human-review-only repurposing.
 - CI verification pending.
+
+
+## 2026-11-16 — Group 13 offline analytics tests
+- Added tests for weighted aggregation, correct denominator handling, missing-value null preservation, freshness state and invalid/future snapshot rejection.
+- CI verification pending.

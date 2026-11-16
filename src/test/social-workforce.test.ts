@@ -178,3 +178,81 @@ describe("platform captions and evidence-gated repurposing", () => {
     expect(eligible.interpretation).toContain("does not establish causation");
   });
 });
+
+
+describe("cross-platform social analytics normalization", () => {
+  it("aggregates supplied metrics with weighted rates and provenance", async () => {
+    const { createCrossPlatformSocialReport } = await import("@/lib/agents/social-workforce");
+    const report = createCrossPlatformSocialReport({
+      generatedAt: "2026-11-16T12:00:00.000Z",
+      snapshots: [
+        {
+          platform: "instagram",
+          impressions: 1000,
+          engagements: 100,
+          clicks: 20,
+          followers: 500,
+          publishedPosts: 4,
+          collectedAt: "2026-11-16T10:00:00.000Z",
+          periodStart: "2026-11-01T00:00:00.000Z",
+          periodEnd: "2026-11-15T23:59:59.000Z",
+          source: "owner-export",
+          metricDefinition: "engagements / impressions",
+        },
+        {
+          platform: "instagram",
+          impressions: 500,
+          engagements: 25,
+          clicks: 5,
+          collectedAt: "2026-11-16T11:00:00.000Z",
+          periodStart: "2026-11-01T00:00:00.000Z",
+          periodEnd: "2026-11-15T23:59:59.000Z",
+          source: "owner-export",
+          metricDefinition: "engagements / impressions",
+        },
+      ],
+    });
+    expect(report.platforms[0]?.engagementRate).toBeCloseTo(8.3333, 3);
+    expect(report.platforms[0]?.clickThroughRate).toBeCloseTo(1.6667, 3);
+    expect(report.platforms[0]?.freshness).toBe("fresh");
+    expect(report.platforms[0]?.impressions).toBe(1500);
+  });
+
+  it("preserves missing metrics as null and marks stale snapshots", async () => {
+    const { createCrossPlatformSocialReport } = await import("@/lib/agents/social-workforce");
+    const report = createCrossPlatformSocialReport({
+      generatedAt: "2026-11-16T12:00:00.000Z",
+      staleAfterHours: 24,
+      snapshots: [{
+        platform: "youtube",
+        collectedAt: "2026-11-14T00:00:00.000Z",
+        periodStart: "2026-11-01T00:00:00.000Z",
+        periodEnd: "2026-11-10T00:00:00.000Z",
+        source: "manual-csv",
+        metricDefinition: "YouTube Analytics export",
+      }],
+    });
+    expect(report.platforms[0]?.impressions).toBeNull();
+    expect(report.platforms[0]?.engagementRate).toBeNull();
+    expect(report.platforms[0]?.freshness).toBe("stale");
+  });
+
+  it("rejects invalid metric denominators and future collection timestamps", async () => {
+    const { createCrossPlatformSocialReport } = await import("@/lib/agents/social-workforce");
+    const base = {
+      platform: "x" as const,
+      periodStart: "2026-11-01T00:00:00.000Z",
+      periodEnd: "2026-11-10T00:00:00.000Z",
+      source: "manual",
+      metricDefinition: "engagements / impressions",
+    };
+    expect(() => createCrossPlatformSocialReport({
+      generatedAt: "2026-11-16T12:00:00.000Z",
+      snapshots: [{ ...base, collectedAt: "2026-11-16T11:00:00.000Z", engagements: 10 }],
+    })).toThrow(/denominator/);
+    expect(() => createCrossPlatformSocialReport({
+      generatedAt: "2026-11-16T12:00:00.000Z",
+      snapshots: [{ ...base, collectedAt: "2026-11-17T11:00:00.000Z" }],
+    })).toThrow(/invalid/);
+  });
+});
