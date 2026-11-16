@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
 import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
@@ -34,6 +35,11 @@ import { Route as ApiIntegrationsRouteImport } from './routes/api/integrations'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -159,6 +165,9 @@ export interface FileRoutesByFullPath {
   '/settings/approvals': typeof SettingsApprovalsRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
   '/analytics': typeof AnalyticsRoute
+  '/tasks': typeof TasksRoute
+  '/tasks': typeof TasksRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -220,6 +229,7 @@ export interface RootRouteChildren {
   ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  TasksRoute: typeof TasksRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
   SettingsPrivacyRoute: typeof SettingsPrivacyRoute
@@ -374,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsPrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -403,6 +420,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiIntegrationRefreshRoute: ApiIntegrationRefreshRoute,
   ApiIntegrationsRoute: ApiIntegrationsRoute,
   AnalyticsRoute: AnalyticsRoute,
+  TasksRoute: TasksRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsApprovalsRoute: SettingsApprovalsRoute,
   SettingsPrivacyRoute: SettingsPrivacyRoute,
