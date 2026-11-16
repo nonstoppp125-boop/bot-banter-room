@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handleTaskRequest } from "@/lib/agents/task-api";
+import { buildManagerPlan } from "@/lib/agents/manager";
+import { listAgents } from "@/lib/agents/registry";
 
 const token = "A".repeat(43);
 const cookie = "__Host-liza_session=" + token;
@@ -43,6 +45,12 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
                 });
               }
               if (query.startsWith("UPDATE agent_tasks")) {
+                if (query.includes("attempt_count = attempt_count + 1")) {
+                  const [updatedAt, id, workspaceId, userId] = values;
+                  const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === "failed" && Number(item["attempt_count"] ?? 0) < 2);
+                  if (row) { row["status"] = "queued"; row["attempt_count"] = Number(row["attempt_count"] ?? 0) + 1; row["updated_at"] = updatedAt; return { success: true, meta: { changes: 1 } }; }
+                  return { success: true, meta: { changes: 0 } };
+                }
                 const [status, , , updatedAt, id, workspaceId, userId, expectedStatus] = values;
                 const row = rows.find((item) => item["id"] === id && item["workspace_id"] === workspaceId && item["user_id"] === userId && item["status"] === expectedStatus);
                 if (row) { row["status"] = status; row["updated_at"] = updatedAt; return { success: true, meta: { changes: 1 } }; }
@@ -182,4 +190,45 @@ describe("authenticated Manager task API", () => {
     expect((await handleTaskRequest(post({ task: "  " }), { ACTION_DB: database })).status).toBe(400);
     expect((await handleTaskRequest(post({ task: "x".repeat(20_001) }), { ACTION_DB: database })).status).toBe(400);
   });
+  it("requeues failed low-risk tasks atomically within a two-retry budget", async () => {
+    const { database, rows, queries } = makeDatabase();
+    const plan = buildManagerPlan("Prepare a research brief", listAgents());
+    rows.push({
+      id: "failed-task", workspace_id: "workspace-1", user_id: "user-1", status: "failed",
+      input_summary: "Prepare a research brief", plan_json: JSON.stringify(plan), result_json: JSON.stringify({ error: "provider timeout" }),
+      created_at: "2026-11-16T10:00:00.000Z", updated_at: "2026-11-16T10:00:00.000Z", attempt_count: 0,
+    });
+    const patch = () => new Request(url, {
+      method: "PATCH", headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "retry", taskId: "failed-task" }),
+    });
+    const first = await handleTaskRequest(patch(), { ACTION_DB: database });
+    expect(first.status).toBe(200);
+    const row = rows.find((item) => item["id"] === "failed-task")!;
+    expect(row["status"]).toBe("queued");
+    row["status"] = "failed";
+    const second = await handleTaskRequest(patch(), { ACTION_DB: database });
+    expect(second.status).toBe(200);
+    row["status"] = "failed";
+    const exhausted = await handleTaskRequest(patch(), { ACTION_DB: database });
+    expect(exhausted.status).toBe(409);
+    expect(queries.some((query) => query.includes("attempt_count = attempt_count + 1") && query.includes("attempt_count < 2"))).toBe(true);
+  });
+
+  it("never retries a high-risk persisted plan", async () => {
+    const { database, rows } = makeDatabase();
+    const summary = "Publish this LinkedIn post";
+    rows.push({
+      id: "high-risk-task", workspace_id: "workspace-1", user_id: "user-1", status: "failed",
+      input_summary: summary, plan_json: JSON.stringify(buildManagerPlan(summary, listAgents())), result_json: null,
+      created_at: "2026-11-16T10:00:00.000Z", updated_at: "2026-11-16T10:00:00.000Z", attempt_count: 0,
+    });
+    const response = await handleTaskRequest(new Request(url, {
+      method: "PATCH", headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "retry", taskId: "high-risk-task" }),
+    }), { ACTION_DB: database });
+    expect(response.status).toBe(409);
+    expect(rows.find((item) => item["id"] === "high-risk-task")?.["status"]).toBe("failed");
+  });
+
 });
