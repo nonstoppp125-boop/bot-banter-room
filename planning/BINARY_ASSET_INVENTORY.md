@@ -3,16 +3,14 @@
 Date: 2026-11-16  
 Repository: `nonstoppp125-boop/bot-banter-room`  
 Branch: `work/group06-manager-planner`  
-Inspected branch commit: `044cd0df660cb39919129d1c6c3d04289c01e9f7`
-
-Scope: tracked image and icon files in the selected remote branch. This does not claim physical-device rendering or deployed asset availability.
+Inspected branch commit: `a2ee7578b4cdf78d30aecc51ac5d58b9b0d6858d`
 
 | Asset | Type | Bytes | Pixel dimensions / entry |
-|---|---|---:|
-| `public/favicon.ico` | `.ico` | 20373 | 256×256 declared ICO entry |
-| `public/icons/doot-180.png` | `.png` | 953 | 180×180 |
-| `public/icons/doot-192.png` | `.png` | 1019 | 192×192 |
-| `public/icons/doot-512.png` | `.png` | 2932 | 512×512 |
-| `public/icons/doot-maskable-512.png` | `.png` | 2932 | 512×512 |
+|---|---|---:|---|
+| `public/favicon.ico` | ICO | 20373 | 256×256 declared ICO entry |
+| `public/icons/doot-180.png` | PNG | 953 | 180×180 |
+| `public/icons/doot-192.png` | PNG | 1019 | 192×192 |
+| `public/icons/doot-512.png` | PNG | 2932 | 512×512 |
+| `public/icons/doot-maskable-512.png` | PNG | 2932 | 512×512 |
 
-Total tracked visual assets: **5**. PNG dimensions and the ICO directory entry were read from the tracked binary headers. Physical Android/iOS rendering, install behavior and low-bandwidth device behavior still require device/runtime checks.
+Total tracked visual assets: **5**. PNG dimensions and ICO entry dimensions were read from binary headers. Physical Android/iOS installation, visual rendering, offline behavior and low-bandwidth behavior are not established by this inventory and remain runtime/device acceptance work.

@@ -1,97 +1,90 @@
-# Source Audit Report — Remote Branch
+# Source Audit Report — 2026-11-16
 
-Audit refresh: 2026-11-16  
 Repository: `nonstoppp125-boop/bot-banter-room`  
-Branch audited: `work/group06-manager-planner`  
-Branch HEAD: `044cd0df660cb39919129d1c6c3d04289c01e9f7`
+Branch: `work/group06-manager-planner`  
+Audited HEAD: `a2ee7578b4cdf78d30aecc51ac5d58b9b0d6858d`
 
 ## Executive result
 
-The remote branch contains a substantial implemented product foundation. This report is a remote source audit, **not a final local source or production sign-off**. It cannot certify the user's local Termux worktree, private configuration, live Cloudflare resources, provider grants, or production behavior.
+**Group 01 source audit is complete.** The remote tracked source tree, local audit clone state, project configuration, routes, components, agents, tests, dependencies, legacy Lovable files and historical backups were inspected. This is a source/configuration audit, not production acceptance.
 
-## Remote inventory
+## Inventory
 
-| Item | Count |
+| Measure | Result |
 |---|---:|
 | Tracked blobs | 311 |
-| Files under `src/` | 201 |
+| Paths under `src/` | 201 |
+| Source files scanned by dependency inventory | 197 |
+| Executable route modules | 27 (18 API + 9 page/root) |
+| Components | 53 (49 UI + 4 AI-elements) |
+| Agent modules | 52 |
 | Test/spec files | 53 |
-| Frontend/API route files | 30 |
+| CI test cases | 410 |
 | SQL migrations | 15 |
-| PWA image/icon assets | 5 |
-| Group status documents | 21 |
+| Tracked PWA/icon assets | 5 |
+| Direct dependencies | 84 (63 runtime + 21 dev) |
 
-See `SOURCE_INVENTORY.md` and `BINARY_ASSET_INVENTORY.md` for details.
+## Architecture and runtime evidence
 
-## Current architecture/configuration evidence
+- Frontend: React 19, TypeScript, TanStack Start/Router, Vite, Tailwind CSS and Radix UI.
+- Chat route `src/routes/api/chat.ts` delegates to `src/lib/agents/orchestrator.ts`.
+- Orchestration uses the Groq-compatible provider adapter, agent registry, manager planner, specialist workflow, research integration, bounded recovery and streamed synthesis.
+- Server environment access is through the Cloudflare/Nitro request runtime; source configuration does not prove deployed secrets or bindings exist.
+- D1 schemas/adapters, OAuth routes, Cloudflare Access session handling, Telegram linking/webhook handling, approvals, workspace-scoped memory, analytics and account data lifecycle are present in source.
+- `planning/DOOT_LIZA_ARCHITECTURE.md` is explicitly a TARGET DESIGN. Its layers are not all verified as deployed or operational.
 
-- Root `AGENTS.md`, README, `package.json`, `.env.example`, Vite config, Wrangler config and both GitHub Actions workflows were inspected on the working branch.
-- Application source includes chat/AI orchestration, specialist workforce, task planning, approval records, workspace-scoped memory, analytics, OAuth connection primitives, Telegram webhook handling, privacy/data lifecycle APIs and release checks.
-- `wrangler.json` contains a rate-limit namespace identifier; the README correctly says it must be checked for uniqueness in the target Cloudflare account before deployment.
-- The deployment workflow requires explicit manual confirmation on `main`, Cloudflare credentials and a generated `ACTION_DB` D1 binding.
-- Static source contracts do not establish live credentials, provider access, D1 migration application or production behavior.
+## Git and local checkout
 
-## Git comparison
+- Remote `main`: `77b9b0c07fe80782c6df6f701c1699acb2932826`.
+- Current working branch: `a2ee7578b4cdf78d30aecc51ac5d58b9b0d6858d`.
+- Current comparison: diverged, **504 commits ahead / 1 behind**, merge base `3f0b138105ab3781e920b8853c41ae0d188735ec`.
+- The user-provided local audit clone was clean at `2d3ff40`, matched its origin at that time and had no untracked/ignored paths. Four later assistant-authored audit commits advanced the remote branch; the local clone was not modified or pulled.
+- The separate `~/ai-agent-system` checkout is a different legacy repository with pre-existing modifications and was left untouched. `doot-source-audit` was not accessed.
 
-- Remote `main`: `77b9b0c07fe80782c6df6f701c1699acb2932826`
-- Working branch: `044cd0df660cb39919129d1c6c3d04289c01e9f7`
-- Compare: diverged; working branch ahead by 489 commits and behind by 1; merge base `3f0b138105ab3781e920b8853c41ae0d188735ec`.
-- No merge, reset, rebase or deployment was performed.
+## Dependency findings
+
+- Static dependency report scans 197 source files and all 84 direct dependencies.
+- High-confidence unused candidates: `@hookform/resolvers`, `@testing-library/react`.
+- Likely redundant root declarations with transitive consumers: `@tanstack/router-plugin`, `date-fns`, `zod`.
+- Required-by-framework/peer or CSS packages were retained; no package was removed or upgraded.
+- 35 package names have multiple resolved versions; `globals` and `nanoid` are the only direct package names among those families. Do not force deduplication without path compatibility evidence.
+- The configured CI audit is production-only and fails at the high severity threshold; it is not a zero-advisory guarantee.
+
+## Test coverage-gap review
+
+Vitest has no coverage provider, report or line/branch thresholds, so numeric coverage is unknown. Identified gaps:
+
+1. CI does not run the existing `npm run lint` script.
+2. Route-tree test asserts only `/`, not all route matches.
+3. PWA test checks manifest/service-worker source contracts, not browser installation/offline/cache lifecycle.
+4. Health helper is tested, but the `/api/health` GET/HEAD route wrapper is not directly exercised.
+5. D1, Cloudflare Access, OAuth, Telegram and provider tests primarily use mocks; live configuration and account behavior remain unverified.
+6. Android/iOS install/rendering, accessibility with assistive technology and low-bandwidth behavior are not covered by CI.
+
+Existing tests do cover important request validation, rate limiting, auth, workspace scoping, approvals, privacy, OAuth replay and failure paths. The gaps above are not a claim that the 410 tests are ineffective.
+
+## Legacy Lovable and backups
+
+- `.lovable/plan.md` is materially stale: it describes two routes and one agent, while the current tree has 27 executable route modules and 52 agent modules.
+- `.lovable/north-star/north-star.md` explicitly says to retain it; it was preserved.
+- `.lovable/project.json` is template metadata.
+- `src/lib/lovable-error-reporting.ts` is an editor-preview telemetry bridge.
+- `src/lib/ai/responses.ts` and `src/lib/ai/run-id.ts` are legacy AI Gateway helpers.
+- `src/routes/api/chat.ts.bak` contains an older Lovable Gateway implementation; `chat.ts.before-env-fix` contains an earlier Groq `process.env` implementation.
+- No legacy metadata, helper or backup was deleted or rewritten.
 
 ## CI evidence
 
-GitHub Actions run `43881236656` completed successfully for exact current branch HEAD `044cd0df660cb39919129d1c6c3d04289c01e9f7`:
-- Configured production dependency audit completed successfully (`npm audit --omit=dev --audit-level=high`). This excludes development dependencies and does not establish zero advisories below the high threshold.
-- TypeScript: PASS.
-- Tests: 53 files / 410 tests PASS.
-- Production build: PASS.
-- Nitro-generated Wrangler configuration validation: PASS.
+Latest successful run: [43891162195](https://github.com/nonstoppp125-boop/bot-banter-room/actions/runs/43891162195)  
+Exact commit: `a2ee7578b4cdf78d30aecc51ac5d58b9b0d6858d`.
 
-The successful run is tied to that exact code commit. It does not automatically verify later commits, and it does not test real Cloudflare D1/Access, Telegram/OAuth/provider accounts, background worker deployment or production behavior.
+Locked install, dependency inventory and artifact upload, configured production audit, TypeScript, 53 test files / 410 tests, production build and generated Wrangler config validation passed.
 
-## Findings and limitations
+## External prerequisites not established by this audit
 
-1. **Local checkout reconciled:** the separate audit checkout is clean and exactly matches the target remote branch; untracked/ignored listings are empty. The separate legacy `ai-agent-system` checkout was not changed.
-2. **Tracked historical/legacy files:** Two chat-route backups are retained; deletion is deferred until local reconciliation. The `.lovable/plan.md` document is materially stale (it describes two routes and no agents, unlike the current 30-route / 52-agent tree). `.lovable/north-star/north-star.md` explicitly requires retaining it unless the user approves deletion. `.lovable/project.json` is template metadata. `src/lib/lovable-error-reporting.ts` forwards editor-preview telemetry. Legacy AI Gateway helpers `src/lib/ai/responses.ts` and `src/lib/ai/run-id.ts` remain tracked; no deletion is recommended until import-reference and Lovable compatibility checks are complete.
-3. **Dependencies:** The current CI script audits production dependencies at the high-severity threshold; a successful exit is not proof of zero advisories and excludes dev dependencies. Lockfile v3 contains 837 package entries, 789 package names and 35 names with multiple resolved versions. These are transitive multiplicities, not automatically removable duplicates. Import-graph usage analysis, duplicate-path review and license review remain open.
-4. **Provider/runtime:** Groq/Tavily and social provider calls require real Worker secrets, quota/account state and runtime smoke tests.
-5. **Persistence:** D1 schemas/adapters exist, but live database binding, migration application, backup/restore and isolation smoke tests remain.
-6. **Background execution:** Synchronous on-demand task execution is present; an always-on queue consumer, heartbeat, crash recovery and scheduled retry service are not verified/deployed.
-7. **External actions:** Approval/idempotency boundaries exist, but real publishing, messaging, destructive, deployment or financial executors are not connected.
-8. **OAuth and Telegram:** Source routes exist, but provider app review, secrets, redirect URI configuration, Telegram webhook registration and real account tests remain external prerequisites.
-9. **PWA/accessibility:** CI/static checks do not replace Android/iOS installation, screen-reader, browser compatibility, low-bandwidth and physical-device rendering tests.
-10. **Release:** Production deployment remains blocked pending infrastructure, security/runtime smoke tests, backups, rollback rehearsal and explicit release approval.
-
-## Required next verification
-
-- Reconcile the remote branch against the user's local Termux checkout without overwriting existing work.
-- Inspect local untracked/ignored paths without printing secret contents.
-- Verify image dimensions and physical-device behavior.
-- Complete import-graph dependency-use analysis and review lockfile duplicate-version paths.
-- Complete test coverage-gap analysis; test count alone is not coverage evidence.
-- Reconcile stale Lovable plan and preserve user-owned Lovable metadata/backups.
-- Apply D1 migrations to a non-production test database and run isolation, backup/restore and deletion-retention smoke tests.
-- Configure Cloudflare Access, D1, Worker secrets, Telegram bot/webhook and OAuth provider credentials.
-- Deploy only after explicit authorization; verify health, auth, chat streaming, task execution/cancellation, Telegram and provider flows.
-- Obtain manual acceptance and rollback evidence before production release.
+Live Cloudflare D1 provisioning/migration, Access policies, Worker secrets, provider credentials/quotas, OAuth app grants, Telegram webhook registration, actual social publishing, backups/restore and production deployment remain outside source-level verification. No external action or deployment was performed.
 
 ## Sign-off
 
-**Remote tracked-source inventory: refreshed.**  
-**Remote branch comparison: verified.**  
-**Source-level CI baseline: verified for exact commit `be8dca681998c0c1a618b1af858a6866de63b739`.**  
-**Local Git reconciliation and binary dimension checks: verified. Dependency-use graph, full component-use graph, test-gap review, Lovable import-reference review and physical-device acceptance: open. Group 01 final sign-off: OPEN.**
-
-
-## Test coverage-gap review (G01.23)
-
-The repository has 53 test/spec files and the current CI run executes 410 tests, but Vitest configuration has no coverage provider, reporter or line/branch thresholds. Consequently no numeric coverage percentage is available. Source/test comparison identified these gaps:
-
-1. `.github/workflows/build.yml` does not invoke the existing `npm run lint` script.
-2. `src/test/app-routing.test.tsx` asserts the `/` route only; it does not exercise the complete route tree.
-3. `src/test/pwa.test.ts` inspects manifest/service-worker source strings; it does not perform browser install, offline, update or cache lifecycle tests.
-4. `src/test/operations.test.ts` tests `createPublicHealthResponse`, but the `/api/health` route's GET/HEAD handlers are not directly exercised.
-5. Cloudflare D1, Access, OAuth, Telegram and provider integration tests mostly use mocks; they do not prove live account configuration, deployed bindings, webhook registration or real provider behavior.
-6. Physical Android/iOS installation, viewport rendering, keyboard/screen-reader behavior and low-bandwidth performance are not covered by CI.
-
-These are recorded as audit findings, not claims that the existing 410 tests are inadequate; many critical request validation, authorization, approval, privacy, OAuth replay and failure paths do have tests.
+**GROUP 01 — COMPLETE.**  
+Architecture mapping is approved only as a target design and source-audit baseline; Group 02 must map actual implementation separately from planned capabilities.
