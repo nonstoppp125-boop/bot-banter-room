@@ -10,17 +10,17 @@ Branch: work/group06-manager-planner
 - DB18 — Workspace record validation and database constraints.
 - DB21 — Bounded retention policy metadata.
 - DB22 — D1 user-data exporter scopes data to the authenticated user and workspace memberships; `/api/account/export` now provides a session-authenticated JSON download. Credential columns are omitted and nested JSON keys are recursively redacted.
-- DB23 — Explicit same-user deletion request store supports cancellation, due-list and completion-state operations plus a 7–90 day grace period; deletion plan preserves audit evidence and cannot execute itself.
+- DB23 — Explicit same-user deletion request store and authenticated `/api/account/deletion` request/cancel endpoint support a 30-day grace period; deletion plan preserves audit evidence and cannot execute itself.
 - DB23 — Deletion plan revokes sessions, clears encrypted provider credentials, anonymizes audit actor and deletes user; plan is non-executable until approved runtime workflow exists.
 
 ## Remaining / blocked
 - DB02 — Final database provisioning, cost/limits review and environment binding remain unverified.
 - DB16 — Migrations must be applied to provisioned D1 and tested remotely.
 - DB19–DB20 — Backups and restoration tests require an actual database.
-- DB23 — Deletion request/cancellation API, scheduled due-time worker, approved execution and cascade review remain open.
+- DB23 — Scheduled due-time worker, approved deletion execution, workspace disposition UI and cascade review remain open. The API only schedules/cancels; it never deletes accounts.
 - DB25 — Concurrent transaction/isolation tests require D1 runtime.
 
-GROUP 17: IN PROGRESS — schema, access and authenticated data export are implemented; live D1, backups/restore and account-deletion runtime remain unverified.
+GROUP 17: IN PROGRESS — schema, authenticated data export and deletion request/cancel APIs are implemented; live D1, backups/restore and scheduled deletion execution remain unverified.
 No merge to main; no production deployment.
 
 
@@ -36,3 +36,10 @@ No merge to main; no production deployment.
 - Export queries do not select encrypted provider token blobs. Nested JSON fields are recursively filtered for token, secret, password, session, OAuth and credential keys; malformed JSON fields are replaced with a redaction marker.
 - Added endpoint tests for authentication, response headers, same-user export and credential-column exclusion, plus nested JSON redaction coverage.
 - GitHub Actions run `43810280545`: SUCCESS. D1 provisioning and remote migration/runtime tests remain blocked.
+
+
+## 2026-11-16 — Account deletion request API
+- Added same-origin, session-authenticated `POST /api/account/deletion` with an exact `DELETE MY ACCOUNT` confirmation phrase and a fixed 30-day grace period.
+- The endpoint supports cancellation for the active session user only. Request bodies are streamed with a 2 KB cap; no deletion worker or destructive execution is enabled.
+- Regression tests cover same-origin enforcement, exact confirmation, user scoping and cancellation.
+- GitHub Actions run `43810538550`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
