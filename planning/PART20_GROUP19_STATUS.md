@@ -65,3 +65,12 @@ No merge to `main`; no production deployment.
 - Approval callback flow is implemented and separately verified; the task-to-approval execution bridge is still unavailable.
 - GitHub Actions run `43870462130`: SUCCESS — TypeScript, 51 test files / 395 tests, production build and generated Wrangler Worker config validation.
 - Live Telegram bot credentials, webhook registration, D1 provisioning and end-to-end Telegram runtime smoke tests remain unverified.
+
+
+## 2026-11-16 — Telegram approval-to-task handoff clarified
+
+- High-risk `/task` requests create payload-bound D1 approval records; workspace admins can decide them through the signed `/approvals` callback flow.
+- After approval, the task owner opens the web Tasks page and uses Verify approval & unlock. The web execution endpoint independently verifies the same persisted approval before running the Manager specialist workflow.
+- Telegram itself does not execute the task. No external publish/message/delete/deploy action is connected.
+- Verification: GitHub Actions run `43872309252` SUCCESS — TypeScript, 51 test files / 397 tests, production build and generated Wrangler Worker config validation.
+- Live Telegram credentials, webhook registration, D1 provisioning and end-to-end runtime smoke tests remain unverified.
