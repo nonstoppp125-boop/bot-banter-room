@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_deploy:
-        description: "Explicitly authorize a production deployment"
+        description: "Explicitly authorize production D1 migrations and deployment"
         required: true
         type: boolean
         default: false
@@ -20,7 +20,7 @@ jobs:
   deploy:
     if: ${{ inputs.confirm_deploy == true && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -30,14 +30,21 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Require Cloudflare credentials
+      - name: Require Cloudflare and D1 configuration
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
         run: |
           node --input-type=module <<'NODE'
-          const missing = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
-            .filter((key) => !process.env[key]);
+          const required = [
+            "CLOUDFLARE_API_TOKEN",
+            "CLOUDFLARE_ACCOUNT_ID",
+            "CLOUDFLARE_D1_DATABASE_NAME",
+            "CLOUDFLARE_D1_DATABASE_ID",
+          ];
+          const missing = required.filter((key) => !process.env[key]);
           if (missing.length) {
             console.error("Deployment blocked; missing GitHub secrets:", missing.join(", "));
             process.exit(1);
@@ -53,7 +60,7 @@ jobs:
         run: npm test
       - name: Build production Worker and Wrangler config
         run: npm run build
-      - name: Validate Nitro-generated Wrangler configuration
+      - name: Locate generated Wrangler configuration
         id: config
         run: |
           set -euo pipefail
@@ -64,10 +71,21 @@ jobs:
             exit 1
           fi
           CONFIG="${configs[0]}"
-          node --input-type=module - "$CONFIG" <<'NODE'
+          echo "path=$CONFIG" >> "$GITHUB_OUTPUT"
+      - name: Inject production ACTION_DB binding
+        env:
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+        run: node scripts/configure-production-d1.mjs "${{ steps.config.outputs.path }}"
+      - name: Validate generated Wrangler configuration
+        env:
+          CONFIG_PATH: ${{ steps.config.outputs.path }}
+        run: |
+          node --input-type=module <<'NODE'
           import fs from "node:fs";
-          const path = process.argv[2];
-          const config = JSON.parse(fs.readFileSync(path, "utf8"));
+          import path from "node:path";
+          const configPath = process.env.CONFIG_PATH;
+          const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
           const missing = ["name", "main", "compatibility_date"].filter(
             (key) => typeof config[key] !== "string" || !config[key].trim(),
           );
@@ -80,20 +98,29 @@ jobs:
             console.error("Generated config is missing the CHAT_RATE_LIMITER binding.");
             process.exit(1);
           }
-          if (!Array.isArray(config.d1_databases) ||
-              !config.d1_databases.some((binding) =>
-                binding.binding === "ACTION_DB" &&
-                typeof binding.database_id === "string" &&
-                binding.database_id.trim()
-              )) {
-            console.error("Production deployment blocked: generated config is missing the ACTION_DB D1 binding.");
+          const d1 = Array.isArray(config.d1_databases)
+            ? config.d1_databases.filter((binding) => binding.binding === "ACTION_DB")
+            : [];
+          if (d1.length !== 1 || !d1[0].database_id || !d1[0].database_name || !d1[0].migrations_dir) {
+            console.error("Production deployment blocked: ACTION_DB binding is missing or incomplete.");
             process.exit(1);
           }
-          console.log("Validated generated Worker config:", path);
+          const migrationsPath = path.resolve(path.dirname(configPath), d1[0].migrations_dir);
+          if (!fs.existsSync(migrationsPath) ||
+              !fs.readdirSync(migrationsPath).some((file) => file.endsWith(".sql"))) {
+            console.error("Production deployment blocked: configured D1 migrations directory is missing or empty.");
+            process.exit(1);
+          }
+          console.log("Validated generated Worker config and ACTION_DB migrations directory.");
           NODE
-          echo "path=$CONFIG" >> "$GITHUB_OUTPUT"
+      - name: Apply production D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+        run: npx --yes wrangler@4.162.0 d1 migrations apply "$CLOUDFLARE_D1_DATABASE_NAME" --remote --config "${{ steps.config.outputs.path }}"
       - name: Deploy to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deploy --config "${{ steps.config.outputs.path }}"
+        run: npx --yes wrangler@4.162.0 deploy --config "${{ steps.config.outputs.path }}"
