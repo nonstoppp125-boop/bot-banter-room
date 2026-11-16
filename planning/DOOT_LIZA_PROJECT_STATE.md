@@ -166,3 +166,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added cross-platform content/calendar, adaptation, video storyboard, campaign brief, in-memory draft approval/versioning, scheduling-state and reply-draft foundations.
 - No social platform OAuth, publisher, analytics client, background scheduler or messaging executor is connected.
 - Verification pending CI.
+
+
+## 2026-11-16 — Group 13 social workforce verification
+- Added five registered platform specialists: Instagram, Facebook, YouTube, X and TikTok.
+- Added unified social calendar, cross-platform adaptation briefs, video storyboards, campaign briefs, in-memory draft approval/versioning, scheduling-state and reply drafts.
+- GitHub Actions run `43800654390`: SUCCESS — TypeScript, 17 test files / 189 tests, production build and Wrangler validation.
+- Group 13 remains partial: official API audits, OAuth, publishing, analytics, durable storage and background scheduling remain open.

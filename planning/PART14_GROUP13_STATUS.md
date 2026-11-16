@@ -40,7 +40,9 @@ No merge to `main`; no production deployment.
 - GitHub Actions verification is pending for the platform-specific specialist and social-workforce foundation.
 
 
-## Latest code verification
-- Platform specialists were added to the live registry; TikTok calendar defaults to a supported short-video format.
-- Registry regression expectations updated from 17 to 22 registered specialists.
-- CI verification pending.
+## Verification
+- Code commit: `30daba72b671e11b8d05a364bdefce4b1492dc0b`.
+- GitHub Actions run `43800654390`: SUCCESS — TypeScript, 17 test files / 189 tests, production build and Nitro-generated Wrangler validation.
+- Platform routing tests cover Instagram, Facebook, YouTube, X and TikTok; registry tests verify all 22 specialists.
+- Social workforce tests cover format constraints, unified calendar, adaptation briefs, storyboards, campaign briefs, approval-gated scheduling and reply drafts.
+- Termux-specific runtime remains unverified due to the earlier local Node exit 132; CI is the current verification evidence.
