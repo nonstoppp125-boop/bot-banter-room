@@ -21,7 +21,7 @@ describe("core route accessibility contracts", () => {
 
   it("provides a named file-import control and accessible error/status regions in analytics", () => {
     const analytics = source("src/routes/analytics.tsx");
-    expect(analytics).toContain('aria-label="');
+    expect(analytics).toContain("Import CSV");
     expect(analytics).toContain('type="file"');
     expect(analytics).toContain('role="alert"');
     expect(analytics).toContain('role="status"');
