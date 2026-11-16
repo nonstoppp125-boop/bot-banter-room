@@ -22,7 +22,7 @@ type ApprovalBodyResult = { ok: true; value: unknown } | { ok: false; status: 40
 async function readSmallJson(request: Request): Promise<ApprovalBodyResult> {
   const declared = request.headers.get("content-length");
   if (declared !== null) {
-    if (!/^\\d+$/.test(declared)) return { ok: false, status: 400 };
+    if (!/^\d+$/.test(declared)) return { ok: false, status: 400 };
     if (Number(declared) > 8192) return { ok: false, status: 413 };
   }
   if (!request.body) return { ok: false, status: 400 };
