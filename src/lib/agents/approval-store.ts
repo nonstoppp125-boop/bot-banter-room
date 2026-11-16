@@ -21,7 +21,7 @@ export function createD1ApprovalStore(database:D1ApprovalDatabase){
    if(result.success===false||result.meta?.changes!==1)throw new Error("Approval request rejected or duplicate.");
   },
   get:async(input:{id:string;workspaceId:string;actorUserId:string})=>{
-   const row=await database.prepare("SELECT a.* FROM approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? WHERE a.id = ? AND a.workspace_id = ? LIMIT 1").bind(input.actorUserId,input.id,input.workspaceId).first<Parameters<typeof map>[0]>();
+   const row=await database.prepare("SELECT a.* FROM approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? AND wm.role IN ('owner','admin') WHERE a.id = ? AND a.workspace_id = ? LIMIT 1").bind(input.actorUserId,input.id,input.workspaceId).first<Parameters<typeof map>[0]>();
    return row?map(row):null;
   },
   listPending:async(input:{workspaceId:string;actorUserId:string;now:string;limit?:number})=>{
