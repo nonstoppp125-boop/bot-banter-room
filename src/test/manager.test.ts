@@ -127,7 +127,7 @@ describe("LLM-assisted Manager decomposition", () => {
     );
     expect(plan.planningMode).toBe("llm-assisted");
     expect(plan.subtasks.find((task) => task.agentId === "coding")?.dependsOn).toEqual(["research"]);
-    expect(plan.agentIds).toEqual(["research", "coding"]);
+    expect(plan.agentIds).toEqual(["coding", "research"]);
   });
 
   it("falls back when the model proposes an unregistered specialist", async () => {
