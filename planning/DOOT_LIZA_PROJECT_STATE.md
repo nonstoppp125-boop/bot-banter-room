@@ -346,3 +346,6 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Canonical CSV export/import now preserves campaign, audience and content-pillar dimensions and still imports the legacy 11-column format.
 - Verification: GitHub Actions run `43868496941` SUCCESS — TypeScript, 51 test files / 387 tests, production build and generated Wrangler Worker config validation.
 - Live D1 migration 0014, official provider ingestion and production runtime verification remain unverified.
+
+- Follow-up verification: GitHub Actions run `43868496941` SUCCESS — TypeScript, 51 test files / 387 tests, production build and generated Wrangler Worker config validation.
+- Added keyset pagination, admin-only soft deletion, migration 0014, and dimension-aware CSV round-tripping with legacy CSV compatibility.
