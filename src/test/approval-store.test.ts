@@ -1,9 +1,22 @@
 import {describe,expect,it} from "vitest";
-import {createD1ApprovalStore} from "@/lib/agents/approval-store";
-describe("durable approval store",()=>{
-it("creates pending requests and authorizes only the exact approved payload",async()=>{let row:Record<string,unknown>={id:"approval-1",workspace_id:"w1",user_id:"u1",task_id:null,action_type:"publish",payload_hash:"a".repeat(64),status:"approved",decided_by_user_id:"admin-1",decision_reason:"Reviewed",expires_at:"2026-11-16T12:00:00Z",created_at:"2026-11-16T10:00:00Z",decided_at:"2026-11-16T10:30:00Z"};const db={prepare:(query:string)=>({bind:(...values:unknown[])=>({run:async()=>({success:true,meta:{changes:1}}),first:async()=>query.includes("SELECT")?row:null})})};const store=createD1ApprovalStore(db as unknown as Parameters<typeof createD1ApprovalStore>[0]);expect(await store.authorize({id:"approval-1",workspaceId:"w1",userId:"u1",payloadHash:"a".repeat(64),now:"2026-11-16T11:00:00Z"})).toBe(true);expect(await store.authorize({id:"approval-1",workspaceId:"w1",userId:"u1",payloadHash:"b".repeat(64),now:"2026-11-16T11:00:00Z"})).toBe(false);});
-it("uses conditional pending-state and owner/admin membership in decision SQL",async()=>{let queryText="";const db={prepare:(query:string)=>({bind:()=>({run:async()=>{queryText=query;return{success:true,meta:{changes:1}};},first:async()=>null})})};const store=createD1ApprovalStore(db as unknown as Parameters<typeof createD1ApprovalStore>[0]);expect(await store.decide({id:"approval-1",workspaceId:"w1",requesterUserId:"u1",approverUserId:"admin-1",decision:"approved",reason:"Reviewed",now:"2026-11-16T11:00:00Z"})).toBe(true);expect(queryText).toContain("status='pending'");expect(queryText).toContain("wm.role IN ('owner','admin')");});
-
-it("creates approval requests only for existing workspace members",async()=>{let queryText="";const db={prepare:(query:string)=>({bind:(...values:unknown[])=>({run:async()=>{queryText=query;expect(values.slice(-2)).toEqual(["w1","u1"]);return{success:true,meta:{changes:1}};},first:async()=>null})})};const store=createD1ApprovalStore(db as unknown as Parameters<typeof createD1ApprovalStore>[0]);await store.create({id:"a1",workspaceId:"w1",userId:"u1",taskId:null,actionType:"publish",payloadHash:"a".repeat(64),status:"pending",decidedByUserId:null,decisionReason:null,expiresAt:"2026-11-16T12:00:00Z",createdAt:"2026-11-16T10:00:00Z",decidedAt:null});expect(queryText).toContain("EXISTS (SELECT 1 FROM workspace_members");});
-
+import {createD1ApprovalStore,hashApprovalPayload} from "@/lib/agents/approval-store";
+describe("workspace approval persistence",()=>{
+ it("hashes action payloads without storing their contents",async()=>{const hash=await hashApprovalPayload({action:"social.publish",draftId:"d1"});expect(hash).toMatch(/^[a-f0-9]{64}$/);});
+ it("creates requests only for workspace members and records payload hashes",async()=>{
+  let query="";let values:unknown[]=[];
+  const database={prepare:(sql:string)=>({bind:(...args:unknown[])=>({run:async()=>{query=sql;values=args;return{success:true,meta:{changes:1}};},first:async<T=Record<string,unknown>>()=>null as T|null,all:async<T=Record<string,unknown>>()=>({success:true,results:[] as T[]})})})};
+  const store=createD1ApprovalStore(database);
+  await store.create({id:"approval-1",workspaceId:"ws1",userId:"u1",actionType:"social.publish",payloadHash:"a".repeat(64),expiresAt:"2026-11-17T10:00:00.000Z",createdAt:"2026-11-16T10:00:00.000Z"});
+  expect(query).toContain("workspace_members");
+  expect(values[4]).toBe("a".repeat(64));
+ });
+ it("allows only owner/admin decisions and only pending unexpired approvals",async()=>{
+  let query="";let values:unknown[]=[];
+  const database={prepare:(sql:string)=>({bind:(...args:unknown[])=>({run:async()=>{query=sql;values=args;return{success:true,meta:{changes:1}};},first:async<T=Record<string,unknown>>()=>null as T|null,all:async<T=Record<string,unknown>>()=>({success:true,results:[] as T[]})})})};
+  const store=createD1ApprovalStore(database);
+  expect(await store.decide({id:"approval-1",workspaceId:"ws1",actorUserId:"u1",decision:"approved",reason:"Reviewed and accepted",now:"2026-11-16T10:00:00.000Z"})).toBe(true);
+  expect(query).toContain("status = 'pending'");
+  expect(query).toContain("role IN ('owner','admin')");
+  expect(values[0]).toBe("approved");
+ });
 });

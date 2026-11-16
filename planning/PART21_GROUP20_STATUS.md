@@ -26,3 +26,8 @@ Branch: work/group06-manager-planner
 
 GROUP 20: IN PROGRESS — static security controls implemented; runtime identity, approval, egress and storage enforcement remain open.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Persisted approval decision contract
+- Added D1 approval request and decision primitives. Decisions require active workspace owner/admin membership, pending state and unexpired request; action payload is represented by SHA-256 hash.
+- No publisher/messaging/destructive executor consumes approval records yet. CI verification pending.

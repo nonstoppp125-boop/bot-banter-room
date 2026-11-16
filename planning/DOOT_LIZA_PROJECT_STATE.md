@@ -253,3 +253,8 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 ## 2026-11-16 — Telegram approval callback security
 - Added user/workspace-bound HMAC callback signatures for Telegram approval actions; no callback can be replayed across users/workspaces.
 - Approval persistence and live callback route remain unconnected. CI verification pending.
+
+
+## 2026-11-16 — Group 18/20 approval persistence
+- Added D1 approval-store contract with payload hashing, owner/admin decision authorization, expiry checks and atomic pending-state decision updates.
+- This stores decisions only; it does not execute publishing, messaging or destructive actions. CI verification pending.

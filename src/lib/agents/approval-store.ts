@@ -1,20 +1,41 @@
 export type ApprovalStatus="pending"|"approved"|"rejected"|"expired";
-export interface DurableApproval{id:string;workspaceId:string;userId:string;taskId:string|null;actionType:string;payloadHash:string;status:ApprovalStatus;decidedByUserId:string|null;decisionReason:string|null;expiresAt:string;createdAt:string;decidedAt:string|null;}
-export type D1ApprovalDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;first:<T=Record<string,unknown>>()=>Promise<T|null>}}};
+export type ApprovalAction="social.publish"|"social.reply"|"external.message"|"account.change"|"destructive.delete"|"deployment"|"financial.action";
+export interface ApprovalRecord{id:string;workspaceId:string;userId:string;actionType:ApprovalAction;payloadHash:string;status:ApprovalStatus;decidedByUserId:string|null;decisionReason:string|null;expiresAt:string;createdAt:string;decidedAt:string|null;}
+type D1ApprovalDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;first:<T=Record<string,unknown>>()=>Promise<T|null>;all:<T=Record<string,unknown>>()=>Promise<{success?:boolean;results?:T[]}>}}};
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
-const STATUSES=new Set<ApprovalStatus>(["pending","approved","rejected","expired"]);
+const ACTIONS=new Set<ApprovalAction>(["social.publish","social.reply","external.message","account.change","destructive.delete","deployment","financial.action"]);
+const iso=(value:string)=>Number.isFinite(Date.parse(value))&&new Date(value).toISOString()===value;
+export async function hashApprovalPayload(payload:unknown):Promise<string>{
+ const json=JSON.stringify(payload);if(!json||json.length>100_000)throw new Error("Approval payload is missing or too large.");
+ const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(json)));
+ return Array.from(digest,byte=>byte.toString(16).padStart(2,"0")).join("");
+}
 export function createD1ApprovalStore(database:D1ApprovalDatabase){
  if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 approval database is required.");
- const getApproval=async(input:{id:string;workspaceId:string;userId:string}):Promise<DurableApproval|null>=>{
-  if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId))return null;
-  const row=await database.prepare("SELECT id,workspace_id,user_id,task_id,action_type,payload_hash,status,decided_by_user_id,decision_reason,expires_at,created_at,decided_at FROM approvals WHERE id=? AND workspace_id=? AND user_id=? LIMIT 1").bind(input.id,input.workspaceId,input.userId).first<Record<string,unknown>>();
-  if(!row||!STATUSES.has(String(row["status"]) as ApprovalStatus))return null;
-  return{id:String(row["id"]),workspaceId:String(row["workspace_id"]),userId:String(row["user_id"]),taskId:row["task_id"]===null?null:String(row["task_id"]),actionType:String(row["action_type"]),payloadHash:String(row["payload_hash"]),status:String(row["status"]) as ApprovalStatus,decidedByUserId:row["decided_by_user_id"]===null?null:String(row["decided_by_user_id"]),decisionReason:row["decision_reason"]===null?null:String(row["decision_reason"]),expiresAt:String(row["expires_at"]),createdAt:String(row["created_at"]),decidedAt:row["decided_at"]===null?null:String(row["decided_at"])};
- };
+ const map=(row:{id:string;workspace_id:string;user_id:string;action_type:ApprovalAction;payload_hash:string;status:ApprovalStatus;decided_by_user_id:string|null;decision_reason:string|null;expires_at:string;created_at:string;decided_at:string|null}):ApprovalRecord=>({id:row.id,workspaceId:row.workspace_id,userId:row.user_id,actionType:row.action_type,payloadHash:row.payload_hash,status:row.status,decidedByUserId:row.decided_by_user_id,decisionReason:row.decision_reason,expiresAt:row.expires_at,createdAt:row.created_at,decidedAt:row.decided_at});
  return{
-  create:async(input:DurableApproval)=>{if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||(input.taskId!==null&&!ID.test(input.taskId))||!input.actionType.trim()||input.actionType.length>100||!/^[a-f0-9]{64}$/.test(input.payloadHash)||input.status!=="pending"||!Number.isFinite(Date.parse(input.expiresAt))||!Number.isFinite(Date.parse(input.createdAt))||Date.parse(input.expiresAt)<=Date.parse(input.createdAt))throw new Error("Invalid approval request.");const result=await database.prepare("INSERT INTO approvals (id,workspace_id,user_id,task_id,action_type,payload_hash,status,expires_at,created_at) SELECT ?,?,?,?,?,?, 'pending', ?, ? WHERE EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = ? AND wm.user_id = ?)").bind(input.id,input.workspaceId,input.userId,input.taskId,input.actionType,input.payloadHash,input.expiresAt,input.createdAt,input.workspaceId,input.userId).run();if(result.success===false||result.meta?.changes!==1)throw new Error("D1 approval creation failed.");},
-  get:getApproval,
-  decide:async(input:{id:string;workspaceId:string;requesterUserId:string;approverUserId:string;decision:"approved"|"rejected";reason:string;now:string})=>{if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.requesterUserId)||!ID.test(input.approverUserId)||!["approved","rejected"].includes(input.decision)||!input.reason.trim()||input.reason.length>1000||!Number.isFinite(Date.parse(input.now)))throw new Error("Invalid approval decision.");const result=await database.prepare("UPDATE approvals SET status=?,decided_by_user_id=?,decision_reason=?,decided_at=? WHERE id=? AND workspace_id=? AND user_id=? AND status='pending' AND expires_at>? AND EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id=approvals.workspace_id AND wm.user_id=? AND wm.role IN ('owner','admin'))").bind(input.decision,input.approverUserId,input.reason.trim(),input.now,input.id,input.workspaceId,input.requesterUserId,input.now,input.approverUserId).run();if(result.success===false)throw new Error("D1 approval decision failed.");return result.meta?.changes===1;},
-  authorize:async(input:{id:string;workspaceId:string;userId:string;payloadHash:string;now:string})=>{if(!/^[a-f0-9]{64}$/.test(input.payloadHash)||!Number.isFinite(Date.parse(input.now)))return false;const approval=await getApproval({id:input.id,workspaceId:input.workspaceId,userId:input.userId});return Boolean(approval&&approval.status==="approved"&&approval.payloadHash===input.payloadHash&&approval.decidedByUserId&&approval.decidedAt&&Date.parse(approval.expiresAt)>Date.parse(input.now));},
+  create:async(input:{id:string;workspaceId:string;userId:string;actionType:ApprovalAction;payloadHash:string;expiresAt:string;createdAt:string})=>{
+   if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!ACTIONS.has(input.actionType)||!/^[a-f0-9]{64}$/.test(input.payloadHash)||!iso(input.createdAt)||!iso(input.expiresAt)||Date.parse(input.expiresAt)<=Date.parse(input.createdAt))throw new Error("Invalid approval request.");
+   const result=await database.prepare("INSERT INTO approvals (id, workspace_id, user_id, action_type, payload_hash, status, expires_at, created_at) SELECT ?, ?, ?, ?, ?, 'pending', ?, ? WHERE EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?)").bind(input.id,input.workspaceId,input.userId,input.actionType,input.payloadHash,input.expiresAt,input.createdAt,input.workspaceId,input.userId).run();
+   if(result.success===false||result.meta?.changes!==1)throw new Error("Approval request rejected or duplicate.");
+  },
+  get:async(input:{id:string;workspaceId:string;actorUserId:string})=>{
+   const row=await database.prepare("SELECT a.* FROM approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? WHERE a.id = ? AND a.workspace_id = ? LIMIT 1").bind(input.actorUserId,input.id,input.workspaceId).first<Parameters<typeof map>[0]>();
+   return row?map(row):null;
+  },
+  listPending:async(input:{workspaceId:string;actorUserId:string;now:string;limit?:number})=>{
+   if(!iso(input.now))throw new Error("Approval list timestamp is invalid.");
+   const limit=input.limit??50;if(!Number.isInteger(limit)||limit<1||limit>100)throw new Error("Approval list limit must be between 1 and 100.");
+   const result=await database.prepare("SELECT a.* FROM approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? WHERE a.workspace_id = ? AND a.status = 'pending' AND a.expires_at > ? AND wm.role IN ('owner','admin') ORDER BY a.created_at ASC LIMIT ?").bind(input.actorUserId,input.workspaceId,input.now,limit).all<Parameters<typeof map>[0]>();
+   if(result.success===false)throw new Error("D1 approval list failed.");
+   return(result.results??[]).map(map);
+  },
+  decide:async(input:{id:string;workspaceId:string;actorUserId:string;decision:"approved"|"rejected";reason:string;now:string})=>{
+   const reason=input.reason.trim().slice(0,1000);
+   if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.actorUserId)||!reason||!iso(input.now))throw new Error("Invalid approval decision.");
+   const result=await database.prepare("UPDATE approvals SET status = ?, decided_by_user_id = ?, decision_reason = ?, decided_at = ? WHERE id = ? AND workspace_id = ? AND status = 'pending' AND expires_at > ? AND EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = approvals.workspace_id AND wm.user_id = ? AND wm.role IN ('owner','admin'))").bind(input.decision,input.actorUserId,reason,input.now,input.id,input.workspaceId,input.now,input.actorUserId).run();
+   if(result.success===false)throw new Error("D1 approval decision failed.");
+   return result.meta?.changes===1;
+  },
  };
 }

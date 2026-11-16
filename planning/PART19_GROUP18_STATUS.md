@@ -18,3 +18,8 @@ Branch: `work/group06-manager-planner`
 
 GROUP 18: IN PROGRESS — session and conversation persistence foundations implemented; no registration/login endpoint or connected identity provider is enabled.
 No merge to `main`; no production deployment.
+
+
+## 2026-11-16 — Approval persistence foundations
+- Added D1 approval request creation with payload SHA-256 hash, workspace membership validation, pending queue reads for owner/admin roles and atomic pending-to-approved/rejected decisions with expiry checks.
+- Approval records do not execute the underlying external action. CI verification pending.
