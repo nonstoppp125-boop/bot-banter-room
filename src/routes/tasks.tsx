@@ -126,6 +126,23 @@ function TasksPage() {
     }
   };
 
+  const retry = async (taskId: string) => {
+    setSubmitting(true); setError(null); setNotice(null);
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "PATCH", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ action: "retry", taskId }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Task could not be requeued.");
+      setNotice("Failed task requeued. Run with Manager to retry it; automatic background retries are not enabled.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Task could not be requeued.");
+    } finally { setSubmitting(false); }
+  };
+
   return (
     <main className="min-h-dvh bg-background px-4 py-6 text-foreground sm:px-8">
       <div className="mx-auto w-full max-w-4xl">
@@ -166,6 +183,7 @@ function TasksPage() {
                   <p className="text-xs text-muted-foreground">Created {new Date(task.createdAt).toLocaleString()}</p>
                   <div className="flex flex-wrap gap-2">
                     {task.status === "queued" && <button type="button" onClick={() => void execute(task.id)} disabled={submitting} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">{submitting ? "Running…" : "Run with Manager"}</button>}
+                    {task.status === "failed" && <button type="button" onClick={() => void retry(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Retry (max 2)</button>}
                     {task.status === "queued" && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel queued task</button>}
                   </div>
                 </div>
