@@ -26,6 +26,10 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
                   expires_at: "2026-11-17T00:00:00.000Z", created_at: "2026-11-16T00:00:00.000Z",
                 } as T;
               }
+              if (query.includes("FROM agent_tasks")) {
+                const [id, workspaceId, userId] = values;
+                return rows.find((row) => row.id === id && row.workspace_id === workspaceId && row.user_id === userId) as T ?? null;
+              }
               return null;
             },
             all: async <T = Record<string, unknown>>() => ({ success: true, results: rows as unknown as T[] }),
@@ -37,6 +41,12 @@ function makeDatabase(membership: "owner" | "member" | null = "owner") {
                   input_summary: inputSummary, plan_json: plan, result_json: result,
                   created_at: createdAt, updated_at: updatedAt,
                 });
+              }
+              if (query.startsWith("UPDATE agent_tasks")) {
+                const [status, , , updatedAt, id, workspaceId, userId, expectedStatus] = values;
+                const row = rows.find((item) => item.id === id && item.workspace_id === workspaceId && item.user_id === userId && item.status === expectedStatus);
+                if (row) { row.status = status; row.updated_at = updatedAt; return { success: true, meta: { changes: 1 } }; }
+                return { success: true, meta: { changes: 0 } };
               }
               return { success: true, meta: { changes: 1 } };
             },
@@ -92,6 +102,33 @@ describe("authenticated Manager task API", () => {
     expect(rows[0]).toMatchObject({ workspace_id: "workspace-1", user_id: "user-1", status: "needs_approval" });
     expect(queries.some((query) => query.startsWith("INSERT INTO agent_tasks"))).toBe(true);
     expect(queries.some((query) => query.includes("UPDATE agent_tasks"))).toBe(false);
+  });
+
+  it("cancels only an owned queued task with a same-origin PATCH", async () => {
+    const { database, rows } = makeDatabase();
+    const create = await handleTaskRequest(post({ task: "Prepare a research brief" }), { ACTION_DB: database });
+    expect(create.status).toBe(201);
+    const created = await create.json() as { task: { id: string; status: string } };
+    expect(created.task.status).toBe("queued");
+    const response = await handleTaskRequest(new Request(url, {
+      method: "PATCH",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "cancel", taskId: created.task.id }),
+    }), { ACTION_DB: database });
+    expect(response.status).toBe(200);
+    expect((await response.json() as { task: { status: string } }).task.status).toBe("cancelled");
+    expect(rows[0].status).toBe("cancelled");
+  });
+
+  it("rejects cross-origin task cancellation before accessing D1", async () => {
+    const { database, queries } = makeDatabase();
+    const response = await handleTaskRequest(new Request(url, {
+      method: "PATCH",
+      headers: { origin: "https://evil.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "cancel", taskId: "task-1" }),
+    }), { ACTION_DB: database });
+    expect(response.status).toBe(403);
+    expect(queries).toEqual([]);
   });
 
   it("blocks a session whose workspace membership has been revoked", async () => {
