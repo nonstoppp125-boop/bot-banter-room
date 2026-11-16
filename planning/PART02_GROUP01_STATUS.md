@@ -31,7 +31,7 @@ Tracked tree inspected: `c2e5e3b8cce1b4d952d396089947f17d13ebbabb`
 - G01.12 — Import-graph dependency-use and duplicate-package analysis has not been completed. Manifest counts and vulnerability audit do not establish whether a package is unused.
 - G01.20 — Full component paths are now documented; route-to-component usage cross-check remains open.
 - G01.23 — Test coverage-gap analysis (untested critical branches, failure paths, security boundaries) remains open; test count alone is not coverage evidence.
-- G01.24 — Legacy Lovable implementation review remains open. Presence of `.lovable/*` metadata and `src/lib/lovable-error-reporting.ts` is inventoried, but behavior/history has not been audited.
+- G01.24 — Legacy Lovable artifacts reviewed: `.lovable/plan.md` is materially stale (it describes a two-route, one-agent app, while the current tree contains 30 route files and 52 agent modules); `.lovable/north-star/north-star.md` explicitly says retain and do not delete without user approval; `.lovable/project.json` is template metadata; `src/lib/lovable-error-reporting.ts` is an editor-preview telemetry bridge. Legacy AI Gateway helpers `src/lib/ai/responses.ts` and `run-id.ts` remain tracked. Do not delete or refactor these without completing import-reference analysis and preserving Lovable compatibility.
 - G01.26 — Local checkout vs GitHub comparison remains open; remote branch vs remote `main` is not a substitute.
 - G01.29–G01.30 — Final audit report sign-off and architecture mapping approval remain blocked until the above evidence is complete.
 
