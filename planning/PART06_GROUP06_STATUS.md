@@ -1,47 +1,49 @@
 # PART 06 — GROUP 06 Manager Agent and Planner Status
 
 Date: 2026-11-16
-Branch: work/group06-manager-planner
-Latest verified commit: d2907df00fa772296538068a785564a567b1f249
+Branch: `work/group06-manager-planner`
+Latest code commit: `41d897a1481e8ff313eed74e3b8ec69cae5deb9e`
+Latest fully verified implementation commit: `d2907df00fa772296538068a785564a567b1f249`
+Latest CI for current code: run `43796777895` — PENDING (no jobs started at last check).
 
-## Current batch
+## Implemented in current branch
 
-Implemented:
-- G06.01 — Added a typed deterministic Manager planning contract.
-- G06.02 — Reuses registered capability routing for task-intent selection.
-- G06.03 — Adds bounded simple/moderate/complex classification heuristics.
-- G06.09 — Adds low/medium/high risk classification.
-- G06.10 — Selects registered specialist agents from matched capabilities.
-- G06.11 — Filters candidates to the existing `llm:inference` permission.
-- G06.17 — Caps specialist fan-out at four and sets a 45-second per-task timeout.
-- G06.18 — Flags explicit publishing, messaging, destructive, deployment and financial intents for human approval.
-- Integrated the plan into the multi-agent orchestrator.
-- Added ten focused Manager planning tests, including dependency ordering and parallel execution.
+- G06.01 — Typed Manager planning contract.
+- G06.02 — Capability-based task intent routing through registered agents.
+- G06.03 — Bounded deterministic complexity classification.
+- G06.04 — LLM-assisted decomposition for complex multi-specialist tasks; validates JSON structure, agent allowlist, duplicate IDs, objective length, dependency references and cycles; deterministic fallback on invalid model output.
+- G06.05 — Dependency graph creation; LLM cannot remove deterministic sequencing constraints.
+- G06.06 — Specialist selection restricted to registered candidates.
+- G06.07 — Structured execution plan and specialist objectives.
+- G06.09 — Deterministic low/medium/high risk classification.
+- G06.10 — Capability checks.
+- G06.11 — Existing `llm:inference` permission filter.
+- G06.12 — Delegation to selected specialists through the coordination workflow.
+- G06.13 — In-memory execution state/results and per-agent metrics; durable cross-request state is not implemented.
+- G06.14 — Failed tasks are recorded; dependent tasks are skipped; independent branches can succeed.
+- G06.17 — Specialist fan-out capped at four; per-task timeout configured.
+- G06.18 — High-risk external-action intent is flagged for approval; no approval UI/store/enforcement exists yet.
+- Specialist task timeout AbortSignal is now passed into the specialist model request (current CI pending).
+- LLM planner output is capped at 700 tokens (current CI pending).
 
-Verified:
-- GitHub Actions run 43793367110: SUCCESS (initial batch).
-- GitHub Actions run 43796215581 on commit d2907df00fa772296538068a785564a567b1f249: SUCCESS.
-- TypeScript: PASS on latest commit.
-- Unit/integration tests: PASS on latest commit (14 test files; latest total count not separately captured).
-- Production build: PASS on latest commit.
-- Nitro-generated Wrangler configuration validation: PASS on latest commit.
+## Verification
 
-## Explicit limitations
+- Initial Manager implementation: run `43793367110` — SUCCESS.
+- Deterministic dependency batch: run `43796215581` on commit `d2907df00fa772296538068a785564a567b1f249` — SUCCESS.
+- Current LLM planner + timeout propagation code: run `43796777895` — PENDING; do not claim it passed.
+- The earlier successful run does not verify commits added after `d2907df`.
 
-- This is deterministic routing and risk planning, not LLM-based autonomous decomposition.
-- Dependency graphs, execution-cost pricing estimates, replanning and durable Manager task-state tracking are not implemented by this batch.
-- Approval is a plan flag only; no external action is executed or approved by this module.
-- Specialist tools remain limited to the registered permission model.
-- Termux runtime verification remains separate and is not claimed by the GitHub Actions result.
+## Remaining requirements
 
-## Group status
+- G06.08 — Reliable execution cost estimate; requires provider/model pricing configuration and realistic input/output token budgets. Current character-based input estimate is approximate and is not a cost estimate.
+- G06.13 — Durable task-state persistence across requests/restarts.
+- G06.15 — Bounded replanning after failure (not just deterministic fallback during planning).
+- G06.16 — Explicit planning/replanning loop budget and persisted loop guard.
+- G06.18 — User-facing approval request, persisted decision, and fail-closed execution enforcement for consequential actions.
+- G06.19 — Deliverable acceptance criteria and independent completion verification.
+- G06.20 — Structured final task report including plan, outcomes, failures, approvals and metrics.
+
+## Status
 
 GROUP 06: IN PROGRESS — PARTIALLY IMPLEMENTED.
-Do not mark complete until remaining roadmap requirements have implementation evidence and consolidated verification.
-
-
-## Dependency-aware execution update — 2026-11-16
-
-- Latest verified commit: `d2907df00fa772296538068a785564a567b1f249`.
-- GitHub Actions run `43796215581`: SUCCESS; TypeScript, unit/integration tests, production build and generated Wrangler configuration validation all passed.
-- Group 06 remains IN PROGRESS. LLM-based decomposition, cost estimation, durable task-state tracking, bounded retries/replanning, approval workflow enforcement and deliverable verification remain open roadmap requirements.
+No merge to `main`; no production deployment. User's local Termux branch remains untouched.
