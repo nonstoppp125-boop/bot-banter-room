@@ -15,12 +15,13 @@ Branch: work/group06-manager-planner
 - APP20 — Unit tests cover allowlists, callback validation, webhook authenticity/replay, retry bounds, ownership and audit metadata.
 
 ## Remaining / blocked
-- APP03–APP11 — No OAuth callback endpoint, token exchange/encryption/refresh/revocation or connection UI; PKCE verifier encryption helper and durable state store contract now exist.
+- APP03 — Session-authenticated OAuth start endpoint now validates provider scope allowlists and exact registered HTTPS redirect URI, creates PKCE S256, encrypts the verifier with AES-256-GCM, and stores only a state hash plus encrypted verifier in D1.
+- APP04–APP11 — OAuth callback, provider token exchange, encrypted token storage/refresh/revocation and connection UI remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.
 
-GROUP 16: IN PROGRESS — provider registry and OAuth/webhook security primitives implemented; no external account is connected and no API action is enabled.
+GROUP 16: IN PROGRESS — provider registry and secure OAuth start flow implemented; callback/token exchange and live account connections remain blocked by runtime configuration and provider approvals.
 No merge to main; no production deployment.
 
 
@@ -34,3 +35,11 @@ No merge to main; no production deployment.
 - Added D1 OAuth transaction store contract that persists only a SHA-256 state hash and an encrypted PKCE verifier blob; consume uses a single conditional UPDATE/RETURNING to enforce one-time use and expiry.
 - Added state hashing and a test proving a transaction can be consumed only once. The D1 binding and encryption key remain unprovisioned; no OAuth flow is live.
 - Verification pending.
+
+
+## 2026-11-16 — OAuth authorization start endpoint
+- Added `POST /api/integrations/oauth/start`; requires active session, same-origin JSON request, server-configured provider client/endpoint/redirect and a 256-bit encryption secret.
+- Scope selection is server-side and limited to provider allowlists; unapproved/empty-scope providers fail closed.
+- OAuth state is stored as SHA-256 only; PKCE verifier is AES-256-GCM encrypted with provider/user-bound additional authenticated data. Transactions expire after 10 minutes and are one-time consumable by the existing D1 store.
+- GitHub Actions run `43810871797`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+- Callback, token exchange, encrypted access-token persistence, refresh/revocation and UI remain unimplemented; no provider account is connected.
