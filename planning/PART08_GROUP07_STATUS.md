@@ -12,10 +12,10 @@ supported capabilities, duplicate capabilities, non-empty and supported
 permissions, duplicate permissions, valid roles and role-specific execution
 handlers. The runtime map is built from the same validated registry list.
 
-Current permission model is deliberately restricted to `llm:inference`.
-No shell, filesystem, publishing, messaging, browsing or external-account
-permissions are granted. Runtime validation remains unverified until Vitest
-can execute successfully.
+Runtime permissions are explicitly scoped: `llm:inference`, `research:search`,
+`research:extract` and `coding:validate-command`. No shell, filesystem,
+publishing, messaging or external-account execution permission is granted.
+Registry and specialist execution tests have CI runtime evidence.
 
 ## G07.21 — Specialist-specific system prompts
 
@@ -95,7 +95,7 @@ No commit, push, deployment or external action was performed.
 - Branch: `work/group06-manager-planner`
 - GitHub Actions run `43798972433`: SUCCESS — TypeScript, 16 test files / 175 tests, production build and Nitro-generated Wrangler validation.
 - Registry validation and specialist execution tests now have CI runtime evidence.
-- G07.22 remains BLOCKED: specialist-specific tools and a permission-controlled tool execution layer are not implemented.
+- G07.22 remains PARTIALLY IMPLEMENTED: the permission-controlled tool layer is implemented for research search/extraction and coding validation. Other specialist tools and model-directed tool selection remain open.
 - Termux's previous Vitest exit 132 remains a local runtime limitation; CI verification is independent.
 
 
@@ -105,3 +105,11 @@ No commit, push, deployment or external action was performed.
 - Coding can inspect whether a command is an exact allowlisted validation command; no command is executed.
 - Added tests for tool listing, cross-agent denial, missing credentials and shell-composition rejection.
 - GitHub Actions run `43809939660`: SUCCESS.
+
+
+## 2026-11-16 — Extraction argument hardening
+- Specialist research extraction now validates each untrusted source object at the tool boundary: bounded ID/title/URL/content, required retrieval metadata, optional metadata types, unique source IDs and configured server-side provider credentials.
+- Invalid or duplicate metadata is rejected before any provider request.
+- Added regression tests for malformed metadata, duplicate IDs and missing extraction credentials.
+- CI runs triggered for these changes: `43825669272` and `43825681385`; results pending at the time of this update.
+- G07.22 remains partial: no arbitrary browsing, shell execution or external side effects are exposed.
