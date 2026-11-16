@@ -10,7 +10,7 @@ Branch: work/group06-manager-planner
 - DB18 — Workspace record validation and database constraints.
 - DB21 — Bounded retention policy metadata.
 - DB22 — D1 user-data exporter scopes data to the authenticated user and workspace memberships; `/api/account/export` now provides a session-authenticated JSON download. Credential columns are omitted and nested JSON keys are recursively redacted.
-- DB23 — Explicit same-user deletion request store and authenticated `/api/account/deletion` request/cancel endpoint support a 30-day grace period; deletion plan preserves audit evidence and cannot execute itself.
+- DB23 — Explicit same-user deletion request store and authenticated `/api/account/deletion` GET/request/cancel API support a 30-day grace period; `/settings/privacy` now exposes export, schedule and cancel controls. Deletion plan preserves audit evidence and cannot execute itself.
 - DB23 — Deletion plan revokes sessions, clears encrypted provider credentials, anonymizes audit actor and deletes user; plan is non-executable until approved runtime workflow exists.
 
 ## Remaining / blocked
@@ -43,3 +43,10 @@ No merge to main; no production deployment.
 - The endpoint supports cancellation for the active session user only. Request bodies are streamed with a 2 KB cap; no deletion worker or destructive execution is enabled.
 - Regression tests cover same-origin enforcement, exact confirmation, user scoping and cancellation.
 - GitHub Actions run `43810538550`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+
+
+## 2026-11-16 — Privacy and account lifecycle UI
+- Added GET /api/account/deletion to return only the active user's pending request; request creation now returns its ID so the user can cancel it.
+- Added /settings/privacy with authenticated JSON export download, exact-phrase deletion scheduling, 30-day grace-period status and cancellation.
+- Added D1 pending-deletion lookup scoped by user and tests for the lookup and GET endpoint.
+- The page explicitly states that no scheduled deletion worker or destructive execution is enabled. Verification pending.

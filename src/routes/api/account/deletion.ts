@@ -9,6 +9,7 @@ function getDeletionEnv(request: Request): AccountDeletionApiEnv {
 export const Route = createFileRoute("/api/account/deletion")({
   server: {
     handlers: {
+      GET: async ({ request }) => handleAccountDeletionRequest(request, getDeletionEnv(request)),
       POST: async ({ request }) => handleAccountDeletionRequest(request, getDeletionEnv(request)),
       HEAD: async () => new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } }),
     },

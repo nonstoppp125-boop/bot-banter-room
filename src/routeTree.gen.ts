@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
+import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
@@ -46,6 +47,11 @@ const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
 const SettingsApprovalsRoute = SettingsApprovalsRouteImport.update({
   id: '/settings/approvals',
   path: '/settings/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsPrivacyRoute = SettingsPrivacyRouteImport.update({
+  id: '/settings/privacy',
+  path: '/settings/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/api/integrations': typeof ApiIntegrationsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/approvals': typeof SettingsApprovalsRoute
+  '/settings/privacy': typeof SettingsPrivacyRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesByTo {
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/api/integrations': typeof ApiIntegrationsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/approvals': typeof SettingsApprovalsRoute
+  '/settings/privacy': typeof SettingsPrivacyRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesById {
@@ -176,14 +184,15 @@ export interface FileRoutesById {
   '/api/integrations': typeof ApiIntegrationsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/approvals': typeof SettingsApprovalsRoute
+  '/settings/privacy': typeof SettingsPrivacyRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  fullPaths: '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
-  id: '__root__' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  to: '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  id: '__root__' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +206,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
+  SettingsPrivacyRoute: typeof SettingsPrivacyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -320,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/privacy': {
+      id: '/settings/privacy'
+      path: '/settings/privacy'
+      fullPath: '/settings/privacy'
+      preLoaderRoute: typeof SettingsPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -349,6 +366,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsApprovalsRoute: SettingsApprovalsRoute,
+  SettingsPrivacyRoute: SettingsPrivacyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

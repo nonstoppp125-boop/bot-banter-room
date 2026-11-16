@@ -55,7 +55,8 @@ describe("account deletion request API", () => {
     const { database, queries, bindings } = makeDatabase();
     const response = await handleAccountDeletionRequest(post({ operation: "request", confirmationPhrase: "DELETE MY ACCOUNT" }), { ACTION_DB: database });
     expect(response.status).toBe(201);
-    const result = await response.json() as { status: string; scheduledFor: string };
+    const result = await response.json() as { id: string; status: string; scheduledFor: string };
+    expect(result.id).toMatch(/^[a-f0-9]{32}$/);
     expect(result.status).toBe("pending");
     expect(Date.parse(result.scheduledFor) - Date.now()).toBeGreaterThan(29 * 24 * 60 * 60 * 1000);
     const insert = queries.findIndex((query) => query.includes("INSERT INTO account_deletion_requests"));
@@ -70,4 +71,16 @@ describe("account deletion request API", () => {
     expect(bindings[update]).toContain("user-1");
     expect(bindings[update]).toContain("deletion-1");
   });
+  it("returns only the active user's pending deletion request", async () => {
+    const { database, queries, bindings } = makeDatabase();
+    const response = await handleAccountDeletionRequest(new Request(url, {
+      method: "GET", headers: { cookie },
+    }), { ACTION_DB: database });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ pending: null });
+    const lookup = queries.findIndex((query) => query.includes("FROM account_deletion_requests"));
+    expect(lookup).toBeGreaterThanOrEqual(0);
+    expect(bindings[lookup]).toContain("user-1");
+  });
+
 });

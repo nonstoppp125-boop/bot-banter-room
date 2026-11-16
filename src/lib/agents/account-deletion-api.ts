@@ -47,13 +47,11 @@ export async function handleAccountDeletionRequest(
   request: Request,
   env: AccountDeletionApiEnv,
 ): Promise<Response> {
-  if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
-  const origin = request.headers.get("origin");
-  if (!origin || origin !== new URL(request.url).origin) {
-    return json({ error: "Cross-origin account changes are blocked." }, 403);
-  }
-  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
-    return json({ error: "JSON content type is required." }, 415);
+  if (request.method !== "GET" && request.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  if (request.method === "POST") {
+    const origin = request.headers.get("origin");
+    if (!origin || origin !== new URL(request.url).origin) return json({ error: "Cross-origin account changes are blocked." }, 403);
+    if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return json({ error: "JSON content type is required." }, 415);
   }
   const database = env.ACTION_DB;
   if (!database) return json({ error: "Account deletion service is not configured." }, 503);
@@ -64,12 +62,16 @@ export async function handleAccountDeletionRequest(
     const now = new Date().toISOString();
     const session = await createD1SessionStore(database).getActive(token, now);
     if (!session) return json({ error: "Active session required." }, 401);
+    const store = createD1AccountDeletionStore(database);
+    if (request.method === "GET") {
+      const pending = await store.getPendingForUser({ userId: session.userId, now });
+      return json({ pending });
+    }
     const raw = await readSmallBody(request);
     if (!raw) return json({ error: "Invalid account deletion request." }, 400);
     let body: unknown;
     try { body = JSON.parse(raw); } catch { return json({ error: "Invalid JSON." }, 400); }
     if (!isRecord(body)) return json({ error: "Invalid account deletion request." }, 400);
-    const store = createD1AccountDeletionStore(database);
 
     if (body["operation"] === "request") {
       if (body["confirmationPhrase"] !== "DELETE MY ACCOUNT") {
@@ -84,7 +86,7 @@ export async function handleAccountDeletionRequest(
         graceDays: 30,
       });
       await store.create(deletion);
-      return json({ status: "pending", scheduledFor: deletion.scheduledFor }, 201);
+      return json({ id: deletion.id, status: "pending", scheduledFor: deletion.scheduledFor }, 201);
     }
 
     if (body["operation"] === "cancel" && typeof body["id"] === "string") {
