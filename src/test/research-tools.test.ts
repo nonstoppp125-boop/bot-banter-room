@@ -79,6 +79,30 @@ describe("authorized research tool contract", () => {
     await expect(openResearchSource(sources[0]!, provider, signal())).rejects.toThrow();
   });
 
+  it("does not let untrusted publisher labels fake independent corroboration", () => {
+    const references = prepareResearchSources(
+      [
+        {
+          id: "same-a", title: "A", publisher: "Publisher One",
+          publishedAt: "2026-11-01", retrievedAt: "2026-11-02",
+          content: "Evidence A", url: "https://www.example.com/a",
+        },
+        {
+          id: "same-b", title: "B", publisher: "Publisher Two",
+          publishedAt: "2026-11-01", retrievedAt: "2026-11-02",
+          content: "Evidence B", url: "https://example.com/b",
+        },
+      ],
+      Date.parse("2026-11-03"),
+    );
+    expect(
+      assessClaimSupport(
+        { text: "Claim", classification: "fact", sourceIds: ["same-a", "same-b"] },
+        references,
+      ).status,
+    ).toBe("single-source");
+  });
+
   it("assesses source diversity without claiming proof of truth", () => {
     const references = prepareResearchSources(
       [
