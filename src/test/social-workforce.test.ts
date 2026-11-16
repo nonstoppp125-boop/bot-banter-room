@@ -110,3 +110,27 @@ describe("cross-platform social workforce foundations", () => {
     expect(reply.note).toContain("No comment");
   });
 });
+
+
+describe("official social API feasibility registry", () => {
+  it("documents all five official platform APIs without claiming live connections", async () => {
+    const { SOCIAL_INTEGRATION_READINESS, getSocialIntegrationReadiness } = await import("@/lib/agents/social-workforce");
+    expect(Object.keys(SOCIAL_INTEGRATION_READINESS).sort()).toEqual(["facebook", "instagram", "tiktok", "x", "youtube"]);
+    for (const platform of Object.keys(SOCIAL_INTEGRATION_READINESS) as Array<keyof typeof SOCIAL_INTEGRATION_READINESS>) {
+      const readiness = getSocialIntegrationReadiness(platform);
+      expect(readiness.apiAvailable).toBe(true);
+      expect(readiness.connectionStatus).toBe("not-connected");
+      expect(readiness.livePublishingEnabled).toBe(false);
+      expect(readiness.sourceUrls.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("records platform-specific approval and account constraints", async () => {
+    const { SOCIAL_INTEGRATION_READINESS } = await import("@/lib/agents/social-workforce");
+    expect(SOCIAL_INTEGRATION_READINESS.instagram.accountEligibility).toContain("Professional");
+    expect(SOCIAL_INTEGRATION_READINESS.facebook.authorization).toContain("pages_manage_posts");
+    expect(SOCIAL_INTEGRATION_READINESS.youtube.authorization).toContain("OAuth 2.0");
+    expect(SOCIAL_INTEGRATION_READINESS.x.authorization).toContain("OAuth");
+    expect(SOCIAL_INTEGRATION_READINESS.tiktok.publishingConstraints).toContain("private visibility");
+  });
+});

@@ -46,3 +46,10 @@ No merge to `main`; no production deployment.
 - Platform routing tests cover Instagram, Facebook, YouTube, X and TikTok; registry tests verify all 22 specialists.
 - Social workforce tests cover format constraints, unified calendar, adaptation briefs, storyboards, campaign briefs, approval-gated scheduling and reply drafts.
 - Termux-specific runtime remains unverified due to the earlier local Node exit 132; CI is the current verification evidence.
+
+
+## 2026-11-16 — Official API feasibility audit
+- S01/S03/S05/S07/S09 feasibility findings documented for Instagram, Facebook Pages, YouTube, X and TikTok in `PART14_GROUP13_API_FEASIBILITY.md`.
+- Added a typed runtime readiness registry with account eligibility, authorization, publishing constraints, quota notes and official source URLs.
+- All five integrations remain `not-connected`; live publishing remains explicitly disabled. OAuth, provider approval, durable encrypted tokens and server-side approval enforcement are still blockers.
+- Feasibility tests added; CI verification pending.

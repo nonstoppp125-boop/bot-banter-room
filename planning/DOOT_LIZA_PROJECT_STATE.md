@@ -173,3 +173,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added unified social calendar, cross-platform adaptation briefs, video storyboards, campaign briefs, in-memory draft approval/versioning, scheduling-state and reply drafts.
 - GitHub Actions run `43800654390`: SUCCESS — TypeScript, 17 test files / 189 tests, production build and Wrangler validation.
 - Group 13 remains partial: official API audits, OAuth, publishing, analytics, durable storage and background scheduling remain open.
+
+
+## 2026-11-16 — Group 13 official API feasibility
+- Audited official API feasibility for Instagram, Facebook Pages, YouTube, X and TikTok; findings and primary documentation URLs recorded in `PART14_GROUP13_API_FEASIBILITY.md`.
+- Added typed platform readiness registry in `social-workforce.ts`; it records account requirements, OAuth scopes, publishing constraints and quota behavior without claiming account connection.
+- All integrations remain disconnected and live publishing disabled. OAuth app setup, provider approvals, encrypted token persistence, server-side human approval and actual API integration remain blocked.
+- CI verification pending.

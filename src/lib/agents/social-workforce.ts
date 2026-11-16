@@ -370,3 +370,103 @@ export const SOCIAL_WORKFORCE_LIMITATIONS = [
   "No platform publishing, comments, messaging, uploads or analytics API is connected.",
   "All content and replies require human review; API permissions must be verified per platform.",
 ] as const;
+
+
+export type SocialIntegrationReadiness = {
+  platform: SocialPlatform;
+  apiAvailable: true;
+  accountEligibility: string;
+  authorization: string;
+  publishingConstraints: string;
+  quotaAndRateLimit: string;
+  connectionStatus: "not-connected";
+  livePublishingEnabled: false;
+  sourceUrls: readonly string[];
+};
+
+/**
+ * Verified API feasibility notes, not live connection claims.
+ * These records intentionally keep every integration disconnected until OAuth,
+ * provider approval, account eligibility and durable secret storage are verified.
+ */
+export const SOCIAL_INTEGRATION_READINESS: Readonly<Record<SocialPlatform, SocialIntegrationReadiness>> = {
+  instagram: {
+    platform: "instagram",
+    apiAvailable: true,
+    accountEligibility: "Instagram Professional account (Business or Creator); consumer/personal accounts are not supported by the professional-account API.",
+    authorization: "Instagram Login uses instagram_business_basic and instagram_business_content_publishing; the Facebook Login route uses Instagram professional-account/Page linkage and the corresponding Meta permissions.",
+    publishingConstraints: "Publishing is supported for eligible professional accounts; Stories availability differs by login route and account type. Media must meet Meta publishing requirements.",
+    quotaAndRateLimit: "Meta applies dynamic app/account rate limits; inspect usage headers and the app dashboard rather than hardcoding a universal quota.",
+    connectionStatus: "not-connected",
+    livePublishingEnabled: false,
+    sourceUrls: [
+      "https://developers.facebook.com/docs/instagram/platform/instagram-api/changelog/",
+      "https://developers.facebook.com/docs/instagram-platform/reference/instagram-media/",
+      "https://developers.facebook.com/docs/graph-api/overview/rate-limiting/",
+    ],
+  },
+  facebook: {
+    platform: "facebook",
+    apiAvailable: true,
+    accountEligibility: "Publishing is for Facebook Pages, not arbitrary personal-profile timelines; the authorizing user must have the Page task required to create content.",
+    authorization: "Page access token plus pages_manage_posts, pages_read_engagement and pages_show_list; Page role/task must include CREATE_CONTENT.",
+    publishingConstraints: "Page Feed publishing is supported through the official Graph API. Page-owned data and public Page data have distinct permission/feature gates.",
+    quotaAndRateLimit: "Graph API and Pages calls are dynamically rate limited; inspect response usage headers and app dashboard.",
+    connectionStatus: "not-connected",
+    livePublishingEnabled: false,
+    sourceUrls: [
+      "https://developers.facebook.com/docs/graph-api/reference/page/feed/",
+      "https://developers.facebook.com/docs/graph-api/overview/rate-limiting/",
+      "https://developers.facebook.com/docs/graph-api/reference/page/",
+    ],
+  },
+  youtube: {
+    platform: "youtube",
+    apiAvailable: true,
+    accountEligibility: "A Google Cloud project with YouTube Data API enabled and a channel/account authorized for the requested operation.",
+    authorization: "API key may read public data; OAuth 2.0 is required for private account data and insert/update/delete operations. Upload requires youtube.upload or a broader documented YouTube scope.",
+    publishingConstraints: "Video upload is supported by videos.insert. The API's documented default quota includes 100 videos.insert calls/day; quota allocation and method costs must be checked in the active Google Cloud project.",
+    quotaAndRateLimit: "Default allocation: 10,000 units/day for most methods, with separate 100/day buckets for search.list and videos.insert; quota may be changed by Google.",
+    connectionStatus: "not-connected",
+    livePublishingEnabled: false,
+    sourceUrls: [
+      "https://developers.google.com/youtube/data/guides/authentication",
+      "https://developers.google.com/youtube/data/reference/rest/v3/videos/insert",
+      "https://developers.google.com/youtube/data/determine_quota_cost",
+    ],
+  },
+  x: {
+    platform: "x",
+    apiAvailable: true,
+    accountEligibility: "An approved X developer account and project/app with access to the required API product/endpoints.",
+    authorization: "User-context access token via OAuth 2.0 PKCE or OAuth 1.0a; posting requires user authorization with write capability.",
+    publishingConstraints: "POST /2/tweets creates posts. Self-serve reply behavior has additional restrictions; API access tier and commercial terms must be checked in the developer console.",
+    quotaAndRateLimit: "Endpoint and access-level rate limits apply; no universal quota or free allowance is assumed. Read current headers and developer-console limits.",
+    connectionStatus: "not-connected",
+    livePublishingEnabled: false,
+    sourceUrls: [
+      "https://docs.x.com/x-api/posts/manage-tweets/introduction",
+      "https://docs.x.com/x-api/posts/manage-tweets/quickstart",
+      "https://help.x.com/en/rules-and-policies/x-api",
+    ],
+  },
+  tiktok: {
+    platform: "tiktok",
+    apiAvailable: true,
+    accountEligibility: "Registered TikTok developer app with Content Posting API product enabled and a target creator account authorizing the app.",
+    authorization: "Direct Post requires approved video.publish scope; draft upload requires approved video.upload scope.",
+    publishingConstraints: "Direct Post supports authorized posting, but unaudited clients are restricted to private visibility until TikTok audits the client. Upload-to-inbox is a draft flow requiring the user to finish in TikTok.",
+    quotaAndRateLimit: "TikTok documents a per-user access-token limit of 6 upload-init requests/minute for the upload endpoint; other endpoint limits must be checked individually.",
+    connectionStatus: "not-connected",
+    livePublishingEnabled: false,
+    sourceUrls: [
+      "https://developers.tiktok.com/docs/en/content-posting-api-get-started",
+      "https://developers.tiktok.com/docs/en/content-posting-api-get-started-upload-content",
+      "https://developers.tiktok.com/docs/en/content-posting-api-reference-upload-video",
+    ],
+  },
+} as const;
+
+export function getSocialIntegrationReadiness(platform: SocialPlatform): SocialIntegrationReadiness {
+  return SOCIAL_INTEGRATION_READINESS[platform];
+}

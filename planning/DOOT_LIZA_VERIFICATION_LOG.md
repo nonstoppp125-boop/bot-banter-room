@@ -173,3 +173,8 @@ Append new evidence below; never rewrite historical results.\n\n
 - Production build: PASS
 - Nitro-generated Wrangler configuration validation: PASS
 - Verified five platform-specific specialists in the registry, platform routing, unified calendar, format validation, campaign briefs, video storyboards, approval state and reply-draft safety.
+
+
+## 2026-11-16 — Group 13 official API feasibility registry
+- Added typed readiness metadata for Instagram, Facebook Pages, YouTube, X and TikTok, plus tests ensuring all integrations remain disconnected and publishing disabled.
+- Added official-source API feasibility audit. CI verification pending.
