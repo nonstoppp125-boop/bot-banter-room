@@ -19,6 +19,7 @@ import { Route as ApiAccountDeletionRouteImport } from './routes/api/account/del
 import { Route as ApiOAuthStartRouteImport } from './routes/api/integrations/oauth/start'
 import { Route as ApiOAuthCallbackRouteImport } from './routes/api/integrations/oauth/callback'
 import { Route as ApiIntegrationDisconnectRouteImport } from './routes/api/integrations/disconnect'
+import { Route as ApiIntegrationRefreshRouteImport } from './routes/api/integrations/refresh'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const ApiIntegrationDisconnectRoute = ApiIntegrationDisconnectRouteImport.update
   path: '/api/integrations/disconnect',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIntegrationRefreshRoute = ApiIntegrationRefreshRouteImport.update({
+  id: '/api/integrations/refresh',
+  path: '/api/integrations/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
   '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
   '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
+  '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
   '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
   '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
+  '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesById {
@@ -104,14 +112,15 @@ export interface FileRoutesById {
   '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
   '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
   '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
+  '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/analytics'
+  fullPaths: '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/analytics'
-  id: '__root__' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/analytics'
+  to: '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  id: '__root__' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -186,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiIntegrationDisconnectRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/integrations/refresh': {
+      id: '/api/integrations/refresh'
+      path: '/api/integrations/refresh'
+      fullPath: '/api/integrations/refresh'
+      preLoaderRoute: typeof ApiIntegrationRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -206,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOAuthStartRoute: ApiOAuthStartRoute,
   ApiOAuthCallbackRoute: ApiOAuthCallbackRoute,
   ApiIntegrationDisconnectRoute: ApiIntegrationDisconnectRoute,
+  ApiIntegrationRefreshRoute: ApiIntegrationRefreshRoute,
   AnalyticsRoute: AnalyticsRoute,
 }
 export const routeTree = rootRouteImport

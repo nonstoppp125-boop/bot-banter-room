@@ -273,6 +273,7 @@ export async function encryptConnectionCredentials(input:{
  if(!/^[A-Za-z0-9._:-]{1,120}$/.test(input.userId)||!/^[A-Za-z0-9._:-]{1,120}$/.test(input.workspaceId)||
     typeof input.credentials.accessToken!=="string"||!input.credentials.accessToken||input.credentials.accessToken.length>10000||
     (input.credentials.refreshToken!==null&&(typeof input.credentials.refreshToken!=="string"||input.credentials.refreshToken.length>10000))||
+    typeof input.credentials.tokenType!=="string"||!input.credentials.tokenType||input.credentials.tokenType.length>40||
     !Number.isFinite(Date.parse(input.credentials.createdAt)))throw new Error("OAuth credential payload is invalid.");
  const iv=crypto.getRandomValues(new Uint8Array(12));
  const aad=new TextEncoder().encode("liza-connection:v1:"+input.provider+":"+input.workspaceId+":"+input.userId);
