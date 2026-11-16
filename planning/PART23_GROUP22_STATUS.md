@@ -24,3 +24,9 @@ No merge to main; no production deployment.
 
 - Manual production deployment now runs only when explicitly confirmed from `main`, checks out the selected `github.ref`, and fails closed unless the generated Worker config contains the `ACTION_DB` D1 binding with a database ID.
 - No deployment was triggered. Current source branch does not have a provisioned production D1 binding, so release remains blocked pending account-side setup.
+
+
+## 2026-11-16 — Production provisioning checklist
+
+- Added `planning/PRODUCTION_ENVIRONMENT_CHECKLIST.md` documenting exact D1, Cloudflare Access, AI/research provider, OAuth, Telegram and GitHub deployment prerequisites plus required live release evidence.
+- No production credentials, database ID or deployment was fabricated. Production remains blocked until account-side setup and smoke tests are completed.
