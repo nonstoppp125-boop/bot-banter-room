@@ -19,7 +19,7 @@ Branch: work/group06-manager-planner
 - APP04–APP05 — OAuth callback consumes state once, verifies user/workspace/redirect binding, enforces provider token-host allowlists, exchanges the code with PKCE and persists access/refresh credentials only as AES-256-GCM encrypted D1 blobs.
 - APP06 — User-triggered `POST /api/integrations/refresh` loads only the active user's workspace connection, decrypts its refresh token server-side, enforces provider token-host/scope allowlists and re-encrypts rotated credentials.
 - APP07 — `POST /api/integrations/disconnect` clears the locally stored encrypted token and marks the owned connection revoked. Provider-side token revocation is not yet called; the API states that explicitly.
-- APP08–APP11 — Connection listing/disconnect UI, background refresh scheduling, remote provider revocation, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
+- APP08–APP11 — Connection listing/connect/disconnect UI is now added; background refresh scheduling, remote provider revocation, provider identity verification and live account smoke tests remain open. Provider credentials, D1 binding and encryption secret are not provisioned.
 - APP14 — Runtime webhook integration and provider-specific signature canonicalization remain unverified.
 - APP15–APP16 — No live provider clients, rate-limit adapters or health probes.
 - APP19 — Secret rotation and encrypted credential storage require provisioned secret/database infrastructure.
@@ -67,3 +67,12 @@ No merge to main; no production deployment.
 - Added regression tests for refresh ownership, encrypted token persistence, missing refresh tokens, provider-host restrictions and local disconnect scoping.
 - GitHub Actions run `43812612109`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
 - Background refresh, remote provider revocation, UI, live D1 and provider credentials remain open.
+
+
+## 2026-11-16 — Integration management UI and OAuth redirect hardening
+- Added `/settings/integrations` with safe metadata-only connection listing, server-generated OAuth start URL navigation, local disconnect, and explicit unavailable states for providers whose scopes are not approved.
+- OAuth start now returns a no-store JSON authorization URL for the client to navigate to; the UI rejects non-HTTPS destinations.
+- Token exchange and refresh requests now use `redirect: error` so a provider token endpoint cannot redirect the authorization code, PKCE verifier or client credentials to another host.
+- Standardized the Instagram callback redirect URI in the start test to the actual shared callback route.
+- GitHub Actions run `43813565318`: SUCCESS — TypeScript, 43 test files / 311 tests, production build and Nitro-generated Wrangler validation.
+- Live D1, provider credentials/secrets, remote revocation and live account smoke tests remain blocked by unprovisioned runtime configuration.

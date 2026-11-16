@@ -15,7 +15,7 @@ Branch: work/group06-manager-planner
 
 ## Remaining / blocked
 - D1 database provisioning and ACTION_DB binding are not configured; adapters are not live.
-- Request, inbox and decision API routes are wired; user-facing approval center UI and authentication/login flow remain open.
+- Request, inbox and decision API routes are wired; an admin approval inbox UI is now available. Authentication/login flow and live D1 remain open.
 - No external publishing, messaging, destructive action or deployment executor is enabled.
 - Provider usage and final synthesis cost remain approximate where provider telemetry is unavailable.
 
@@ -31,3 +31,9 @@ No merge to main; no production deployment.
 - D1 binding, session issuance/login, approval center UI and external executor remain unconfigured; no external action is enabled.
 
 - Approval API security tests cover same-origin enforcement, member request creation, admin-only inbox/decisions and pending-only decision transitions; run `43809939660` passed.
+
+
+## 2026-11-16 — Approval inbox UI
+- Added `/settings/approvals` with an admin-only pending inbox, requester/action/summary/payload-hash/expiry display, mandatory decision reason, and approve/reject actions.
+- UI explicitly states that recording approval does not itself execute external actions. API remains the authority for owner/admin role, same-origin, expiry and pending-only transitions.
+- Verification will be recorded after CI.

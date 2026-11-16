@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
+import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
@@ -36,6 +37,11 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
   id: '/settings/integrations',
   path: '/settings/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsApprovalsRoute = SettingsApprovalsRouteImport.update({
+  id: '/settings/approvals',
+  path: '/settings/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/api/integrations': typeof ApiIntegrationsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/approvals': typeof SettingsApprovalsRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesByTo {
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/api/integrations': typeof ApiIntegrationsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/approvals': typeof SettingsApprovalsRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesById {
@@ -131,14 +139,15 @@ export interface FileRoutesById {
   '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
   '/api/integrations': typeof ApiIntegrationsRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/approvals': typeof SettingsApprovalsRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  fullPaths: '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
-  id: '__root__' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  to: '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  id: '__root__' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,6 +156,7 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+  SettingsApprovalsRoute: typeof SettingsApprovalsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -235,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIntegrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/approvals': {
+      id: '/settings/approvals'
+      path: '/settings/approvals'
+      fullPath: '/settings/approvals'
+      preLoaderRoute: typeof SettingsApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -259,6 +276,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiIntegrationsRoute: ApiIntegrationsRoute,
   AnalyticsRoute: AnalyticsRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+  SettingsApprovalsRoute: SettingsApprovalsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
