@@ -14,6 +14,8 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
@@ -47,6 +49,16 @@ const SettingsApprovalsRoute = SettingsApprovalsRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSessionRoute = ApiAuthSessionRouteImport.update({
+  id: '/api/auth/session',
+  path: '/api/auth/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -98,6 +110,8 @@ const ApiIntegrationsRoute = ApiIntegrationsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/health': typeof ApiHealthRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/account/export': typeof ApiAccountExportRoute
@@ -114,6 +128,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
@@ -130,6 +146,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
@@ -144,15 +162,17 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  fullPaths: '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
-  id: '__root__' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  to: '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
+  id: '__root__' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiAuthSessionRoute: typeof ApiAuthSessionRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
@@ -173,6 +193,20 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/session': {
+      id: '/api/auth/session'
+      path: '/api/auth/session'
+      fullPath: '/api/auth/session'
+      preLoaderRoute: typeof ApiAuthSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -265,6 +299,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiAuthSessionRoute: ApiAuthSessionRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiApprovalsRoute: ApiApprovalsRoute,
   ApiAccountExportRoute: ApiAccountExportRoute,
