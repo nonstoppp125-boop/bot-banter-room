@@ -64,6 +64,17 @@ describe("authenticated Manager task API", () => {
     expect(queries).toEqual([]);
   });
 
+  it("requires the exact JSON media type before accessing storage", async () => {
+    const { database, queries } = makeDatabase();
+    const request = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/jsonp", cookie },
+      body: JSON.stringify({ task: "Research this" }),
+    });
+    expect((await handleTaskRequest(request, { ACTION_DB: database })).status).toBe(415);
+    expect(queries).toEqual([]);
+  });
+
   it("requires a session and configured D1 binding", async () => {
     expect((await handleTaskRequest(new Request(url), {})).status).toBe(503);
     const { database } = makeDatabase();
