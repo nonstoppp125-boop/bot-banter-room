@@ -24,6 +24,10 @@ export function createD1ApprovalStore(database:D1ApprovalDatabase){
    const row=await database.prepare("SELECT a.* FROM approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? AND wm.role IN ('owner','admin') WHERE a.id = ? AND a.workspace_id = ? LIMIT 1").bind(input.actorUserId,input.id,input.workspaceId).first<Parameters<typeof map>[0]>();
    return row?map(row):null;
   },
+  getForAction:async(input:{id:string;workspaceId:string;actorUserId:string})=>{
+   const row=await database.prepare("SELECT a.* FROM approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? WHERE a.id = ? AND a.workspace_id = ? LIMIT 1").bind(input.actorUserId,input.id,input.workspaceId).first<Parameters<typeof map>[0]>();
+   return row?map(row):null;
+  },
   listPending:async(input:{workspaceId:string;actorUserId:string;now:string;limit?:number})=>{
    if(!iso(input.now))throw new Error("Approval list timestamp is invalid.");
    const limit=input.limit??50;if(!Number.isInteger(limit)||limit<1||limit>100)throw new Error("Approval list limit must be between 1 and 100.");
