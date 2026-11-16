@@ -32,3 +32,11 @@ No merge to main; no production deployment.
 - Initial high-threshold audit found 9 vulnerabilities (7 low, 2 high), including Vite 8.1.5 and Zod 3.25.76; KaTeX also has a reported advisory with no fix shown.
 - `planning/SECURITY_DEPENDENCY_AUDIT.md` records evidence and remediation. Build CI now blocks critical findings while keeping high findings visible; the manual production deploy retains a high-severity threshold and remains blocked until remediation.
 - GitHub Actions run `43874074750`: SUCCESS — critical-threshold audit step, TypeScript, 51 test files / 400 tests, production build and Wrangler config validation. This does not mean the high vulnerabilities are fixed.
+
+
+## 2026-11-16 — High-severity dependency remediation verified
+
+- Vite upgraded to 8.3.8 and Zod upgraded to 4.6.7 with a regenerated lockfile; the full existing suite passed without code compatibility changes.
+- The high-severity npm audit gate is restored in build and manual deploy workflows. Audit reports 7 low, 0 moderate, 0 high and 0 critical vulnerabilities.
+- Latest merged-branch CI run `43875777984`: SUCCESS — TypeScript, 51 test files / 401 tests, production build, generated Wrangler Worker config validation and high-threshold dependency audit.
+- KaTeX advisory remains among low findings with no fixed release reported; keep math-rendering trust restrictions and review upstream updates.
