@@ -1,6 +1,6 @@
 import { validateReleaseMetadata } from "./quality-gates";
 export interface ReleaseApproval{approved:boolean;approvedByUserId:string|null;approvedAt:string|null;commitSha:string;scope:"staging"|"production";reason:string;}
-export interface ReleaseCandidateInput{version:string;commitSha:string;branch:string;changeSummary:string;artifactSha256:string;qualityStatus:"passed"|"failed"|"blocked";rollbackPlan:string;backupEvidence:string;approval:ReleaseApproval|null;now:string;}
+export interface ReleaseCandidateInput{version:string;commitSha:string;branch:string;changeSummary:string;artifactSha256:string;qualityStatus:"passed"|"failed"|"blocked";rollbackPlan:string;backupEvidence:string;approval?:ReleaseApproval|null;now:string;}
 export interface ReleaseDecision{status:"blocked"|"ready-for-human-approval"|"approved-for-promotion";deploymentPerformed:false;deploymentAllowed:boolean;blockers:string[];note:string;}
 export function evaluateReleaseCandidate(input:ReleaseCandidateInput):ReleaseDecision{
  const blockers:string[]=[];
