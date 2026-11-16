@@ -38,6 +38,7 @@ function Index() {
   const [error, setError] = useState<string | null>(null);
   const [taskSaving, setTaskSaving] = useState<string | null>(null);
   const [taskNotice, setTaskNotice] = useState<string | null>(null);
+  const [taskNoticeFor, setTaskNoticeFor] = useState<string | null>(null);
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     onError: (e) => setError(e.message || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।"),
@@ -54,6 +55,7 @@ function Index() {
     if (!taskText.trim() || taskSaving) return;
     setTaskSaving(messageId);
     setTaskNotice(null);
+    setTaskNoticeFor(null);
     setError(null);
     try {
       const response = await fetch("/api/tasks", {
@@ -64,6 +66,7 @@ function Index() {
       });
       const data = await response.json() as { task?: { status?: string }; error?: string };
       if (!response.ok) throw new Error(data.error || "Manager task could not be saved.");
+      setTaskNoticeFor(messageId);
       setTaskNotice(data.task?.status === "needs_approval"
         ? "Manager plan saved — approval required."
         : "Manager plan saved to your task workspace. Background execution is not enabled yet.");
@@ -144,7 +147,7 @@ function Index() {
                         >
                           {taskSaving === m.id ? "Saving plan…" : "Create Manager task"}
                         </button>
-                        {taskNotice && taskSaving === null && <span role="status" className="text-xs text-muted-foreground">{taskNotice}</span>}
+                        {taskNotice && taskNoticeFor === m.id && taskSaving === null && <span role="status" className="text-xs text-muted-foreground">{taskNotice}</span>}
                       </div>
                     )}
                   </MessageContent>
