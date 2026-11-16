@@ -69,3 +69,24 @@ The Worker must also have the GROQ_API_KEY secret configured in Cloudflare. The 
 The deployment workflow is restricted to main and requires confirm_deploy=true. The current branch is not main; no merge or deployment was performed. The D1 database must exist in the same Cloudflare account before its actual name/UUID can be entered.
 
 **GROUP 03 STATUS: 19/20 COMPLETE — BLOCKED at G03.20. Do not start Group 04 until the production D1/account configuration is available and deployment is explicitly authorized.**
+
+
+## Production release-scope audit — 2026-11-16
+
+After the user authorized Group-03-only release integration and production validation, the release boundary was re-audited before any merge or deployment.
+
+A critical scope conflict was found: the current deploy workflow runs every SQL migration in the repository's `migrations/` directory. That directory contains 15 migrations, not just Group 03 infrastructure:
+
+- `0001_action_claims.sql`: action idempotency claims.
+- `0002_linkedin_growth.sql` and `0003_analytics_snapshots.sql`: LinkedIn/social and analytics schemas.
+- `0004_webhook_event_claims.sql`: webhook processing.
+- `0005_workspace_core.sql`: users, workspaces, sessions, conversations, memories, agent tasks, approvals, app connections, social accounts, content drafts, publications and audit events.
+- `0006_oauth_transactions.sql`, `0007_telegram_bridge.sql`, `0008_telegram_chat_conversations.sql`, `0012_telegram_link_tokens.sql`: OAuth and Telegram schemas.
+- `0009_account_deletion_requests.sql`: account deletion.
+- `0010`–`0011`, `0013`–`0015`: approval, workspace analytics/retention and agent retry-budget changes.
+
+These schemas cover later product capabilities and cannot be silently applied as part of a Group-03-only release. The current feature branch also contains substantial Groups 04+ code and must not be merged wholesale.
+
+Therefore the existing workflow is not yet safe to run for the approved Group-03-only scope. No PR merge, remote D1 migration, or production deployment was triggered. Next required engineering task: isolate a Group-03 release artifact with a migration allowlist and runtime dependency boundary, then run CI against that artifact. If Group 03 cannot operate independently of later-group code/schema, G03.20 must remain blocked rather than deploy unfinished groups.
+
+**Current status remains 19/20; production action is intentionally held at the verified scope boundary.**
