@@ -26,14 +26,14 @@ export type ManagerPlan = {
   executionBudget: {
     maxSpecialists: number;
     maxParallelAgents: number;
-    maxDurationMs: number;
+    perTaskTimeoutMs: number;
   };
   limitations: string[];
 };
 
 const MAX_SPECIALISTS = 4;
 const MAX_TASK_CHARS = 20_000;
-const MAX_EXECUTION_MS = 45_000;
+const MAX_TASK_TIMEOUT_MS = 45_000;
 
 const HIGH_RISK_ACTIONS: readonly [RegExp, string][] = [
   [/\b(publish|post\s+(?:this|it|the|my)|send|message)\b/i, "External publishing or messaging"],
@@ -154,7 +154,7 @@ export function buildManagerPlan(
     executionBudget: {
       maxSpecialists: MAX_SPECIALISTS,
       maxParallelAgents: Math.max(1, Math.min(MAX_SPECIALISTS, agentIds.length)),
-      maxDurationMs: MAX_EXECUTION_MS,
+      perTaskTimeoutMs: MAX_EXECUTION_MS,
     },
     limitations: [
       "Routing and risk classification are deterministic heuristics, not an autonomous LLM planner.",
