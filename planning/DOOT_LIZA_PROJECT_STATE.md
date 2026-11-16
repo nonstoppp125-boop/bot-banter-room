@@ -397,3 +397,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 
 - Added `planning/SECURITY_DEPENDENCY_AUDIT.md` with the 2026-11-16 npm audit results and safe remediation plan.
 - The manual deployment workflow retains a high-severity audit gate. No force upgrades or production deployment were performed.
+
+
+## 2026-11-16 — Corrected task execution, approval and Telegram status
+
+- Persisted Manager tasks can be explicitly executed through authenticated synchronous `POST /api/tasks/execute`; this is not a background queue consumer.
+- High-risk tasks create payload-bound approval records, owner/admin decisions are persisted, and the web Tasks API verifies the exact plan hash before unlocking. Execution re-verifies approval.
+- Telegram `/task` creates shared task records and approval metadata; `/approvals` handles signed admin decisions. Final unlock/run remains a web Tasks action.
+- Failed low-risk tasks support a bounded manual retry; background scheduling and crash recovery remain open.
+- Exact CI evidence at checkpoint: run `43871570424` verified commit `ce03045517cad439c53d14929fdd943f78e443f6`, 51 test files / 395 tests, TypeScript, production build and Wrangler config validation. Later branch commits need a fresh run.
+- No production deployment or live D1/Telegram/provider runtime is claimed.
