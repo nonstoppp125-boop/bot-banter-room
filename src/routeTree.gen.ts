@@ -23,6 +23,7 @@ import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/we
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
+import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks.execute'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
 import { Route as ApiAccountDeletionRouteImport } from './routes/api/account/deletion'
@@ -102,6 +103,11 @@ const ApiTasksRoute = ApiTasksRouteImport.update({
   path: '/api/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTasksExecuteRoute = ApiTasksExecuteRouteImport.update({
+  id: '/api/tasks/execute',
+  path: '/api/tasks/execute',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
   id: '/api/analytics',
   path: '/api/analytics',
@@ -153,6 +159,11 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/tasks': typeof ApiTasksRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/account/export': typeof ApiAccountExportRoute
   '/api/account/deletion': typeof ApiAccountDeletionRoute
@@ -300,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTasksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tasks/execute': {
+      id: '/api/tasks/execute'
+      path: '/api/tasks/execute'
+      fullPath: '/api/tasks/execute'
+      preLoaderRoute: typeof ApiTasksExecuteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/analytics': {
       id: '/api/analytics'
       path: '/api/analytics'
@@ -411,6 +429,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiApprovalsRoute: ApiApprovalsRoute,
   ApiTasksRoute: ApiTasksRoute,
+  ApiTasksExecuteRoute: ApiTasksExecuteRoute,
   ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiAccountExportRoute: ApiAccountExportRoute,
   ApiAccountDeletionRoute: ApiAccountDeletionRoute,
