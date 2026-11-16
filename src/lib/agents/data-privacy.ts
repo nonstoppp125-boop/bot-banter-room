@@ -1,4 +1,4 @@
-export interface ExportDataset{users:Record<string,unknown>[];workspaces:Record<string,unknown>[];projects:Record<string,unknown>[];conversations:Record<string,unknown>[];messages:Record<string,unknown>[];memories:Record<string,unknown>[];agentTasks:Record<string,unknown>[];approvals:Record<string,unknown>[];appConnections:Record<string,unknown>[];socialAccounts:Record<string,unknown>[];contentDrafts:Record<string,unknown>[];publications:Record<string,unknown>[];analyticsSnapshots:Record<string,unknown>[];auditEvents:Record<string,unknown>[];}
+export interface ExportDataset{users:Record<string,unknown>[];workspaces:Record<string,unknown>[];workspaceMemberships:Record<string,unknown>[];projects:Record<string,unknown>[];conversations:Record<string,unknown>[];messages:Record<string,unknown>[];memories:Record<string,unknown>[];agentTasks:Record<string,unknown>[];approvals:Record<string,unknown>[];appConnections:Record<string,unknown>[];socialAccounts:Record<string,unknown>[];contentDrafts:Record<string,unknown>[];publications:Record<string,unknown>[];analyticsSnapshots:Record<string,unknown>[];auditEvents:Record<string,unknown>[];}
 const SENSITIVE_KEYS=/(token|secret|password|credential|authorization|cookie|private.?key|verifier|session|api.?key|oauth.?state|pkce)/i;
 function safeRecord(record:Record<string,unknown>):Record<string,unknown>{return Object.fromEntries(Object.entries(record).filter(([key])=>!SENSITIVE_KEYS.test(key)).map(([key,value])=>[key,value]));}
 function belongs(record:Record<string,unknown>,userId:string,workspaceIds:Set<string>):boolean{
@@ -6,14 +6,15 @@ function belongs(record:Record<string,unknown>,userId:string,workspaceIds:Set<st
 }
 export function buildUserDataExport(input:{userId:string;exportedAt:string;datasets:ExportDataset}){
  if(!/^[A-Za-z0-9._:-]{1,120}$/.test(input.userId)||!Number.isFinite(Date.parse(input.exportedAt)))throw new Error("Invalid data export identity or timestamp.");
+ const memberships=input.datasets.workspaceMemberships.filter(row=>row["userId"]===input.userId||row["user_id"]===input.userId);
  const ownedWorkspaces=input.datasets.workspaces.filter(row=>row["ownerUserId"]===input.userId||row["owner_user_id"]===input.userId);
- const workspaceIds=new Set(ownedWorkspaces.map(row=>String(row["id"])));
+ const workspaceIds=new Set([...ownedWorkspaces.map(row=>String(row["id"])),...memberships.map(row=>String(row["workspaceId"]??row["workspace_id"]))]);
  const ownedConversations=input.datasets.conversations.filter(row=>belongs(row,input.userId,workspaceIds));
  const conversationIds=new Set(ownedConversations.map(row=>String(row["id"])));
  const filter=(rows:Record<string,unknown>[])=>rows.filter(row=>belongs(row,input.userId,workspaceIds)).map(safeRecord);
  const filterMessages=(rows:Record<string,unknown>[])=>rows.filter(row=>belongs(row,input.userId,workspaceIds)||(typeof row["conversation_id"]==="string"&&conversationIds.has(row["conversation_id"]))).map(safeRecord);
  const exported={
-  users:input.datasets.users.filter(row=>row["id"]===input.userId).map(safeRecord),workspaces:ownedWorkspaces.map(safeRecord),projects:filter(input.datasets.projects),
+  users:input.datasets.users.filter(row=>row["id"]===input.userId).map(safeRecord),workspaces:input.datasets.workspaces.filter(row=>workspaceIds.has(String(row["id"]))).map(safeRecord),workspaceMemberships:memberships.map(safeRecord),projects:filter(input.datasets.projects),
   conversations:ownedConversations.map(safeRecord),messages:filterMessages(input.datasets.messages),memories:filter(input.datasets.memories),
   agentTasks:filter(input.datasets.agentTasks),approvals:filter(input.datasets.approvals),appConnections:filter(input.datasets.appConnections),
   socialAccounts:filter(input.datasets.socialAccounts),contentDrafts:filter(input.datasets.contentDrafts),publications:filter(input.datasets.publications),
@@ -67,4 +68,38 @@ export function createD1AccountDeletionStore(database:D1DeletionDatabase):Accoun
   listDue:async(now,limit=50)=>{if(!Number.isFinite(Date.parse(now))||!Number.isInteger(limit)||limit<1||limit>100)throw new Error("Invalid due-deletion query.");const result=await database.prepare("SELECT id,user_id,confirmed_by_user_id,confirmed_at,requested_at,scheduled_for,status FROM account_deletion_requests WHERE status='pending' AND scheduled_for<=? ORDER BY scheduled_for ASC LIMIT ?").bind(now,limit).all<Parameters<typeof map>[0]>();if(result.success===false)throw new Error("D1 due-deletion query failed.");return(result.results??[]).map(map);},
   markCompleted:async(input)=>{if(!input.id||!Number.isFinite(Date.parse(input.now)))throw new Error("Invalid deletion completion.");const result=await database.prepare("UPDATE account_deletion_requests SET status='completed',completed_at=? WHERE id=? AND status='pending' AND scheduled_for<=?").bind(input.now,input.id,input.now).run();if(result.success===false)throw new Error("D1 deletion completion failed.");return result.meta?.changes===1;},
  };
+}
+
+
+export type D1ExportDatabase={prepare:(query:string)=>{bind:(...values:unknown[])=>{first:<T=Record<string,unknown>>()=>Promise<T|null>;all:<T=Record<string,unknown>>()=>Promise<{success?:boolean;results?:T[]}>}}};
+export function createD1UserDataExporter(database:D1ExportDatabase){
+ if(!database||typeof database.prepare!=="function")throw new Error("A valid D1 export database is required.");
+ const all=async<T=Record<string,unknown>>(query:string,...values:unknown[]):Promise<T[]>=>{
+  const result=await database.prepare(query).bind(...values).all<T>();
+  if(result.success===false)throw new Error("D1 user data export query failed.");
+  return result.results??[];
+ };
+ return{exportUser:async(userId:string,exportedAt:string)=>{
+  if(!/^[A-Za-z0-9._:-]{1,120}$/.test(userId)||!Number.isFinite(Date.parse(exportedAt)))throw new Error("Invalid export request.");
+  const user=await database.prepare("SELECT id,email,display_name,created_at,updated_at FROM users WHERE id=? AND deleted_at IS NULL LIMIT 1").bind(userId).first<Record<string,unknown>>();
+  if(!user)return null;
+  const [workspaces,workspaceMemberships,projects,conversations,messages,memories,agentTasks,approvals,appConnections,socialAccounts,contentDrafts,publications,analyticsSnapshots,auditEvents]=await Promise.all([
+   all("SELECT w.* FROM workspaces w JOIN workspace_members wm ON wm.workspace_id=w.id WHERE wm.user_id=?",userId),
+   all("SELECT workspace_id,user_id,role,created_at FROM workspace_members WHERE user_id=?",userId),
+   all("SELECT * FROM projects WHERE workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id=?)",userId),
+   all("SELECT * FROM conversations WHERE user_id=? AND deleted_at IS NULL",userId),
+   all("SELECT m.* FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.user_id=? AND c.deleted_at IS NULL",userId),
+   all("SELECT * FROM memories WHERE user_id=? AND deleted_at IS NULL",userId),
+   all("SELECT id,workspace_id,user_id,status,input_summary,plan_json,result_json,created_at,updated_at FROM agent_tasks WHERE user_id=?",userId),
+   all("SELECT id,workspace_id,user_id,task_id,action_type,payload_hash,status,decided_by_user_id,decision_reason,expires_at,created_at,decided_at FROM approvals WHERE user_id=?",userId),
+   all("SELECT id,workspace_id,user_id,provider,provider_account_id,scopes_json,token_expires_at,status,created_at,updated_at,revoked_at FROM app_connections WHERE user_id=?",userId),
+   all("SELECT * FROM social_accounts WHERE user_id=?",userId),
+   all("SELECT * FROM content_drafts WHERE user_id=?",userId),
+   all("SELECT p.* FROM publications p JOIN content_drafts d ON d.id=p.draft_id WHERE d.user_id=?",userId),
+   all("SELECT a.* FROM analytics_snapshots a WHERE a.account_id IN (SELECT platform_account_id FROM social_accounts WHERE user_id=? AND platform_account_id IS NOT NULL)",userId),
+   all("SELECT * FROM audit_events WHERE user_id=?",userId),
+  ]);
+  const datasets:ExportDataset={users:[user],workspaces,workspaceMemberships,projects,conversations,messages,memories,agentTasks,approvals,appConnections,socialAccounts,contentDrafts,publications,analyticsSnapshots,auditEvents};
+  return buildUserDataExport({userId,exportedAt,datasets});
+ }};
 }

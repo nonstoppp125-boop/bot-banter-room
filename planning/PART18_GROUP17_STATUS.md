@@ -9,7 +9,7 @@ Branch: work/group06-manager-planner
 - DB17 and DB24 — Workspace membership access store scopes lookups by workspace and user; role hierarchy enforces member/admin/owner.
 - DB18 — Workspace record validation and database constraints.
 - DB21 — Bounded retention policy metadata.
-- DB22–DB23 — User data export filters by owner/workspace and redacts credentials; explicit same-user deletion request is persisted in D1 with cancellation, due-list and completion-state operations plus a 7–90 day grace period.
+- DB22–DB23 — D1 user-data exporter scopes workspaces through membership and redacts credentials; explicit same-user deletion request is persisted in D1 with cancellation, due-list and completion-state operations plus a 7–90 day grace period.
 - DB23 — Deletion plan revokes sessions, clears encrypted provider credentials, anonymizes audit actor and deletes user; plan is non-executable until approved runtime workflow exists.
 
 ## Remaining / blocked
