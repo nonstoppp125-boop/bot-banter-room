@@ -41,4 +41,6 @@ No merge to `main`; no production deployment.
 
 
 ## Latest code verification
-- Platform specialists were added to the live registry; TikTok calendar defaults to a supported short-video format. CI verification pending.
+- Platform specialists were added to the live registry; TikTok calendar defaults to a supported short-video format.
+- Registry regression expectations updated from 17 to 22 registered specialists.
+- CI verification pending.
