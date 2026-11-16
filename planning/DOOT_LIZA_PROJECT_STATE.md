@@ -139,3 +139,9 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Group 09 now includes selected-page extraction through Tavily Extract in addition to search; source content is retained as untrusted evidence and extraction failures preserve search snippets.
 - CI run `43799513815`: SUCCESS — TypeScript, 16 test files / 178 tests, production build and Wrangler validation.
 - Semantic claim verification remains an explicit limitation.
+
+
+## 2026-11-16 — Group 10 LinkedIn intelligence
+- Offline profile, positioning, audience, market-evidence, brand consistency, performance and dashboard primitives are implemented.
+- Official LinkedIn OAuth/account access remains blocked pending developer application approval, actual product scopes, callback configuration and encrypted durable storage.
+- CI run `43799513815`: SUCCESS — TypeScript, 16 test files / 178 tests, production build and Wrangler validation.

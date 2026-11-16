@@ -125,3 +125,10 @@ No commit, push, deployment or backup modification was performed by this batch.
 - Group 08 coordination runtime verification: CI run `43798972433` SUCCESS (175 tests); G08.17 remains partial pending provisioned D1 and approved external-action execution.
 - Group 09 added Tavily Extract for selected pages. CI run `43799513815` SUCCESS (178 tests), TypeScript, build and Wrangler validation all PASS.
 - Semantic claim verification remains unimplemented; citation diversity/freshness are not truth verification.
+
+
+## 2026-11-16 — Group 10 LinkedIn Intelligence status
+- Added `PART11_GROUP10_STATUS.md` mapping LI01–LI30.
+- Offline profile analysis, positioning, audience persona, evidence-linked market brief, theme comparison, user-supplied metrics and dashboard model are implemented and CI-tested.
+- LI02–LI10 and live retrieval remain blocked on verified developer app, approved scopes, callback, encrypted token storage and account consent.
+- Group 10 is PARTIALLY IMPLEMENTED; no account connection or live LinkedIn analytics is claimed.
