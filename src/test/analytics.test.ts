@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createD1AnalyticsStore,
   buildAnalyticsDimensionReport,
   buildAnalyticsTrendReport,
   generateAnalyticsRecommendations,
@@ -29,8 +30,28 @@ describe("unified analytics",()=>{
   it("reports freshness and missing data",()=>{expect(getAnalyticsFreshness([],"2026-11-09T10:00:00.000Z").status).toBe("missing");expect(getAnalyticsFreshness([row()],"2026-11-08T11:00:00.000Z").status).toBe("fresh");expect(getAnalyticsFreshness([row()],"2026-11-10T10:00:00.000Z").status).toBe("stale");});
   it("neutralizes spreadsheet formulas in CSV exports",()=>{const csv=exportAnalyticsCsv([row({source:'=IMPORTDATA("x")'})]);expect(csv).toContain(String.fromCharCode(39)+'=IMPORTDATA(""x"")');});
   it("round-trips canonical CSV exports",()=>{const parsed=parseAnalyticsCsv(exportAnalyticsCsv([row({source:"provider, export"})]));expect(parsed).toHaveLength(1);expect(parsed[0]).toMatchObject({platform:"linkedin",metric:"impressions",value:1000});});
-  it("rejects malformed, oversized and non-canonical CSV",()=>{expect(()=>parseAnalyticsCsv("wrong,header\na,b")).toThrow("header");expect(()=>parseAnalyticsCsv('"unterminated')).toThrow("unterminated");expect(()=>parseAnalyticsCsv("x".repeat(2_000_001))).toThrow("2 MB");});
+  it("rejects malformed, oversized and non-canonical CSV",()=>{expect(()=>parseAnalyticsCsv("wrong,header
+a,b")).toThrow("header");expect(()=>parseAnalyticsCsv('"unterminated')).toThrow("unterminated");expect(()=>parseAnalyticsCsv("x".repeat(2_000_001))).toThrow("2 MB");});
   it("does not invent absent metrics",()=>{const s=createExecutiveAnalyticsSummary([row()]);expect(s.snapshotCount).toBe(1);expect(s.totals["impressions"]).toBe(1000);expect(s.totals["comments"]).toBeNull();expect(s.note).toContain("not inferred");});
   it("builds dimension and trend reports from supplied metadata",()=>{const rows=[row({dimensions:{campaign:"Launch"},value:100}),row({id:"s2",dimensions:{campaign:"Launch"},value:50}),row({id:"s3",periodStart:"2026-11-08",periodEnd:"2026-11-14",value:25})];expect(buildAnalyticsDimensionReport(rows,"campaign","impressions")[0]).toMatchObject({dimension:"Launch",value:150,recordCount:2});expect(buildAnalyticsTrendReport(rows,"impressions")).toHaveLength(2);});
   it("recommends only evidence-supported actions",()=>{const recs=generateAnalyticsRecommendations([row()],"2026-11-10T10:00:00.000Z");expect(recs.some(x=>x.id==="refresh-data")).toBe(true);expect(recs.some(x=>x.id==="complete-exposure-metrics")).toBe(false);});
+
+  it("uses the D1 adapter contract for durable snapshot writes and reads", async () => {
+    const payloads: string[] = [];
+    const database = {
+      prepare: (query: string) => ({
+        bind: (...values: unknown[]) => ({
+          run: async () => { if (query.startsWith("INSERT")) payloads.push(String(values[11])); return { success: true, meta: { changes: 1 } }; },
+          first: async () => null,
+          all: async () => ({ success: true, results: payloads.map(payload_json => ({ payload_json })) }),
+        }),
+      }),
+    };
+    const store = createD1AnalyticsStore(database);
+    await store.append(row());
+    const restored = await store.list({ platform: "linkedin" });
+    expect(restored).toHaveLength(1);
+    expect(restored[0]).toMatchObject({ metric: "impressions", value: 1000 });
+  });
+
 });

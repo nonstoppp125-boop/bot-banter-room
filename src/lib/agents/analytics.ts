@@ -118,3 +118,68 @@ export function buildAnalyticsDimensionReport(rows:readonly AnalyticsSnapshot[],
  for(const row of rows){if(row.metric!==metric)continue;const label=clean(row.dimensions[dimension],160)||"Unspecified",current=grouped.get(label)??{value:0,recordCount:0};current.value+=row.value;current.recordCount++;grouped.set(label,current);}
  return [...grouped.entries()].map(([dimension,data])=>({dimension,...data})).sort((a,b)=>b.value-a.value);
 }
+
+
+export type D1AnalyticsDatabase = {
+  prepare: (query: string) => {
+    bind: (...values: unknown[]) => {
+      run: () => Promise<{ success?: boolean; meta?: { changes?: number } }>;
+      first: <T = Record<string, unknown>>() => Promise<T | null>;
+      all: <T = Record<string, unknown>>() => Promise<{ success?: boolean; results?: T[] }>;
+    };
+  };
+};
+
+export interface DurableAnalyticsSnapshotStore {
+  append(snapshot: AnalyticsSnapshot): Promise<void>;
+  list(filters?: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>): Promise<AnalyticsSnapshot[]>;
+}
+
+/** D1 adapter. It is usable only after the analytics migration and ACTION_DB binding are provisioned. */
+export function createD1AnalyticsStore(database: D1AnalyticsDatabase): DurableAnalyticsSnapshotStore {
+  if (!database || typeof database.prepare !== "function") throw new Error("A valid D1 analytics database is required");
+  const restore = (json: string): AnalyticsSnapshot => {
+    let value: unknown;
+    try { value = JSON.parse(json); } catch { throw new Error("Stored analytics snapshot is invalid JSON"); }
+    if (!value || typeof value !== "object") throw new Error("Stored analytics snapshot is invalid");
+    const item = value as AnalyticsSnapshot;
+    return normalizeAnalyticsRecord({
+      id:item.id, platform:item.platform, accountId:item.accountId, entityId:item.entityId,
+      entityType:item.entityType, metricName:item.metric, value:item.value,
+      periodStart:item.periodStart, periodEnd:item.periodEnd, capturedAt:item.capturedAt,
+      source:item.source, limitations:item.limitations, dimensions:item.dimensions,
+    });
+  };
+  return {
+    append: async (snapshot) => {
+      const normalized = restore(JSON.stringify(snapshot));
+      const payload = JSON.stringify(normalized);
+      const result = await database.prepare(
+        "INSERT OR IGNORE INTO analytics_snapshots (id, platform, account_id, entity_id, entity_type, metric, period_start, period_end, captured_at, source, value, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ).bind(normalized.id, normalized.platform, normalized.accountId, normalized.entityId,
+        normalized.entityType, normalized.metric, normalized.periodStart, normalized.periodEnd,
+        normalized.capturedAt, normalized.source, normalized.value, payload).run();
+      if (result.success === false) throw new Error("D1 analytics snapshot write failed");
+      if (result.meta?.changes === 1) return;
+      if (result.meta?.changes !== 0) throw new Error("D1 did not return an analytics write change count");
+      const existing = await database.prepare(
+        "SELECT payload_json FROM analytics_snapshots WHERE id = ?",
+      ).bind(normalized.id).first<{ payload_json: string }>();
+      if (!existing || existing.payload_json !== payload) throw new Error("Analytics snapshot ID already exists with different data.");
+    },
+    list: async (filters = {}) => {
+      const clauses: string[] = [];
+      const values: unknown[] = [];
+      if (filters.platform !== undefined) { clauses.push("platform = ?"); values.push(filters.platform); }
+      if (filters.accountId !== undefined) { clauses.push("account_id = ?"); values.push(filters.accountId); }
+      if (filters.entityId !== undefined) { clauses.push("entity_id = ?"); values.push(filters.entityId); }
+      if (filters.metric !== undefined) { clauses.push("metric = ?"); values.push(filters.metric); }
+      const query = "SELECT payload_json FROM analytics_snapshots" +
+        (clauses.length ? " WHERE " + clauses.join(" AND ") : "") +
+        " ORDER BY period_start ASC, captured_at ASC LIMIT 10000";
+      const result = await database.prepare(query).bind(...values).all<{ payload_json: string }>();
+      if (result.success === false) throw new Error("D1 analytics snapshot query failed");
+      return (result.results ?? []).map((row) => restore(row.payload_json));
+    },
+  };
+}

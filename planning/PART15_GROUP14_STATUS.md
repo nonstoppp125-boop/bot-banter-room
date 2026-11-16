@@ -6,7 +6,7 @@ Branch: work/group06-manager-planner
 ## Implemented foundations
 - BI01 — Unified typed analytics snapshot schema with platform, entity, metric, period, capture time, source, dimensions and limitations.
 - BI02–BI03 — Provider-neutral normalization for common platform metric aliases; invalid values and unknown metrics are rejected.
-- BI04 — In-memory snapshot store with stable IDs, idempotent duplicate writes and filters. Durable history remains blocked on database provisioning.
+- BI04 — In-memory snapshot store plus a D1 durable adapter and indexed migration; live persistence remains unavailable until the D1 database is provisioned and bound.
 - BI05 and BI14 — KPI definitions and engagement rate using tracked interactions divided by an explicitly selected impressions or reach denominator.
 - BI06 — Responsive dashboard route with truthful empty state, KPI cards, platform coverage, evidence-based recommendations, trend panel and metric table; imported data remains in browser session.
 - BI07–BI10 — Campaign/audience/content dimension aggregation and period trend reporting primitives; dedicated report views remain open.
