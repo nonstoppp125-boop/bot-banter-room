@@ -190,3 +190,8 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 ## 2026-11-16 — Group 13 analytics foundation
 - Added normalized caller-supplied social metric snapshots, weighted engagement/click-through rates, source/definition provenance, missing-data preservation and freshness indicators.
 - No live analytics ingestion is claimed. CI verification pending.
+
+
+## 2026-11-16 — Group 14 dashboard/report models
+- Added platform performance dashboard, campaign, audience-segment, content and time-series report data models over normalized analytics snapshots.
+- No interactive dashboard UI or live platform ingestion is claimed. CI verification pending.

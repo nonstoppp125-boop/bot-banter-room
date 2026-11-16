@@ -25,3 +25,13 @@ Branch: work/group06-manager-planner
 
 GROUP 14: IN PROGRESS — core schema, normalization, KPI and reporting primitives implemented; persistence, dashboards and platform adapters remain open.
 No merge to main; no production deployment.
+
+
+## 2026-11-16 — Group 14 dashboard and report models
+- BI06 — Added platform performance dashboard data model with freshness and limitations.
+- BI07 — Added campaign-level aggregation.
+- BI08 — Added dimension-based audience segment aggregation.
+- BI09 — Added content/post-level performance aggregation.
+- BI10 — Added metric trend series and period-over-period changes.
+- These are data models over supplied snapshots; no UI or platform data connector is implied.
+- CI verification pending.

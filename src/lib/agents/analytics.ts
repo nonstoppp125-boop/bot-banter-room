@@ -39,3 +39,50 @@ export function detectMetricAnomalies(history:readonly number[],current:number,t
 export function getAnalyticsFreshness(rows:readonly AnalyticsSnapshot[],now=new Date().toISOString(),staleAfterMs=86400000){if(!validTimestamp(now)||!Number.isFinite(staleAfterMs)||staleAfterMs<0)throw new Error("Invalid freshness evaluation parameters.");if(!rows.length)return{status:"missing" as const,latestCapturedAt:null,ageMs:null};const latest=rows.reduce((v,r)=>Date.parse(r.capturedAt)>Date.parse(v)?r.capturedAt:v,rows[0]!.capturedAt),ageMs=Math.max(0,Date.parse(now)-Date.parse(latest));return{status:ageMs<=staleAfterMs?"fresh" as const:"stale" as const,latestCapturedAt:latest,ageMs};}
 export function exportAnalyticsCsv(rows:readonly AnalyticsSnapshot[]){const cols:(keyof AnalyticsSnapshot)[]=["platform","accountId","entityId","entityType","metric","value","unit","periodStart","periodEnd","capturedAt","source"];const quote=(v:unknown)=>{const raw=String(v??""),safe=/^[=+@\-]/.test(raw)?"'"+raw:raw;return '"'+safe.replace(/"/g,'""')+'"';};return[cols.join(","),...rows.map(r=>cols.map(k=>quote(r[k])).join(","))].join("\n");}
 export function createExecutiveAnalyticsSummary(rows:readonly AnalyticsSnapshot[]){const metrics:AnalyticsMetricName[]=["impressions","reach","views","reactions","likes","comments","shares","clicks","followersGained","followersLost","saves"],totals=Object.fromEntries(metrics.map(m=>[m,sumMetrics(rows,[m])])),platforms=[...new Set(rows.map(r=>r.platform))];return{snapshotCount:rows.length,platforms,totals,engagementByPlatform:platforms.map(platform=>{const subset=rows.filter(r=>r.platform===platform),imp=calculateEngagementRate(subset,"impressions"),reach=calculateEngagementRate(subset,"reach");return{platform,engagementRate:imp.rate??reach.rate,denominator:imp.rate!==null?"impressions":reach.rate!==null?"reach":null};}),limitations:[...new Set(rows.flatMap(r=>r.limitations))],note:"Only supplied, normalized snapshots are included. Missing platform metrics are not inferred."};}
+
+
+function aggregateForAnalyticsRows(rows: readonly AnalyticsSnapshot[]) {
+  const metricNames: AnalyticsMetricName[] = ["impressions","reach","views","reactions","likes","comments","shares","clicks","followersGained","followersLost","saves"];
+  return Object.fromEntries(metricNames.map((metric) => [metric, sumMetrics(rows, [metric])])) as Record<AnalyticsMetricName, number | null>;
+}
+function groupRowsBy(rows: readonly AnalyticsSnapshot[], selector: (row: AnalyticsSnapshot) => string | null) {
+  const groups = new Map<string, AnalyticsSnapshot[]>();
+  for (const row of rows) { const key = selector(row); if (!key) continue; const group=groups.get(key)??[]; group.push(row); groups.set(key,group); }
+  return groups;
+}
+export function createPerformanceDashboard(rows: readonly AnalyticsSnapshot[], generatedAt: string) {
+  if (!validTimestamp(generatedAt)) throw new Error("Dashboard generation timestamp is invalid.");
+  const platforms=[...new Set(rows.map(row=>row.platform))];
+  return {
+    generatedAt,
+    executive:createExecutiveAnalyticsSummary(rows),
+    freshness:getAnalyticsFreshness(rows,generatedAt),
+    platformCards:platforms.map(platform=>{
+      const subset=rows.filter(row=>row.platform===platform);
+      return {platform,snapshotCount:subset.length,totals:aggregateForAnalyticsRows(subset),engagement:calculateEngagementRate(subset,"impressions"),sourceCount:new Set(subset.map(row=>row.source)).size,limitations:[...new Set(subset.flatMap(row=>row.limitations))]};
+    }),
+    dataPolicy:"Dashboard values are derived only from supplied snapshots; missing metrics remain null.",
+  };
+}
+export function createCampaignAnalyticsReport(rows: readonly AnalyticsSnapshot[]) {
+  const groups=groupRowsBy(rows.filter(row=>row.entityType==="campaign"),row=>row.dimensions.campaignId??row.entityId);
+  return [...groups.entries()].map(([campaignId,group])=>({campaignId,platforms:[...new Set(group.map(row=>row.platform))],totals:aggregateForAnalyticsRows(group),engagement:calculateEngagementRate(group,"impressions"),snapshotCount:group.length,sources:[...new Set(group.map(row=>row.source))],limitations:[...new Set(group.flatMap(row=>row.limitations))]}));
+}
+export function createAudienceAnalyticsReport(rows: readonly AnalyticsSnapshot[],dimension="audienceSegment") {
+  const safeDimension=clean(dimension,60); if(!safeDimension)throw new Error("Audience dimension is required.");
+  const groups=groupRowsBy(rows,row=>row.dimensions[safeDimension]??null);
+  return [...groups.entries()].map(([segment,group])=>({segment,platforms:[...new Set(group.map(row=>row.platform))],totals:aggregateForAnalyticsRows(group),snapshotCount:group.length,sourceCount:new Set(group.map(row=>row.source)).size,limitations:[...new Set(group.flatMap(row=>row.limitations))]}));
+}
+export function createContentAnalyticsReport(rows: readonly AnalyticsSnapshot[]) {
+  const groups=groupRowsBy(rows.filter(row=>row.entityType==="post"),row=>row.platform+":"+row.entityId);
+  return [...groups.entries()].map(([contentKey,group])=>({contentKey,platform:group[0]!.platform,contentId:group[0]!.entityId,totals:aggregateForAnalyticsRows(group),engagement:calculateEngagementRate(group,"impressions"),snapshotCount:group.length,sources:[...new Set(group.map(row=>row.source))],limitations:[...new Set(group.flatMap(row=>row.limitations))]}));
+}
+export function createAnalyticsTrendReport(rows: readonly AnalyticsSnapshot[],metric:AnalyticsMetricName) {
+  const selected=rows.filter(row=>row.metric===metric);
+  const groups=groupRowsBy(selected,row=>row.platform+":"+row.periodStart+":"+row.periodEnd);
+  const points=[...groups.entries()].map(([key,group])=>({key,platform:group[0]!.platform,periodStart:group[0]!.periodStart,periodEnd:group[0]!.periodEnd,metric,value:sumMetrics(group,[metric]),sourceCount:new Set(group.map(row=>row.source)).size})).sort((a,b)=>a.periodStart.localeCompare(b.periodStart));
+  const byPlatform=new Map<string,typeof points>();
+  for(const point of points){const list=byPlatform.get(point.platform)??[];list.push(point);byPlatform.set(point.platform,list);}
+  const changes=[...byPlatform.entries()].flatMap(([platform,series])=>{const ordered=[...series].sort((a,b)=>a.periodStart.localeCompare(b.periodStart));return ordered.slice(1).map((current,index)=>{const previous=ordered[index]!;return{platform,currentPeriodStart:current.periodStart,previousPeriodStart:previous.periodStart,absoluteChange:current.value===null||previous.value===null?null:current.value-previous.value,percentageChange:current.value===null||previous.value===null||previous.value===0?null:((current.value-previous.value)/previous.value)*100};});});
+  return {metric,points,changes,limitations:["Periods are grouped from supplied snapshots; overlapping periods are not deduplicated.","A zero previous-period value has no percentage-change result."]};
+}
