@@ -61,6 +61,33 @@ describe("approval API authorization and workflow", () => {
     expect(response.status).toBe(403);
   });
 
+  it("requires the exact JSON media type before accessing storage", async () => {
+    const { database, queries } = makeDatabase();
+    const request = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/jsonp", cookie },
+      body: JSON.stringify({ operation: "request" }),
+    });
+    expect((await handleApprovalRequest(request, { ACTION_DB: database })).status).toBe(415);
+    expect(queries).toEqual([]);
+  });
+
+  it("rejects oversized streamed bodies and malformed JSON", async () => {
+    const { database } = makeDatabase();
+    const oversized = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: "x".repeat(8193),
+    });
+    expect((await handleApprovalRequest(oversized, { ACTION_DB: database })).status).toBe(413);
+    const malformed = new Request(url, {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: "{",
+    });
+    expect((await handleApprovalRequest(malformed, { ACTION_DB: database })).status).toBe(400);
+  });
+
   it("allows an authenticated workspace member to create a hash-bound request", async () => {
     const { database, queries, bindings } = makeDatabase("member");
     const payload = { draftId: "draft-1", content: "Do not persist this raw content" };
