@@ -626,7 +626,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
 }
 
 /** Load only relevant, explicitly user-entered memories for the active session. */
-async function loadUserMemoryContext(request: Request, env: AgentEnv, messages: UIMessage[]): Promise<string | undefined> {
+export async function loadUserMemoryContext(request: Request, env: AgentEnv, messages: UIMessage[]): Promise<string | undefined> {
   const database = env.ACTION_DB;
   const token = readSessionCookie(request.headers.get("cookie"));
   if (!database || !token) return undefined;
