@@ -63,3 +63,9 @@ No merge to main; no production deployment.
 - Added regression tests for workspace scoping, secret rejection, updates, deletion and request limits.
 - CI run `43867055849`: SUCCESS — TypeScript, 51 test files / 381 tests, production build and generated Wrangler Worker config validation.
 - Live D1 binding, migration/runtime smoke tests and production backup/restore remain unverified.
+
+
+## 2026-11-16 — Analytics retention migration
+
+- Added migration `0014_analytics_retention_controls.sql`, introducing workspace-indexed `deleted_at` soft-delete metadata for analytics snapshots.
+- Live D1 migration application and backup/restore verification remain blocked pending runtime provisioning.
