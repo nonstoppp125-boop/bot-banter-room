@@ -282,3 +282,13 @@ Append new evidence below; never rewrite historical results.\n\n
 - Nitro-generated Wrangler configuration validation: passed.
 - Test coverage includes link-code hashing/expiry, same-origin enforcement, webhook secret validation, private Telegram identity linking and unlinked-user response.
 - Live D1/Telegram configuration and external webhook smoke are not claimed.
+
+
+## 2026-11-16 — Privacy settings and deletion-status verification
+- Commit: 2683177e9e13bc17b56cf0959fa1483f1a65eca6.
+- Run: 43815989375 — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: 45 files, 324 tests passed.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Covered active-user pending deletion lookup, 30-day schedule response ID and cancellation path. No scheduled deletion worker or destructive execution is claimed.

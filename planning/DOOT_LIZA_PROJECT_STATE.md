@@ -291,3 +291,11 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Group 19 now has a session-authenticated one-time Telegram link-code endpoint, secret-verified webhook, replay claims, private-chat-only identity linking, shared D1 conversation persistence and default-Liza Groq reply flow.
 - Telegram bot ID/token/webhook secret, D1 binding and migration apply, webhook registration and live bot smoke remain unconfigured. No Telegram publishing/approval/destructive actions are enabled.
 - No merge to main or production deployment; local Termux branch/worktree unchanged.
+
+
+## 2026-11-16 — Privacy settings checkpoint
+- Latest verified code commit: 2683177e9e13bc17b56cf0959fa1483f1a65eca6.
+- GitHub Actions run 43815989375: SUCCESS — TypeScript, 45 test files / 324 tests, production build and Nitro-generated Wrangler validation.
+- Group 17 now exposes authenticated data export and a privacy page for 30-day account deletion scheduling/cancellation; pending request lookup is scoped to the active user.
+- Deletion execution remains disabled pending scheduled worker, workspace disposition and live D1 review.
+- No production deployment or merge to main; local Termux worktree unchanged.

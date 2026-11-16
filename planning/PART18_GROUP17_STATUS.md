@@ -49,4 +49,6 @@ No merge to main; no production deployment.
 - Added GET /api/account/deletion to return only the active user's pending request; request creation now returns its ID so the user can cancel it.
 - Added /settings/privacy with authenticated JSON export download, exact-phrase deletion scheduling, 30-day grace-period status and cancellation.
 - Added D1 pending-deletion lookup scoped by user and tests for the lookup and GET endpoint.
-- The page explicitly states that no scheduled deletion worker or destructive execution is enabled. Verification pending.
+- The page explicitly states that no scheduled deletion worker or destructive execution is enabled. GitHub Actions run 43815989375: SUCCESS — TypeScript, 45 test files / 324 tests, production build and Nitro-generated Wrangler validation.
+
+- Account deletion status lookup and request-ID response are covered by regression tests; UI does not claim deletion execution.
