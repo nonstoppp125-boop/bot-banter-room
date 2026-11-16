@@ -19,6 +19,7 @@ describe("workspace-scoped conversation store",()=>{
   await store.appendMessage({id:"m1",conversationId:"c1",workspaceId:"w1",userId:"u1",role:"user",content:"Hello",metadata:{},createdAt:"2026-11-16T10:00:00.000Z"});
   expect(insertQuery).toContain("c.user_id");
   expect(insertQuery).toContain("deleted_at IS NULL");
+  expect(insertQuery).toContain("workspace_members");
   expect(insertValues.slice(-3)).toEqual(["c1","w1","u1"]);
  });
  it("soft-deletes only the matching workspace and owner",async()=>{
