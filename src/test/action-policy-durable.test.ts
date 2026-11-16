@@ -1,62 +1,37 @@
 import { describe, expect, it, vi } from "vitest";
-import { createD1ActionStore, executeApprovedAction, executeVerifiedApprovedAction } from "@/lib/agents/action-policy";
+import { createD1ActionStore, executeVerifiedApprovedAction } from "@/lib/agents/action-policy";
 
 describe("durable external action boundary", () => {
-  it("fails closed without approval or durable storage", async () => {
-    await expect(
-      executeApprovedAction({
-        approvedByUser: false,
-        idempotencyKey: "action-1",
-        store: { claim: vi.fn(async () => true) },
-        execute: async () => "done",
-      }),
-    ).rejects.toThrow(/payload/i);
+  const approval = {
+    id:"approval-1",workspaceId:"ws1",userId:"u1",actionType:"social.publish" as const,
+    payloadHash:"a".repeat(64),status:"approved" as const,decidedByUserId:"admin1",
+    decisionReason:"Reviewed",expiresAt:"2026-11-17T10:00:00.000Z",
+    createdAt:"2026-11-16T09:00:00.000Z",decidedAt:"2026-11-16T10:00:00.000Z",
+  };
+  const approvalStore = { get: vi.fn(async () => approval) };
+  const base = {
+    approvalStore,approvalId:"approval-1",actorUserId:"admin1",workspaceId:"ws1",
+    actionType:"social.publish" as const,payloadHash:"a".repeat(64),
+    now:"2026-11-16T11:00:00.000Z",idempotencyKey:"action-1",
+    store:{claim:vi.fn(async()=>true)},execute:async()=>"done",
+  };
 
-    await expect(
-      executeApprovedAction({
-        approvedByUser: true,
-        idempotencyKey: "action-2",
-        store: null,
-        execute: async () => "done",
-      }),
-    ).rejects.toThrow(/storage/i);
+  it("fails closed without persisted approval or durable storage",async()=>{
+    await expect(executeVerifiedApprovedAction({...base,approvalStore:null})).rejects.toThrow(/approval storage/i);
+    await expect(executeVerifiedApprovedAction({...base,store:null})).rejects.toThrow(/storage/i);
   });
 
-  it("rejects duplicate claims before executing", async () => {
-    const execute = vi.fn(async () => "done");
-    const store = { claim: vi.fn(async () => false) };
-
-    await expect(
-      executeApprovedAction({
-        approvedByUser: true,
-        idempotencyKey: "action-3",
-        store,
-        execute,
-      }),
-    ).rejects.toThrow(/duplicate/i);
-
+  it("rejects duplicate claims before executing",async()=>{
+    const execute=vi.fn(async()=>"done");
+    await expect(executeVerifiedApprovedAction({...base,store:{claim:vi.fn(async()=>false)},execute})).rejects.toThrow(/duplicate/i);
     expect(execute).not.toHaveBeenCalled();
   });
 
-  it("claims the key before executing an approved action", async () => {
-    const order: string[] = [];
-    const result = await executeApprovedAction({
-      approvedByUser: true,
-      idempotencyKey: "action-4",
-      store: {
-        claim: vi.fn(async () => {
-          order.push("claim");
-          return true;
-        }),
-      },
-      execute: async () => {
-        order.push("execute");
-        return "completed";
-      },
-    });
-
-    expect(order).toEqual(["claim", "execute"]);
-    expect(result).toEqual({ executed: true, result: "completed" });
+  it("claims the key before executing an approved action",async()=>{
+    const order:string[]=[];
+    const result=await executeVerifiedApprovedAction({...base,store:{claim:vi.fn(async()=>{order.push("claim");return true;})},execute:async()=>{order.push("execute");return"completed";}});
+    expect(order).toEqual(["claim","execute"]);
+    expect(result).toEqual({executed:true,result:"completed"});
   });
 
   it("uses an atomic D1 insert and accepts only a newly inserted claim", async () => {

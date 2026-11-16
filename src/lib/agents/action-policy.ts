@@ -48,41 +48,17 @@ export type DurableActionStore = {
   claim: (key: string) => Promise<boolean>;
 };
 
-export type ApprovedActionInput<T> = {
-  approvedByUser: boolean;
-  idempotencyKey: string;
-  store: DurableActionStore | null;
-  execute: () => Promise<T>;
-};
-
-/**
- * Fail-closed at-most-once execution boundary.
- * A successful claim is retained even if execution fails: automatic retries
- * must not risk repeating an external side effect. Recovery requires an
- * explicit audited workflow.
- */
-export async function executeApprovedAction<T>(
-  input: ApprovedActionInput<T>,
-): Promise<{ executed: true; result: T }> {
-  if (!input.approvedByUser) {
-    throw new Error("External action requires explicit user approval");
-  }
-
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$/.test(input.idempotencyKey)) {
-    throw new Error("Invalid external action idempotency key");
-  }
-
-  if (!input.store || typeof input.store.claim !== "function") {
-    throw new Error("Durable idempotency storage is unavailable");
-  }
-
-  const claimed = await input.store.claim(input.idempotencyKey);
-  if (!claimed) {
-    throw new Error("Duplicate external action rejected");
-  }
-
-  const result = await input.execute();
-  return { executed: true, result };
+async function executeClaimedAction<T>(input:{
+  idempotencyKey:string;
+  store:DurableActionStore|null;
+  execute:()=>Promise<T>;
+}):Promise<{executed:true;result:T}>{
+  if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$/.test(input.idempotencyKey))throw new Error("Invalid external action idempotency key");
+  if(!input.store||typeof input.store.claim!=="function")throw new Error("Durable idempotency storage is unavailable");
+  const claimed=await input.store.claim(input.idempotencyKey);
+  if(!claimed)throw new Error("Duplicate external action rejected");
+  const result=await input.execute();
+  return{executed:true,result};
 }
 
 /**
@@ -152,5 +128,5 @@ export async function executeVerifiedApprovedAction<T>(input:{
   if(!approval||approval.decidedByUserId!==input.actorUserId)throw new Error("External action blocked: persisted approval not found for the approving user.");
   const decision=verifyApprovalForAction({approval,workspaceId:input.workspaceId,actionType:input.actionType,payloadHash:input.payloadHash,now:input.now});
   if(!decision.allowed)throw new Error("External action blocked: "+decision.reason);
-  return executeApprovedAction({approvedByUser:true,idempotencyKey:input.idempotencyKey,store:input.store,execute:input.execute});
+  return executeClaimedAction({idempotencyKey:input.idempotencyKey,store:input.store,execute:input.execute});
 }
