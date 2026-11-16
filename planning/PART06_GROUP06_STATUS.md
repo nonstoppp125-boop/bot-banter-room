@@ -161,3 +161,14 @@ No merge to main; no production deployment.
 - Important boundary: this execution only runs the specialist workflow/report. No social publishing, messaging, deletion, deployment or financial side effect is connected or implied. No background worker is deployed.
 - GitHub Actions run `43872309252`: SUCCESS — TypeScript, 51 test files / 397 tests, production build and generated Wrangler Worker config validation.
 - Remaining: real background queue consumer, crash recovery, cooperative cancellation UI, live D1/Access provisioning and smoke tests, and separately authorized external-action executors.
+
+
+## 2026-11-16 — Approval-gated execution and cooperative cancellation
+
+- Persisted Manager plan JSON is restored and passed into the specialist workflow; execution does not silently rebuild a different plan from the task summary.
+- Generic state transitions cannot unlock `needs_approval` tasks or requeue failed tasks. Dedicated D1 methods enforce a matching approved/unexpired approval row for unlock and a maximum-two retry counter for retry.
+- The execution endpoint re-verifies the payload-bound approval before running high-risk Manager specialist work. The specialist workflow has no connected publishing, messaging, deletion, deployment or financial executor.
+- Added a visible running-task Cancel execution control. It aborts the user-triggered request; the Worker propagates the abort to the specialist workflow and records `cancelled` when the disconnect is observed.
+- Regression tests cover approved/unapproved unlock, approval payload binding, retry budget, high-risk execution verification and request-abort cancellation.
+- GitHub Actions run `43872990333`: SUCCESS — TypeScript, 51 test files / 399 tests, production build and generated Wrangler Worker config validation.
+- Remaining: durable background queue consumer, crash recovery after Worker interruption, live D1/Access provisioning and smoke tests, and separately authorized external-action executors.
