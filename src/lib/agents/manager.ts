@@ -13,6 +13,8 @@ export type ManagerSubtask = {
 
 export type ManagerPlan = {
   summary: string;
+  planningMode: "deterministic" | "llm-assisted";
+  planningFallbackReason?: string;
   subtasks: ManagerSubtask[];
   agentIds: string[];
   capabilities: string[];
@@ -143,6 +145,7 @@ export function buildManagerPlan(
 
   return {
     summary: normalizedTask.slice(0, 240),
+    planningMode: "deterministic",
     subtasks,
     agentIds,
     capabilities,
@@ -165,4 +168,108 @@ export function buildManagerPlan(
       "Only registered specialists with llm:inference permission are eligible.",
     ],
   };
+}
+
+
+export type ManagerPlanGenerator = (input: {
+  taskText: string;
+  candidateAgentIds: readonly string[];
+  signal: AbortSignal;
+}) => Promise<string>;
+
+/**
+ * Uses an LLM only to decompose complex multi-specialist work.
+ * Deterministic routing, permissions, risk and execution budgets remain authoritative.
+ */
+export async function buildLLMAssistedManagerPlan(
+  taskText: string,
+  basePlan: ManagerPlan,
+  generate: ManagerPlanGenerator,
+  signal: AbortSignal,
+): Promise<ManagerPlan> {
+  if (basePlan.complexity !== "complex" || basePlan.agentIds.length < 2) return basePlan;
+  if (signal.aborted) throw new Error("Manager planning cancelled");
+
+  try {
+    const raw = await generate({
+      taskText: taskText.slice(0, MAX_TASK_CHARS),
+      candidateAgentIds: basePlan.agentIds,
+      signal,
+    });
+    if (signal.aborted) throw new Error("Manager planning cancelled");
+
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !("subtasks" in parsed) ||
+      !Array.isArray(parsed.subtasks) ||
+      parsed.subtasks.length === 0 ||
+      parsed.subtasks.length > MAX_SPECIALISTS
+    ) {
+      throw new Error("Invalid Manager plan structure");
+    }
+
+    const allowed = new Set(basePlan.agentIds);
+    const seen = new Set<string>();
+    const subtasks: ManagerSubtask[] = parsed.subtasks.map((item: unknown) => {
+      if (typeof item !== "object" || item === null) throw new Error("Invalid Manager subtask");
+      const value = item as Record<string, unknown>;
+      const { agentId, objective, dependsOn } = value;
+      if (
+        typeof agentId !== "string" ||
+        !allowed.has(agentId) ||
+        seen.has(agentId) ||
+        typeof objective !== "string" ||
+        objective.trim().length === 0 ||
+        objective.length > 500 ||
+        !Array.isArray(dependsOn) ||
+        dependsOn.some((dependency) => typeof dependency !== "string")
+      ) {
+        throw new Error("Manager plan contains an invalid subtask");
+      }
+      seen.add(agentId);
+      return {
+        id: agentId,
+        agentId,
+        objective: objective.trim(),
+        dependsOn: [...new Set(dependsOn as string[])],
+      };
+    });
+
+    const subtaskIds = new Set(subtasks.map((task) => task.id));
+    for (const task of subtasks) {
+      if (task.dependsOn.some((dependency) => !subtaskIds.has(dependency) || dependency === task.id)) {
+        throw new Error("Manager plan contains an unknown or self dependency");
+      }
+    }
+
+    const byId = new Map(subtasks.map((task) => [task.id, task]));
+    const visiting = new Set<string>();
+    const visited = new Set<string>();
+    const visit = (id: string): void => {
+      if (visiting.has(id)) throw new Error("Manager plan contains a dependency cycle");
+      if (visited.has(id)) return;
+      visiting.add(id);
+      for (const dependency of byId.get(id)?.dependsOn ?? []) visit(dependency);
+      visiting.delete(id);
+      visited.add(id);
+    };
+    for (const id of byId.keys()) visit(id);
+
+    return {
+      ...basePlan,
+      subtasks,
+      agentIds: subtasks.map((task) => task.agentId),
+      planningMode: "llm-assisted",
+      estimatedModelCalls: basePlan.estimatedModelCalls + 1,
+    };
+  } catch (error) {
+    if (signal.aborted) throw new Error("Manager planning cancelled");
+    return {
+      ...basePlan,
+      planningFallbackReason:
+        error instanceof Error ? error.message.slice(0, 160) : "LLM planning failed",
+    };
+  }
 }
