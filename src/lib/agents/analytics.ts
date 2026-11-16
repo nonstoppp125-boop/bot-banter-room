@@ -138,7 +138,7 @@ export interface DurableAnalyticsSnapshotStore {
 
 type AnalyticsPageCursor = { periodStart: string; capturedAt: string; storageId: string };
 function encodeAnalyticsCursor(cursor: AnalyticsPageCursor): string {
-  return btoa(JSON.stringify(cursor)).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+  return btoa(JSON.stringify(cursor)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 function decodeAnalyticsCursor(value: string): AnalyticsPageCursor {
   if (!value || value.length > 1024 || !/^[A-Za-z0-9_-]+$/.test(value)) throw new Error("Invalid analytics page cursor.");
