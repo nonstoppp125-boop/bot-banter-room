@@ -35,3 +35,9 @@ Branch: `work/group06-manager-planner`
 
 GROUP 09: PARTIALLY IMPLEMENTED — search and selected-page extraction are integrated; semantic claim verification remains open.
 No merge to `main`; no production deployment.
+
+
+## 2026-11-16 — Specialist tool boundary integration
+- Research/Web Intelligence search and selected-page extraction now execute through a specialist permission registry, rather than direct unscoped orchestrator calls.
+- Missing provider key, invalid tool arguments, cross-agent access and cancellation fail closed.
+- GitHub Actions run `43809939660`: SUCCESS.

@@ -28,4 +28,5 @@ No merge to `main`; no production deployment.
 ## 2026-11-16 — Approval API route
 - `/api/approvals` now uses the active session cookie and workspace membership. Members can create requests; only admins/owners can view pending requests and decide them.
 - Approval summaries are persisted through migration `0010_approval_summary.sql`; exact payload hashes remain the execution binding.
-- CI run `43809230814` passed TypeScript, tests, production build and Wrangler validation. No login provider or D1 binding is configured.
+- CI run `43809939660` passed TypeScript, tests, production build and Wrangler validation. No login provider or D1 binding is configured.
+- Approval API regression tests also passed in run `43809939660`.

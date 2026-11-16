@@ -44,4 +44,4 @@ No merge to `main`; no production deployment.
 ## 2026-11-16 — Persisted approval and execution boundary
 - Exact workspace/action/payload/expiry approval verification is enforced before an atomic D1 idempotency claim.
 - Authenticated approval request and decision API is wired; external action adapters remain disabled and require a live D1 binding plus platform credentials.
-- CI run `43809230814`: SUCCESS.
+- CI run `43809939660`: SUCCESS.

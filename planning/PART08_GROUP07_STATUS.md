@@ -31,11 +31,13 @@ limitations.
 
 ## G07.22 — Specialist-specific tools
 
-BLOCKED.
+PARTIALLY IMPLEMENTED.
 
-The inspected source contains no actual tool integrations or tool execution
-framework. No fake tools or unsupported capabilities are registered.
-This requires a separately designed, permission-controlled tool layer.
+A permission-scoped tool registry is now wired through the orchestrator:
+- Research and Web Intelligence may call only the bounded Tavily search and selected-page extraction tools.
+- Coding may call only the exact allowlisted validation-command checker; it does not execute commands.
+- Tool calls require an explicit per-agent permission and fail closed on missing credentials, invalid arguments or cancellation.
+- Other specialists have no tool permissions. No shell, filesystem, publishing, messaging or external-account execution is exposed.
 
 ## G07.05–G07.15 — New specialist agents
 
@@ -79,9 +81,7 @@ and a non-empty description. No placeholder specialist is added.
 
 ## Important scope limitations
 
-G07.22 remains BLOCKED because no real specialist-specific tool integration
-or permission-controlled execution framework exists. Do not represent
-prompt-based specialists as agents with working external tools.
+G07.22 is PARTIALLY IMPLEMENTED: Research/Web Intelligence search and extraction plus Coding command validation are permission-controlled and orchestrator-wired. Other specialist tools and model-directed tool selection remain open. Do not represent prompt-based specialists as agents with unrestricted external tools.
 
 Group 07 is NOT fully complete. G07.01–G07.04 now have static implementation; runtime tests remain unverified because of
 the Termux/Vitest illegal-instruction crash. G07.01–G07.04 and G07.16–G07.20
@@ -97,3 +97,11 @@ No commit, push, deployment or external action was performed.
 - Registry validation and specialist execution tests now have CI runtime evidence.
 - G07.22 remains BLOCKED: specialist-specific tools and a permission-controlled tool execution layer are not implemented.
 - Termux's previous Vitest exit 132 remains a local runtime limitation; CI verification is independent.
+
+
+## 2026-11-16 — Permission-scoped specialist tool runtime
+- Added explicit `research:search`, `research:extract` and `coding:validate-command` permissions.
+- Orchestrator research calls now pass through the specialist tool registry; only Research/Web Intelligence can search or extract.
+- Coding can inspect whether a command is an exact allowlisted validation command; no command is executed.
+- Added tests for tool listing, cross-agent denial, missing credentials and shell-composition rejection.
+- GitHub Actions run `43809939660`: SUCCESS.

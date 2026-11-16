@@ -27,5 +27,7 @@ No merge to main; no production deployment.
 - Added `/api/approvals` for authenticated workspace members to submit a request with a bounded review summary and SHA-256 payload hash; raw action payload is not persisted.
 - GET returns pending requests only to workspace owners/admins. POST approve/reject requires owner/admin membership, a valid session, same-origin Origin and JSON content type.
 - Added migration `0010_approval_summary.sql` so reviewers see a summary rather than approving an opaque hash alone.
-- GitHub Actions run `43809230814`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
+- GitHub Actions run `43809939660`: SUCCESS — TypeScript, unit/integration tests, production build and Nitro-generated Wrangler validation.
 - D1 binding, session issuance/login, approval center UI and external executor remain unconfigured; no external action is enabled.
+
+- Approval API security tests cover same-origin enforcement, member request creation, admin-only inbox/decisions and pending-only decision transitions; run `43809939660` passed.
