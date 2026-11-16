@@ -10,7 +10,7 @@ import {
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { LIZA_SYSTEM } from "./liza-default";
 import { runDelegatedAgentWorkflow } from "./coordination";
-import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan } from "./manager";
+import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan, restoreManagerPlan } from "./manager";
 import {
   RESEARCH_SOURCE_SAFETY_RULE,
   buildResearchReport,
@@ -218,7 +218,13 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
 
   const linkedinContentTask = isLinkedInContentRequest(taskText);
   const deterministicPlan = buildManagerPlan(taskText, listAgents());
-  const managerPlan = await buildLLMAssistedManagerPlan(
+  const restoredPlan = input.managerPlan === undefined
+    ? null
+    : restoreManagerPlan(taskText, input.managerPlan, listAgents());
+  if (input.managerPlan !== undefined && !restoredPlan) {
+    return Response.json({ error: "Persisted Manager plan is invalid or no longer compatible with registered specialists." }, { status: 409 });
+  }
+  const managerPlan = restoredPlan ?? await buildLLMAssistedManagerPlan(
     taskText,
     deterministicPlan,
     async ({ taskText: planningTask, candidateAgentIds, signal: planningSignal }) => {
