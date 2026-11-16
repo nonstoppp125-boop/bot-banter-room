@@ -9,6 +9,7 @@ import { buildManagerPlan } from "./manager";
 import { createD1MemoryStore } from "./memory-store";
 import { createD1TaskStore, type D1TaskDatabase } from "./task-store";
 import { listAgents } from "./registry";
+import { createManagerTaskApproval } from "./task-approval";
 import { createTelegramApprovalCallbackData, verifyTelegramApprovalCallbackData } from "./telegram-approval";
 import {
   createD1TelegramBridgeStore,
@@ -291,14 +292,22 @@ export async function handleTelegramWebhookRequest(
       const plan = buildManagerPlan(taskText, listAgents());
       const status = plan.approvalRequired ? "needs_approval" as const : "queued" as const;
       const now = new Date().toISOString();
+      const taskId = crypto.randomUUID().replace(/-/g, "");
+      const approval = plan.approvalRequired
+        ? await createManagerTaskApproval(database, {
+            taskId, workspaceId: identity.workspaceId, userId: identity.userId,
+            inputSummary: taskText, plan, now,
+          })
+        : null;
       const task = {
-        id: crypto.randomUUID().replace(/-/g, ""),
+        id: taskId,
         workspaceId: identity.workspaceId, userId: identity.userId, status,
-        inputSummary: taskText, plan, result: null, createdAt: now, updatedAt: now,
+        inputSummary: taskText, plan: approval ? { ...plan, approval } : plan,
+        result: null, createdAt: now, updatedAt: now,
       };
       await createD1TaskStore(database).create(task);
       const statusText = plan.approvalRequired
-        ? "This plan is approval-gated and will not execute from Telegram. A task-to-approval execution bridge is not available yet; review it in the web Tasks page."
+        ? "Approval request created. A workspace admin can decide it with /approvals. After approval, unlock the task in the web Tasks page; it will not execute from Telegram."
         : "Plan saved as queued. Open the Liza web Tasks page and choose Run with Manager; background execution is not enabled.";
       await sendTelegramText({
         token: botToken, chatId: message.chatId, fetcher,
