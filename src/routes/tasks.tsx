@@ -214,7 +214,7 @@ function TasksPage() {
                     {task.status === "needs_approval" && <button type="button" onClick={() => void unlock(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Verify approval & unlock</button>}
                     {task.status === "failed" && <button type="button" onClick={() => void retry(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Retry (max 2)</button>}
                     {task.status === "running" && <button type="button" onClick={() => executionController.current?.abort()} disabled={!executionController.current} className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/5 disabled:opacity-50">Cancel execution</button>}
-                    {task.status === "queued" && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel queued task</button>}
+                    {(task.status === "queued" || task.status === "needs_approval") && <button type="button" onClick={() => void cancel(task.id)} disabled={submitting} className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">Cancel task</button>}
                   </div>
                 </div>
               </article>
