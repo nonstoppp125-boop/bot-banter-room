@@ -65,3 +65,10 @@ No merge to main; no production deployment.
 
 - Security regression tests now cover owner cancellation of approval-gated tasks before approval, plus approved-task unlock and persisted approval verification.
 - Latest GitHub Actions run `43873475716`: SUCCESS — 51 test files / 400 tests, TypeScript, production build and generated Wrangler Worker config validation.
+
+
+## 2026-11-16 — Dependency advisory remediation
+
+- High-severity Vite and Zod findings are remediated; the remaining npm audit findings are 7 low, including the KaTeX advisory with no fixed release reported.
+- The high-severity audit gate is enabled in both build and deploy workflows. Latest CI run `43875777984` passed 51 test files / 401 tests and the production build.
+- External-action executors remain disconnected; approval records do not enable publishing, messaging, deletion or deployment.
