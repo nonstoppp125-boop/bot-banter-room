@@ -132,7 +132,8 @@ export type D1AnalyticsDatabase = {
 
 export interface DurableAnalyticsSnapshotStore {
   append(snapshot: AnalyticsSnapshot): Promise<void>;
-  list(filters?: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>): Promise<AnalyticsSnapshot[]>;\n  listPage(filters: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>, limit: number, cursor?: string): Promise<{ records: AnalyticsSnapshot[]; nextCursor: string | null; hasMore: boolean }>;\n  delete(ids: string[], deletedAt: string): Promise<number>;
+  list(filters?: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>): Promise<AnalyticsSnapshot[]>;
+  listPage(filters: Partial<Pick<AnalyticsSnapshot, "platform" | "accountId" | "entityId" | "metric">>, limit: number, cursor?: string): Promise<{ records: AnalyticsSnapshot[]; nextCursor: string | null; hasMore: boolean }>;\n  delete(ids: string[], deletedAt: string): Promise<number>;
 }
 
 
