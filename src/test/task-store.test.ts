@@ -145,7 +145,7 @@ describe("durable agent task store", () => {
     expect(canTransitionTaskStatus("queued", "running")).toBe(true);
     expect(canTransitionTaskStatus("running", "completed")).toBe(true);
     expect(canTransitionTaskStatus("running", "failed")).toBe(true);
-    expect(canTransitionTaskStatus("failed", "queued")).toBe(true);
+    expect(canTransitionTaskStatus("failed", "queued")).toBe(false);
     expect(canTransitionTaskStatus("queued", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("running", "cancelled")).toBe(true);
     expect(canTransitionTaskStatus("needs_approval", "cancelled")).toBe(true);
