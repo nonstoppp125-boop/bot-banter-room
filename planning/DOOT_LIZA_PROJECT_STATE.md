@@ -317,3 +317,14 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Corrected Group 06 status: these UI/intake features are complete; background queue consumption and persisted-plan specialist execution remain unimplemented. Live Cloudflare D1/Access configuration and production smoke tests remain unverified.
 - Group 06 status correction commit: `245b47fb50ec9f41dd867b36295b4b7862963fd5`.
 - No deployment, merge to `main`, or external action execution was performed.
+
+
+## 2026-11-16 — Group 06 on-demand execution hardening
+
+- Code commits: `781aef13e57e2521eff9c6dcab549ced832bc186` and `ba19532e5dc611c07bc5caeecc9748ce6ace240b`.
+- Verification: GitHub Actions run `43841185448` SUCCESS — TypeScript, 48 test files / 363 tests, production build and generated Wrangler Worker configuration validation.
+- The existing `POST /api/tasks/execute` route and `/tasks` “Run with Manager” UI provide explicit synchronous execution for low-risk queued tasks. Execution atomically claims the task, invokes Manager/specialist workflow from the saved input summary, and persists assistant text.
+- Hardened the execution route with a streamed 2 KB request cap, malformed JSON rejection, output cap, final stream-line handling, and timeout/disconnect cancellation persistence.
+- This is not a background worker; stored plan JSON is not yet replayed as a fixed plan. High-risk approval-gated tasks and external side effects remain fail-closed.
+- Group 06 remains IN PROGRESS pending a real worker, persisted-plan execution, crash recovery/cooperative cancellation, live D1/Access setup and smoke tests, and separately authorized external-action executors.
+- No merge to `main`, production deployment, or external account action was performed.
