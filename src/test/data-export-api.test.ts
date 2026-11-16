@@ -24,7 +24,7 @@ function makeDatabase() {
             },
             all: async <T = Record<string, unknown>>() => ({
               success: true,
-              results: [] as T[],
+              results: (query.includes("FROM memories") ? [{ id: "memory-1", user_id: "user-1", workspace_id: "workspace-1", category: "preference", content: "Prefer Bengali script", source: "user-entered", created_at: "2026-11-16T10:00:00.000Z", updated_at: "2026-11-16T10:00:00.000Z", expires_at: null }] : []) as T[],
             }),
             run: async () => ({ success: true, meta: { changes: 1 } }),
           };
@@ -58,6 +58,14 @@ describe("authenticated personal data export API", () => {
     expect(exported.data.users).toHaveLength(1);
     const connectionQuery = queries.find((query) => query.includes("FROM app_connections")) ?? "";
     expect(connectionQuery).not.toContain("encrypted_token_blob");
+  });
+
+  it("includes user-authored durable memories in the personal data export", async () => {
+    const { database } = makeDatabase();
+    const response = await handleDataExportRequest(new Request(url, { headers: { cookie } }), { ACTION_DB: database });
+    expect(response.status).toBe(200);
+    const exported = await response.json() as { data: { memories: Array<{ id: string; content: string }> } };
+    expect(exported.data.memories).toMatchObject([{ id: "memory-1", content: "Prefer Bengali script" }]);
   });
 
   it("does not accept state-changing methods", async () => {
