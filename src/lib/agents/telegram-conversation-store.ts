@@ -6,7 +6,7 @@ export interface TelegramConversationLink {
   botId:string; chatId:string; telegramUserId:string; userId:string;
   workspaceId:string; conversationId:string; updatedAt:string;
 }
-type D1TelegramConversationDatabase={
+export type D1TelegramConversationDatabase={
  prepare:(query:string)=>{bind:(...values:unknown[])=>{
   run:()=>Promise<{success?:boolean;meta?:{changes?:number}}>;
   first:<T=Record<string,unknown>>()=>Promise<T|null>;

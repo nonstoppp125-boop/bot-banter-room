@@ -205,7 +205,7 @@ export async function handleTelegramWebhookRequest(
       instructions: LIZA_SYSTEM,
       abortSignal: generationController.signal,
       messages: history.filter((item) => item.role === "user" || item.role === "assistant")
-        .map((item) => ({ role: item.role, content: item.content })),
+        .map((item) => ({ role: item.role as "user" | "assistant", content: item.content })),
       });
       answer = result.text.trim();
     } finally { clearTimeout(generationTimeout); }
