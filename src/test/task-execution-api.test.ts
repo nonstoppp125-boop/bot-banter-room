@@ -164,7 +164,7 @@ describe("authenticated Manager task execution", () => {
     const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }), env(database), async ({ managerPlan }) => {
       invoked = true;
       expect(managerPlan).toMatchObject({ approvalRequired: true });
-      return new Response(`0:${JSON.stringify("Approved draft prepared; nothing was published.")}\\n`, { status: 200 });
+      return new Response(`0:${JSON.stringify("Approved draft prepared; nothing was published.")}\n`, { status: 200 });
     });
     expect(response.status).toBe(200);
     expect(invoked).toBe(true);
