@@ -15,6 +15,7 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
 import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
+import { Route as SettingsMemoryRouteImport } from './routes/settings.memory'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
@@ -62,6 +63,11 @@ const SettingsApprovalsRoute = SettingsApprovalsRouteImport.update({
 const SettingsPrivacyRoute = SettingsPrivacyRouteImport.update({
   id: '/settings/privacy',
   path: '/settings/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsMemoryRoute = SettingsMemoryRouteImport.update({
+  id: '/settings/memory',
+  path: '/settings/memory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/approvals': typeof SettingsApprovalsRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/memory': typeof SettingsMemoryRoute
   '/analytics': typeof AnalyticsRoute
   '/tasks': typeof TasksRoute
   '/tasks': typeof TasksRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByTo {
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/approvals': typeof SettingsApprovalsRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/memory': typeof SettingsMemoryRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRoutesById {
@@ -230,6 +238,7 @@ export interface FileRoutesById {
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/approvals': typeof SettingsApprovalsRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/memory': typeof SettingsMemoryRoute
   '/analytics': typeof AnalyticsRoute
 }
 export interface FileRouteTypes {
@@ -253,6 +262,7 @@ export interface RootRouteChildren {
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
   SettingsPrivacyRoute: typeof SettingsPrivacyRoute
+  SettingsMemoryRoute: typeof SettingsMemoryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -409,6 +419,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/approvals'
       fullPath: '/settings/approvals'
       preLoaderRoute: typeof SettingsApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/memory': {
+      id: '/settings/memory'
+      path: '/settings/memory'
+      fullPath: '/settings/memory'
+      preLoaderRoute: typeof SettingsMemoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/privacy': {
