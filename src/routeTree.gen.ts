@@ -146,6 +146,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -225,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/api/integrations'
       fullPath: '/api/integrations'
       preLoaderRoute: typeof ApiIntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/settings/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics': {
