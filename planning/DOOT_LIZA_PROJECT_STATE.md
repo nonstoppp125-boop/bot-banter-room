@@ -384,3 +384,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Fixed literal escaped line breaks in `.env.example`.
 - Still unverified or blocked: live `ACTION_DB` D1 binding and migrations, Cloudflare Access production configuration, Telegram bot secrets/webhook, OAuth provider credentials/scopes, external-action executors, background queue worker, device/runtime testing, production smoke/rollback and final user acceptance.
 - No merge to `main`, no production deployment and no external side effect was performed.
+
+
+## 2026-11-16 — Latest task workflow and release setup checkpoint
+
+- Latest source verification: GitHub Actions run `43873475716` SUCCESS — TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation.
+- Added `planning/PRODUCTION_ENVIRONMENT_CHECKLIST.md` to make external provisioning and final release gates explicit.
+- The current work branch is still not merged or deployed. Live D1/Access/Telegram/OAuth configuration and external-action executors remain unavailable; production completion is not claimed.
