@@ -26,7 +26,7 @@ export const lizaDefaultAgent: AgentDefinition = {
       ...PROVIDER_REQUEST_OPTIONS,
       model: groqModel(apiKey, env.GROQ_MODEL?.trim() || undefined),
       instructions: memoryContext
-        ? `${buildLizaSystem(messages)}\\n\\n${memoryContext}`
+        ? `${buildLizaSystem(messages)}\n\n${memoryContext}`
         : buildLizaSystem(messages),
       messages: await convertToModelMessages(messages),
       abortSignal: signal,
