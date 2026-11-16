@@ -41,6 +41,8 @@ jobs:
         run: npm run typecheck
       - name: Unit and integration tests
         run: npm test
+      - name: Cloudflare Worker streaming runtime smoke test
+        run: bash scripts/test-worker-streaming.sh
       - name: Production build
         run: npm run build
       - name: Validate Nitro-generated Wrangler configuration
