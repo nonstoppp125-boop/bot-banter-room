@@ -5,6 +5,9 @@ import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { createD1ConversationStore, type D1ConversationDatabase } from "./conversation-store";
 import { createD1SessionStore, readSessionCookie, type D1SessionDatabase } from "./session-auth";
 import { createD1ApprovalStore } from "./approval-store";
+import { buildManagerPlan } from "./manager";
+import { createD1TaskStore, type D1TaskDatabase } from "./task-store";
+import { listAgents } from "./registry";
 import { createTelegramApprovalCallbackData, verifyTelegramApprovalCallbackData } from "./telegram-approval";
 import {
   createD1TelegramBridgeStore,
@@ -16,7 +19,7 @@ import {
 } from "./telegram-bridge";
 import { createD1TelegramConversationStore, type D1TelegramConversationDatabase } from "./telegram-conversation-store";
 
-type TelegramDatabase = D1ConversationDatabase & D1SessionDatabase & D1TelegramDatabase & D1TelegramConversationDatabase;
+type TelegramDatabase = D1ConversationDatabase & D1SessionDatabase & D1TelegramDatabase & D1TelegramConversationDatabase & D1TaskDatabase;
 export type TelegramApiEnv = {
   ACTION_DB?: TelegramDatabase;
   TELEGRAM_BOT_ID?: string;
@@ -276,6 +279,43 @@ export async function handleTelegramWebhookRequest(
     if (!identity) {
       await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: "Your account is not linked yet. Open Liza Settings → Integrations, generate a Telegram link code, and send /link CODE here." });
       return json({ ok: true, linked: false });
+    }
+    const taskMatch = command.match(/^\\/task(?:@\\w+)?(?:\\s+([\\s\\S]+))?$/i);
+    if (taskMatch) {
+      const taskText = (taskMatch[1] ?? "").trim();
+      if (!taskText || taskText.length > 20_000) {
+        await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: "Usage: /task Describe the outcome you want Manager to plan (max 20,000 characters)." });
+        return json({ ok: true, command: "task", invalid: true });
+      }
+      const plan = buildManagerPlan(taskText, listAgents());
+      const status = plan.approvalRequired ? "needs_approval" as const : "queued" as const;
+      const now = new Date().toISOString();
+      const task = {
+        id: crypto.randomUUID().replace(/-/g, ""),
+        workspaceId: identity.workspaceId, userId: identity.userId, status,
+        inputSummary: taskText, plan, result: null, createdAt: now, updatedAt: now,
+      };
+      await createD1TaskStore(database).create(task);
+      const statusText = plan.approvalRequired
+        ? "This plan is approval-gated and will not execute until an approval workflow is completed."
+        : "Plan saved as queued. Open the Liza web Tasks page and choose Run with Manager; background execution is not enabled.";
+      await sendTelegramText({
+        token: botToken, chatId: message.chatId, fetcher,
+        text: "Manager task saved: " + task.id + "\\nStatus: " + status + "\\nSpecialists: " + plan.agentIds.join(", ") + "\\n" + statusText,
+      });
+      return json({ ok: true, taskId: task.id, status });
+    }
+    if (/^\\/tasks(?:@\\w+)?$/i.test(command)) {
+      const tasks = await createD1TaskStore(database).list({
+        workspaceId: identity.workspaceId, userId: identity.userId, limit: 10,
+      });
+      const summary = tasks.length
+        ? tasks.map((task) => task.status.toUpperCase() + " · " + task.id + "\\n" + task.inputSummary.slice(0, 160)).join("\\n\\n")
+        : "No Manager tasks have been saved yet. Send /task followed by a task description to create one.";
+      for (const chunk of splitTelegramText(summary)) {
+        await sendTelegramText({ token: botToken, chatId: message.chatId, fetcher, text: chunk });
+      }
+      return json({ ok: true, taskCount: tasks.length });
     }
     const conversationLinks = createD1TelegramConversationStore(database);
     let link = await conversationLinks.get({
