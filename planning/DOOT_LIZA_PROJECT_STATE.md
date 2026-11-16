@@ -44,3 +44,12 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Multi-capability router implementation and regression test added.
 - Static verification pending.
 - Runtime test status remains blocked/unverified; no test pass is claimed.
+
+
+## 2026-11-16 — Group 06 Manager planning batch
+
+- Added a deterministic Manager planning contract and integrated it into multi-agent routing on `work/group06-manager-planner`.
+- Risk classification, explicit approval flags, specialist permission filtering and bounded fan-out are implemented; full autonomous decomposition and replanning remain pending.
+- See `planning/PART06_GROUP06_STATUS.md` for exact task scope and limitations.
+- GitHub Actions run `43793367110` passed: TypeScript, 156 tests across 14 files, production build and generated Wrangler configuration validation.
+- Group 06 remains IN PROGRESS; no merge to `main` and no production deployment.
