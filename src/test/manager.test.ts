@@ -194,7 +194,7 @@ describe("bounded Manager replanning", () => {
         generate: async () => "recovered",
       },
     ];
-    const original = buildManagerPlan("Implement a TypeScript feature", extended);
+    const original = buildManagerPlan("Implement a TypeScript feature", agents);
     const replanned = buildManagerReplanPlan(
       original.subtasks,
       { "specialist-coding": { status: "rejected", error: "provider timeout" } },
