@@ -34,3 +34,7 @@ Branch: `work/group06-manager-planner`
 
 GROUP 13: PARTIALLY IMPLEMENTED — planning, specialist and draft/approval foundations exist; official platform feasibility, OAuth, publishing, analytics and durable storage remain open.
 No merge to `main`; no production deployment.
+
+
+## CI verification
+- GitHub Actions verification is pending for the platform-specific specialist and social-workforce foundation.
