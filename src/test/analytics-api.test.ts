@@ -58,6 +58,37 @@ describe("workspace analytics API",()=>{
     const owner=makeDatabase();
     expect((await handleAnalyticsRequest(post({records:Array(101).fill(record)}),{ACTION_DB:owner.database})).status).toBe(400);
   });
+  it("returns bounded workspace-scoped pages with continuation metadata",async()=>{
+    const {database,queries}=makeDatabase();
+    const response=await handleAnalyticsRequest(new Request(url+"?limit=25",{headers:{cookie}}),{ACTION_DB:database});
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({records:[],nextCursor:null,hasMore:false});
+    expect(queries.some(query=>query.includes("deleted_at IS NULL")&&query.includes("ORDER BY period_start ASC")&&query.includes("LIMIT ?"))).toBe(true);
+  });
+  it("rejects malformed pagination cursors",async()=>{
+    const {database}=makeDatabase();
+    const response=await handleAnalyticsRequest(new Request(url+"?cursor=bad%20cursor",{headers:{cookie}}),{ACTION_DB:database});
+    expect(response.status).toBe(400);
+  });
+  it("allows workspace admins to soft-delete selected snapshots",async()=>{
+    const {database,queries,bindings}=makeDatabase("admin");
+    const request=new Request(url,{method:"DELETE",headers:{origin:"https://liza.example","content-type":"application/json",cookie},body:JSON.stringify({ids:["snap-1"]})});
+    const response=await handleAnalyticsRequest(request,{ACTION_DB:database});
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({deleted:1,scope:"current-workspace"});
+    expect(queries.some(query=>query.includes("UPDATE analytics_snapshots SET deleted_at"))).toBe(true);
+    expect(bindings.some(values=>values.includes("workspace-1"))).toBe(true);
+  });
+  it("blocks member deletion and cross-origin analytics deletion",async()=>{
+    const member=makeDatabase("member");
+    const request=new Request(url,{method:"DELETE",headers:{origin:"https://liza.example","content-type":"application/json",cookie},body:JSON.stringify({ids:["snap-1"]})});
+    expect((await handleAnalyticsRequest(request,{ACTION_DB:member.database})).status).toBe(403);
+    const admin=makeDatabase("admin");
+    const crossOrigin=new Request(url,{method:"DELETE",headers:{origin:"https://evil.example","content-type":"application/json",cookie},body:JSON.stringify({ids:["snap-1"]})});
+    expect((await handleAnalyticsRequest(crossOrigin,{ACTION_DB:admin.database})).status).toBe(403);
+    expect(admin.queries).toEqual([]);
+  });
+
   it("rejects unsupported analytics filters",async()=>{
     const {database}=makeDatabase();
     const response=await handleAnalyticsRequest(new Request(url+"?platform=unknown",{headers:{cookie}}),{ACTION_DB:database});
