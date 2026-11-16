@@ -11,8 +11,9 @@ export type D1TelegramDatabase={
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
 function clean(value:string,max:number){return value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g," ").trim().slice(0,max);}
 export function verifyTelegramWebhookSecret(received:string|null,expected:string|undefined):boolean{
- if(!received||!expected||expected.length<32||received.length!==expected.length)return false;
+ if(!received||!expected||!/^[A-Za-z0-9_-]{32,256}$/.test(expected))return false;
  const a=new TextEncoder().encode(received),b=new TextEncoder().encode(expected);
+ if(a.length!==b.length)return false;
  let diff=0;for(let i=0;i<a.length;i++)diff|=a[i]!^b[i]!;
  return diff===0;
 }
@@ -27,7 +28,7 @@ export function normalizeTelegramPrivateMessage(value:unknown,receivedAt:string)
  const sender=from as Record<string,unknown>,room=chat as Record<string,unknown>;
  const userId=sender["id"],chatId=room["id"],text=m["text"];
  if(!Number.isSafeInteger(userId)||(userId as number)<=0||sender["is_bot"]===true||
-    room["type"]!=="private"||chatId!==userId||typeof text!=="string"||!text.trim()||text.length>4096||
+    room["type"]!=="private"||chatId!==userId||typeof text!=="string"||!text.trim()||Array.from(text).length>4096||
     !Number.isSafeInteger(m["message_id"])||!Number.isSafeInteger(m["date"]))return null;
  const language=sender["language_code"];
  return{
@@ -35,7 +36,7 @@ export function normalizeTelegramPrivateMessage(value:unknown,receivedAt:string)
   telegramUserId:String(userId),
   chatId:String(chatId),
   messageId:m["message_id"] as number,
-  text:clean(text,4096),
+  text:clean(text,8192),
   languageCode:typeof language==="string"?clean(language,16):null,
   receivedAt,
  };
@@ -56,7 +57,7 @@ export function createD1TelegramBridgeStore(database:D1TelegramDatabase):Telegra
  return{
   getIdentity:async(botId,telegramUserId)=>{
    if(!ID.test(botId)||!/^[1-9][0-9]{0,19}$/.test(telegramUserId))return null;
-   const row=await database.prepare("SELECT bot_id, telegram_user_id, user_id, workspace_id FROM telegram_user_links WHERE bot_id = ? AND telegram_user_id = ? AND status = 'active' AND revoked_at IS NULL LIMIT 1").bind(botId,telegramUserId).first<{bot_id:string;telegram_user_id:string;user_id:string;workspace_id:string}>();
+   const row=await database.prepare("SELECT l.bot_id, l.telegram_user_id, l.user_id, l.workspace_id FROM telegram_user_links l JOIN workspace_members wm ON wm.workspace_id = l.workspace_id AND wm.user_id = l.user_id WHERE l.bot_id = ? AND l.telegram_user_id = ? AND l.status = 'active' AND l.revoked_at IS NULL LIMIT 1").bind(botId,telegramUserId).first<{bot_id:string;telegram_user_id:string;user_id:string;workspace_id:string}>();
    return row?{botId:row.bot_id,telegramUserId:row.telegram_user_id,userId:row.user_id,workspaceId:row.workspace_id}:null;
   },
   claimUpdate:async(botId,updateId,receivedAt,expiresAt)=>{
