@@ -172,3 +172,9 @@ No merge to main; no production deployment.
 - Regression tests cover approved/unapproved unlock, approval payload binding, retry budget, high-risk execution verification and request-abort cancellation.
 - GitHub Actions run `43872990333`: SUCCESS — TypeScript, 51 test files / 399 tests, production build and generated Wrangler Worker config validation.
 - Remaining: durable background queue consumer, crash recovery after Worker interruption, live D1/Access provisioning and smoke tests, and separately authorized external-action executors.
+
+
+## 2026-11-16 — Approval cancellation and 400-test verification
+
+- Owners can cancel queued or approval-gated tasks before execution. Generic state transitions remain unable to unlock approvals or bypass the bounded retry method.
+- Latest GitHub Actions run `43873475716`: SUCCESS — TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation.
