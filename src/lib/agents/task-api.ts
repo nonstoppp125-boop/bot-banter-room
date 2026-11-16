@@ -2,9 +2,10 @@ import { createD1SessionStore, readSessionCookie } from "./session-auth";
 import { buildManagerPlan } from "./manager";
 import { listAgents } from "./registry";
 import { createD1TaskStore, type D1TaskDatabase } from "./task-store";
+import { createD1WorkspaceAccessStore } from "./workspace-store";
 import type { D1SessionDatabase } from "./session-auth";
 
-type TaskApiDatabase = D1TaskDatabase & D1SessionDatabase;
+type TaskApiDatabase = D1TaskDatabase & D1SessionDatabase & Parameters<typeof createD1WorkspaceAccessStore>[0];
 export type TaskApiEnv = { ACTION_DB?: TaskApiDatabase };
 
 const json = (body: unknown, status = 200) =>
@@ -53,6 +54,8 @@ export async function handleTaskRequest(request: Request, env: TaskApiEnv): Prom
     const now = new Date().toISOString();
     const session = await createD1SessionStore(database).getActive(token, now);
     if (!session?.workspaceId) return json({ error: "Active workspace session required." }, 401);
+    const membership = await createD1WorkspaceAccessStore(database).getMembership(session.workspaceId, session.userId);
+    if (!membership) return json({ error: "Workspace membership required." }, 403);
     const body = request.method === "POST" ? await readTaskBody(request) : null;
 
     if (request.method === "POST") {
