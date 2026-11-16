@@ -69,7 +69,7 @@ function Index() {
       setTaskNoticeFor(messageId);
       setTaskNotice(data.task?.status === "needs_approval"
         ? "Manager plan saved — approval required."
-        : "Manager plan saved to your task workspace. Background execution is not enabled yet.");
+        : "Manager plan saved. Open Tasks and choose Run with Manager for on-demand execution; automatic background execution is not enabled.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Manager task could not be saved.");
     } finally {
@@ -93,7 +93,7 @@ function Index() {
       <a href="#main-content" className="sr-only z-50 rounded-md bg-background p-3 text-foreground focus:not-sr-only focus:absolute focus:left-3 focus:top-3">মূল কনটেন্টে যান</a>
       <header className="flex items-center justify-between px-3 py-2">
         <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Liza</span>
-        <nav className="flex items-center gap-1"><a href="/tasks" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Tasks</a><a href="/analytics" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Analytics</a><a href="/api/auth/session" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign in</a><a href="/settings/integrations" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Integrations</a><a href="/settings/approvals" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Approvals</a><a href="/settings/privacy" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Privacy</a><button onClick={() => { void fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).then((response) => { if (response.ok) window.location.reload(); else setError("Sign out failed."); }).catch(() => setError("Sign out failed.")); }} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign out</button></nav>
+        <nav aria-label="প্রধান নেভিগেশন" className="flex items-center gap-1"><a href="/tasks" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Tasks</a><a href="/analytics" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Analytics</a><a href="/api/auth/session" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign in</a><a href="/settings/integrations" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Integrations</a><a href="/settings/approvals" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Approvals</a><a href="/settings/privacy" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Privacy</a><button onClick={() => { void fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).then((response) => { if (response.ok) window.location.reload(); else setError("Sign out failed."); }).catch(() => setError("Sign out failed.")); }} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign out</button></nav>
         <button
           onClick={() => setMessages([])}
           aria-label="নতুন চ্যাট"
