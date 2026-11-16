@@ -160,6 +160,22 @@ describe("authenticated Manager task API", () => {
     expect(state.queries.some((query) => query.includes("a.status = 'approved'") && query.includes("a.payload_hash = ?"))).toBe(true);
   });
 
+  it("lets the owner cancel an approval-gated task before approval", async () => {
+    const state = makeDatabase();
+    const create = await handleTaskRequest(post({ task: "Publish this LinkedIn post" }), { ACTION_DB: state.database });
+    expect(create.status).toBe(201);
+    const created = await create.json() as { task: { id: string; status: string } };
+    expect(created.task.status).toBe("needs_approval");
+    const response = await handleTaskRequest(new Request(url, {
+      method: "PATCH",
+      headers: { origin: "https://liza.example", "content-type": "application/json", cookie },
+      body: JSON.stringify({ action: "cancel", taskId: created.task.id }),
+    }), { ACTION_DB: state.database });
+    expect(response.status).toBe(200);
+    expect((await response.json() as { task: { status: string } }).task.status).toBe("cancelled");
+    expect(state.rows[0]?.["status"]).toBe("cancelled");
+  });
+
   it("cancels only an owned queued task with a same-origin PATCH", async () => {
     const { database, rows } = makeDatabase();
     const create = await handleTaskRequest(post({ task: "Prepare a research brief" }), { ACTION_DB: database });
