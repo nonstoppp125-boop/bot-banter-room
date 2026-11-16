@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import {
   buildLinkedInContentStrategy,
   createLinkedInContentCalendar,
@@ -38,7 +38,7 @@ function LinkedInStudioPage() {
   const [draft, setDraft] = useState<LinkedInPostDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const buildStrategy = (event: React.FormEvent<HTMLFormElement>) => {
+  const buildStrategy = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     const pillar: ContentPillar = {
