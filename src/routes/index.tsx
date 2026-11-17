@@ -73,7 +73,7 @@ function Index() {
           </a>
           <button onClick={() => void signOut()} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign out</button>
           <button
-            onClick={() => setMessages([])
+            onClick={() => setMessages([])}
             aria-label="নতুন চ্যাট"
             className="grid size-9 place-items-center rounded-lg text-foreground hover:bg-accent"
           >
