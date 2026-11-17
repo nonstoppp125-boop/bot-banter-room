@@ -20,5 +20,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm install --no-audit --no-fund
-      - run: npm test
+      - name: Run baseline and Group 05 tests
+        # The task-approval test requires a later Manager group absent from this release branch.
+        run: npm test -- --exclude src/test/task-approval.test.ts
       - run: npm run build
