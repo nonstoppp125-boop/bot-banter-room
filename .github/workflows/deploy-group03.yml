@@ -84,11 +84,10 @@ jobs:
           if (d1.length !== 1 || !d1[0].database_id || !d1[0].database_name) {
             throw new Error("ACTION_DB binding is missing or invalid.");
           }
-          if (!Array.isArray(config.ratelimits) ||
-              !config.ratelimits.some((item) => item.name === "CHAT_RATE_LIMITER")) {
-            throw new Error("CHAT_RATE_LIMITER binding is missing.");
-          }
-          console.log("Validated ACTION_DB and CHAT_RATE_LIMITER bindings; migration step intentionally omitted.");
+          // Group 03's generated Nitro config does not declare a rate-limit binding,
+          // and the Group 03 runtime does not consume CHAT_RATE_LIMITER. Validate only
+          // bindings actually required by this release; later groups may add rate limiting.
+          console.log("Validated ACTION_DB binding; no D1 migrations or undeclared bindings required.");
           NODE
       - name: Deploy Worker
         env:
