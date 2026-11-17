@@ -88,6 +88,51 @@ describe("Cloudflare Access authentication", () => {
     expect(queries.some((query) => query.includes("INSERT OR IGNORE INTO workspace_members"))).toBe(true);
   });
 
+  it("reuses an active session for the same Access identity instead of creating duplicates", async () => {
+    const signed = await signedAssertion();
+    const digest = new Uint8Array(await crypto.subtle.digest(
+      "SHA-256", encoder.encode("cloudflare-access:user:identity-123"),
+    ));
+    const userId = "u_" + Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    const workspaceDigest = new Uint8Array(await crypto.subtle.digest(
+      "SHA-256", encoder.encode("cloudflare-access:workspace:" + userId),
+    ));
+    const workspaceId = "w_" + Array.from(workspaceDigest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    const queries: string[] = [];
+    const database = {
+      prepare(query: string) {
+        queries.push(query);
+        return {
+          bind(...values: unknown[]) {
+            return {
+              run: async () => ({ success: true, meta: { changes: 1 } }),
+              first: async <T = Record<string, unknown>>() => {
+                if (query.includes("SELECT id FROM users")) return { id: userId } as T;
+                if (query.includes("FROM sessions")) return {
+                  id: "s-existing", user_id: userId, workspace_id: workspaceId,
+                  expires_at: "2026-11-18T00:00:00.000Z", created_at: "2026-11-17T00:00:00.000Z",
+                } as T;
+                return null;
+              },
+            };
+          },
+        };
+      },
+    };
+    const response = await handleCloudflareAccessSessionRequest(new Request("https://liza.example/api/auth/session", {
+      headers: {
+        "cf-access-jwt-assertion": signed.token,
+        cookie: "__Host-liza_session=" + "A".repeat(43),
+      },
+    }), {
+      ACTION_DB: database, CF_ACCESS_TEAM_DOMAIN: teamDomain, CF_ACCESS_AUD: audience,
+      CF_ACCESS_ALLOWED_EMAIL_DOMAINS: "example.com",
+    }, async () => new Response(JSON.stringify(signed.jwks)));
+    expect(response.status).toBe(204);
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(queries.some((query) => query.includes("INSERT INTO sessions"))).toBe(false);
+  });
+
   it("rejects unconfigured or missing Access assertions", async () => {
     const noConfig = await handleCloudflareAccessSessionRequest(
       new Request("https://liza.example/api/auth/session"), {},
