@@ -71,6 +71,17 @@ describe("production D1 config preparation", () => {
     });
   });
 
+  it("keeps the Group 05 migration limited to identity, session and memory tables", () => {
+    const sql = fs.readFileSync(
+      path.resolve(process.cwd(), "migrations/group05/0005_memory_foundation.sql"),
+      "utf8",
+    );
+    const tables = [...sql.matchAll(/CREATE TABLE IF NOT EXISTS ([a-z_]+)/g)].map((match) => match[1]);
+
+    expect(tables).toEqual(["users", "workspaces", "workspace_members", "sessions", "memories"]);
+    expect(sql).not.toMatch(/agent_tasks|approvals|app_connections|social_accounts|content_drafts|publications|audit_events/);
+  });
+
   it("replaces an existing ACTION_DB binding instead of creating duplicates", () => {
     const { root, configPath } = fixture();
     const result = addProductionD1Binding({
