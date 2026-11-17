@@ -124,14 +124,14 @@ G03.09 Implement safe API errors. [IMPLEMENTED]
 G03.10 Add provider timeout handling. [IMPLEMENTED]
 G03.11 Add retry policy with bounded attempts. [IMPLEMENTED]
 G03.12 Preserve abort signal propagation. [IMPLEMENTED]
-G03.13 Verify streaming under real Worker runtime. [BLOCKED — real Worker test]
+G03.13 Verify streaming under real Worker runtime. [VERIFIED — live production chat response; local workerd streaming test passed]
 G03.14 Add API rate limiting. [IMPLEMENTED]
 G03.15 Add abuse protection. [IMPLEMENTED]
-G03.16 Add provider quota monitoring. [BLOCKED — quota telemetry]
+G03.16 Add provider quota monitoring. [VERIFIED — sanitized Groq quota telemetry and regression tests]
 G03.17 Add model configuration management. [IMPLEMENTED]
 G03.18 Evaluate alternative free providers. [EVALUATED]
 G03.19 Add provider failure fallback policy. [IMPLEMENTED]
-G03.20 Test production binding and deployment. [BLOCKED — production access]
+G03.20 Test production binding and deployment. [VERIFIED — correct Worker deployed; live homepage and chat smoke test passed]
 
 ==================================================PART 05 — GROUP 04: LIZA CONVERSATIONAL INTELLIGENCE
 ==================================================
