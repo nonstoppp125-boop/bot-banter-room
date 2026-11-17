@@ -76,6 +76,30 @@ describe("authenticated user-controlled memory API", () => {
     expect(writes).toHaveLength(0);
   });
 
+  it("accepts bounded future retention dates and rejects expired or excessive dates", async () => {
+    const { database, writes } = makeDatabase();
+    const validExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const valid = await handleMemoryRequest(
+      post({ content: "Temporary project context", category: "project", expiresAt: validExpiry }),
+      { ACTION_DB: database },
+    );
+    expect(valid.status).toBe(201);
+    expect(writes[0]?.values).toContain(validExpiry);
+
+    const expired = await handleMemoryRequest(
+      post({ content: "Expired memory", category: "project", expiresAt: "2000-01-01T00:00:00.000Z" }),
+      { ACTION_DB: database },
+    );
+    expect(expired.status).toBe(400);
+
+    const tooFar = await handleMemoryRequest(
+      post({ content: "Long retention", category: "project", expiresAt: new Date(Date.now() + 11 * 365 * 24 * 60 * 60 * 1000).toISOString() }),
+      { ACTION_DB: database },
+    );
+    expect(tooFar.status).toBe(400);
+    expect(writes).toHaveLength(1);
+  });
+
   it("supports optimistic edits and owner-scoped soft deletion", async () => {
     const { database, writes } = makeDatabase();
     const patch = new Request(url, {
