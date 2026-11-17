@@ -68,7 +68,7 @@ describe("D1 background task queue", () => {
       {
         now: () => new Date("2026-11-17T10:00:00.000Z"),
         owner: () => "worker-test-1",
-        runner: async () => new Response('0:"Queue execution result"\\n'),
+        runner: async () => new Response('0:"Queue execution result"\n'),
       },
     );
     expect(result).toEqual({ recovered: 1, claimed: true, taskId: "task-queue-1" });
@@ -87,7 +87,7 @@ describe("D1 background task queue", () => {
       worker_attempt_count: 1,
     };
     const { db, calls } = fakeDb(row);
-    const runner = vi.fn(async () => new Response('0:"must not run"\\n'));
+    const runner = vi.fn(async () => new Response('0:"must not run"\n'));
     await processD1TaskQueue(
       { ACTION_DB: db, GROQ_API_KEY: "test-key" },
       {
