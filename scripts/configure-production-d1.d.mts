@@ -8,6 +8,7 @@ export interface WranglerD1Binding {
 
 export interface WranglerConfig {
   d1_databases?: WranglerD1Binding[];
+  triggers?: { crons?: string[]; [key: string]: unknown };
   secrets?: {
     required?: string[];
     [key: string]: unknown;
@@ -27,4 +28,5 @@ export function addProductionD1Binding(
 ): WranglerConfig & {
   d1_databases: WranglerD1Binding[];
   secrets: { required: string[]; [key: string]: unknown };
+  triggers: { crons: string[]; [key: string]: unknown };
 };
