@@ -12,14 +12,12 @@ supported capabilities, duplicate capabilities, non-empty and supported
 permissions, duplicate permissions, valid roles and role-specific execution
 handlers. The runtime map is built from the same validated registry list.
 
-Runtime permissions are explicitly scoped: `llm:inference`, `research:search`,
-`research:extract` and `coding:validate-command`. No shell, filesystem,
-publishing, messaging or external-account execution permission is granted.
+Runtime permissions are explicitly scoped to inference, research search/extraction, coding command validation, data profiling, requirements validation, content validation, SEO audit, campaign validation, quality checks, security scanning, workflow validation, report aggregation and social-content validation. No arbitrary shell, filesystem, publishing, messaging or external-account execution permission is granted.
 Registry and specialist execution tests have CI runtime evidence.
 
 ## G07.21 — Specialist-specific system prompts
 
-IMPLEMENTED for all 17 registered specialists.
+IMPLEMENTED for all 22 registered specialists.
 
 Each specialist has a distinct role-specific system prompt in
 `src/lib/agents/specialists.ts`, covering Research, Web Intelligence,
@@ -31,13 +29,23 @@ limitations.
 
 ## G07.22 — Specialist-specific tools
 
-PARTIALLY IMPLEMENTED.
+IMPLEMENTED AT CODE / ORCHESTRATOR LEVEL.
 
-A permission-scoped tool registry is now wired through the orchestrator:
-- Research and Web Intelligence may call only the bounded Tavily search and selected-page extraction tools.
-- Coding may call only the exact allowlisted validation-command checker; it does not execute commands.
-- Tool calls require an explicit per-agent permission and fail closed on missing credentials, invalid arguments or cancellation.
-- Other specialists have no tool permissions. No shell, filesystem, publishing, messaging or external-account execution is exposed.
+The permission-scoped registry exposes bounded tools for:
+- Research / Web Intelligence: Tavily search and selected-page extraction.
+- Coding: exact allowlisted command validation only; no command execution.
+- Data Analyst: bounded tabular profiling and numeric summaries.
+- Business Analyst: requirement and acceptance-criteria structure validation.
+- Content Writer / Reviewer: structural content checks.
+- SEO: title, metadata, heading and keyword heuristics.
+- Marketing Strategist: campaign-brief completeness checks.
+- Quality Reviewer: literal requirement-coverage checks, explicitly not semantic verification.
+- Security Reviewer: redacted pattern-based secret screening.
+- Automation: bounded workflow dependency and cycle validation.
+- Reporting: descriptive numeric aggregation.
+- LinkedIn / social platform specialists: bounded content metrics.
+
+Structured JSON user inputs are routed to the matching specialist tool before generation. Content, social and security outputs receive bounded post-generation checks. Every tool requires a per-agent permission, validates bounded arguments and fails closed. These tools do not grant arbitrary shell, filesystem, publishing, messaging or external-account execution.
 
 ## G07.05–G07.15 — New specialist agents
 
@@ -46,7 +54,7 @@ IMPLEMENTED AT CODE / REGISTRY LEVEL.
 Research, Web Intelligence, Coding, Debugging, Data Analyst,
 Business Analyst, LinkedIn, Social Media, Content Writer,
 Content Reviewer and SEO agents have been implemented and registered.
-The registry now contains 17 specialist agents in total.
+The registry now contains 22 specialist agents in total.
 
 These are prompt-based specialists. Their presence does not imply
 independent tool execution or external account access.
@@ -88,7 +96,7 @@ the Termux/Vitest illegal-instruction crash. G07.01–G07.04 and G07.16–G07.20
 must be assessed against their actual implementation before declaring the
 whole group complete.
 
-No commit, push, deployment or external action was performed.
+No production deployment, D1 migration or external action was performed.
 
 
 ## 2026-11-16 — Group 07 CI verification refresh
@@ -113,3 +121,11 @@ No commit, push, deployment or external action was performed.
 - Added regression tests for malformed metadata, duplicate IDs and missing extraction credentials.
 - GitHub Actions run `43825704479`: SUCCESS — TypeScript, 46 test files / 341 tests, production build and Nitro-generated Wrangler validation.
 - G07.22 remains partial: no arbitrary browsing, shell execution or external side effects are exposed.
+
+## 2026-11-17 — Group 07 completion verification
+
+- Registry count: 1 default chat agent + 22 specialists. All 22 have role-specific prompts and generator checks; G07.16–G07.20 (Marketing Strategist, Quality Reviewer, Security Reviewer, Automation, Reporting) are registered and exercised.
+- G07.22 now includes 13 permission-scoped tool IDs across research, coding, data, business, content, SEO, campaign, quality, security, workflow, reporting and social domains. Structured JSON input routing and post-generation structural checks are integrated in the orchestrator. Tool limitations are explicitly reported; no arbitrary shell, filesystem or external side-effect execution is granted.
+- G07.23–G07.25 are verified by registry/capability, failure-propagation and no-placeholder checks.
+- Latest code commit `8e5a777616583932870d764db11fda859c8fd0f7`; GitHub Actions run `44127627987`: SUCCESS — dependency audit 0 vulnerabilities; TypeScript PASS; 57 test files / 448 tests PASS; local workerd streaming smoke PASS; production build PASS; generated Wrangler config validation PASS.
+- **Group 07: COMPLETE at code and CI level.** No merge or production deployment was performed.
