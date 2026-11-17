@@ -17,11 +17,11 @@ export type PasswordAuthEnv = {
 const json = (body: unknown, status = 200) => Response.json(body, {
   status, headers: { "Cache-Control": "no-store", "Vary": "Cookie" },
 });
-const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-const HASH = /^pbkdf2\\$310000\\$([A-Za-z0-9_-]{22})\\$([A-Za-z0-9_-]{43})$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const HASH = /^pbkdf2\$310000\$([A-Za-z0-9_-]{22})\$([A-Za-z0-9_-]{43})$/;
 function b64url(bytes: Uint8Array): string {
   let raw = ""; for (const byte of bytes) raw += String.fromCharCode(byte);
-  return btoa(raw).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+  return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 function fromB64url(value: string): Uint8Array {
   const raw = atob(value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4));
