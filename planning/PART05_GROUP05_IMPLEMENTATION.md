@@ -54,3 +54,14 @@ Memory retrieval is bounded and heuristic, not semantic search. Conflict detecti
 
 **GROUP 05 IMPLEMENTATION: COMPLETE (20/20).**  
 **Roadmap remains on Group 05 until the production D1 migration/release gate is resolved.** The current feature branch contains later-group baseline code; no later-group implementation work is being advanced as part of this checkpoint.
+
+## 2026-11-17 — Group-scoped migration isolation
+
+- Added `migrations/group05/0005_memory_foundation.sql` containing only the minimum identity, workspace membership, session and memory tables required by Group 05.
+- Explicitly excluded Manager task/approval, OAuth, Telegram, social publishing, analytics and audit schemas from this Group 05 migration.
+- Updated `configure-production-d1.mjs` to accept a repository-contained `CLOUDFLARE_D1_MIGRATIONS_DIR`; absolute paths and path traversal are rejected.
+- Updated the manual deploy workflow to select only `migrations/group05`, rather than the repository-wide migration directory.
+- Added regression tests for migration-directory scoping, path traversal rejection and the exact Group 05 table allowlist.
+- This is a release-safety change only. It has not been applied to the remote D1 database and no production deployment has been triggered.
+- CI for these latest changes is pending. The prior 431-test run remains valid only for its exact earlier commit.
+- The current branch still contains later-group source. It must not be merged or deployed wholesale; a clean Group 04/05-only release artifact and authenticated production smoke test remain required.
