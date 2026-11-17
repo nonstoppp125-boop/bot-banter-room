@@ -204,3 +204,13 @@ No merge to main; no production deployment.
 - The web Tasks page exposes on-demand execution, cancellation, approval unlock, manual retry and stale recovery.
 - GitHub Actions run `43877244027`, exact code commit `0ac038a9dac7556edd2afccd3f867d85338df328`: production dependency audit found 0 vulnerabilities; TypeScript PASS; 52 test files / 407 tests PASS; production build PASS; generated Wrangler Worker config PASS.
 - Remaining: always-on queue/worker consumer, heartbeat/lease management and crash recovery, automated retries, live D1/Access provisioning and smoke tests, external-action executors and production verification.
+
+## 2026-11-17 — D1 background queue worker implementation
+
+- Added `migrations/0016_agent_task_queue_leases.sql`: lease owner, lease expiry, heartbeat timestamp and a separate bounded automatic-worker attempt counter. The existing `attempt_count` remains reserved for user-triggered manual retries.
+- Added `src/lib/agents/task-queue-worker.ts`: one task is atomically claimed per scheduled invocation; claim uses a single conditional D1 UPDATE ... RETURNING statement, leases are owner-bound, heartbeats extend the lease, expired leases are recovered, and worker attempts are bounded.
+- The worker restores the persisted Manager plan against the current specialist registry and re-verifies any approval-gated plan before inference. It stores bounded final output and clears lease metadata on terminal completion.
+- Wired the Worker's `scheduled` handler in `src/server.ts`; the generated production Wrangler config receives a one-minute cron trigger from `scripts/configure-production-d1.mjs`.
+- Added queue lease/recovery/heartbeat tests and cron-config assertion.
+- CI run `44124226237` passed: dependency audit 0 vulnerabilities; TypeScript PASS; 57 test files / 438 tests PASS; local workerd streaming smoke PASS; production build PASS; generated Wrangler config validation PASS.
+- **Not yet runtime-verified against Cloudflare D1:** migration 0016 has not been applied and no production deployment was performed. The scheduled consumer is implemented and CI-tested, but live D1 persistence/cron execution remains a release-time verification item. No merge or production deployment was performed.
