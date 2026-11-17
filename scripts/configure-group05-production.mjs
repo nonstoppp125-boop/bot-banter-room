@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 
 const [configPath] = process.argv.slice(2);
 if (!configPath) {
@@ -53,11 +54,18 @@ if (
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 const bindings = Array.isArray(config.d1_databases) ? config.d1_databases : [];
 config.d1_databases = bindings.filter((item) => item.binding !== "ACTION_DB");
+const migrationDir = path.relative(
+  path.dirname(path.resolve(configPath)),
+  path.resolve("migrations/group05"),
+).split(path.sep).join("/");
+if (!migrationDir || path.isAbsolute(migrationDir)) {
+  throw new Error("Could not resolve the isolated Group 05 migration directory.");
+}
 config.d1_databases.push({
   binding: "ACTION_DB",
   database_name: process.env.CLOUDFLARE_D1_DATABASE_NAME,
   database_id: process.env.CLOUDFLARE_D1_DATABASE_ID,
-  migrations_dir: "migrations/group05",
+  migrations_dir: migrationDir,
 });
 config.vars = {
   ...(config.vars ?? {}),
