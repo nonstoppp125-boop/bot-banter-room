@@ -18,6 +18,9 @@ describe("explicit memory extraction", () => {
       category: "project",
       content: "amar project XterLiza",
     });
+    expect(extractExplicitMemory("মনে রেখো আমার প্রকল্পের নাম Doot")).toMatchObject({
+      category: "project",
+    });
   });
 
   it("does not infer durable memories from ordinary conversation", () => {
