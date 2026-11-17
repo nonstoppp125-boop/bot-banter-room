@@ -209,3 +209,42 @@ export async function auditSpecialistOutput(agentId: string, output: string, sig
   if (agentId === "security-reviewer") return invokeSpecialistTool({ agentId, toolId: "security.scan", args: { text: output }, signal });
   return null;
 }
+
+/** Run a specialist's domain tool when the latest user message is a bounded JSON payload. */
+export async function prepareSpecialistToolContext(agentId: string, messages: readonly unknown[], signal: AbortSignal): Promise<unknown | null> {
+  const latest = [...messages].reverse().find((message) => record(message) && message["role"] === "user");
+  if (!record(latest)) return null;
+  const content = latest["content"];
+  let raw = "";
+  if (typeof content === "string") raw = content;
+  else if (Array.isArray(content)) {
+    raw = content.filter((part) => record(part) && part["type"] === "text" && typeof part["text"] === "string")
+      .map((part) => (part as Record<string, unknown>)["text"] as string).join("\n");
+  }
+  raw = raw.trim();
+  if (!raw.startsWith("{")) return null;
+  let payload: unknown;
+  try { payload = JSON.parse(raw); } catch { return null; }
+  if (!record(payload)) return null;
+  let toolId: SpecialistToolId | null = null;
+  let args: Record<string, unknown> = payload;
+  if (agentId === "data-analyst" && Array.isArray(payload["rows"])) toolId = "data.profile";
+  else if (agentId === "business-analyst" && Array.isArray(payload["requirements"])) toolId = "business.requirements";
+  else if (["content-writer", "content-reviewer"].includes(agentId) && typeof payload["text"] === "string") toolId = "content.validate";
+  else if (agentId === "seo" && typeof payload["title"] === "string" && typeof payload["metaDescription"] === "string") toolId = "seo.audit";
+  else if (agentId === "marketing-strategist" && typeof payload["objective"] === "string" && typeof payload["audience"] === "string") toolId = "campaign.validate";
+  else if (agentId === "quality-reviewer" && typeof payload["text"] === "string" && Array.isArray(payload["requirements"])) toolId = "quality.check";
+  else if (agentId === "security-reviewer" && typeof payload["text"] === "string") toolId = "security.scan";
+  else if (agentId === "automation" && Array.isArray(payload["steps"])) toolId = "workflow.validate";
+  else if (agentId === "reporting" && Array.isArray(payload["values"])) toolId = "report.aggregate";
+  else if (["linkedin", "social-media", "instagram", "facebook", "youtube", "x-platform", "tiktok"].includes(agentId) && typeof payload["text"] === "string") {
+    toolId = "social.validate";
+    args = { ...payload, platform: agentId };
+  }
+  if (!toolId) return null;
+  try { return await invokeSpecialistTool({ agentId, toolId, args, signal }); }
+  catch (error) {
+    if (signal.aborted) throw error;
+    return { toolError: error instanceof Error ? error.message.slice(0, 240) : "Structured specialist tool validation failed." };
+  }
+}

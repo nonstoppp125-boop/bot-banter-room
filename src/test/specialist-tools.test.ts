@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { auditSpecialistOutput, invokeSpecialistTool, listSpecialistTools } from "@/lib/agents/specialist-tools";
+import { auditSpecialistOutput, invokeSpecialistTool, listSpecialistTools, prepareSpecialistToolContext } from "@/lib/agents/specialist-tools";
 
 describe("permission-controlled specialist tools", () => {
   it("exposes only tools granted to the selected specialist", () => {
@@ -8,6 +8,24 @@ describe("permission-controlled specialist tools", () => {
     expect(listSpecialistTools("data-analyst")).toEqual(["data.profile", "report.aggregate"]);
   });
 
+
+
+  it("runs authorized domain tools from structured user input before specialist generation", async () => {
+    const signal = new AbortController().signal;
+    const context = await prepareSpecialistToolContext("data-analyst", [{
+      role: "user", content: JSON.stringify({ rows: [{ sales: 10 }, { sales: 20 }] }),
+    }], signal);
+    expect(context).toMatchObject({ rowCount: 2, fieldCount: 1 });
+    await expect(prepareSpecialistToolContext("problem-solver", [{
+      role: "user", content: JSON.stringify({ rows: [{ sales: 10 }] }),
+    }], signal)).resolves.toBeNull();
+  });
+
+  it("does not execute structured specialist tools for malformed JSON", async () => {
+    await expect(prepareSpecialistToolContext("data-analyst", [{
+      role: "user", content: "{not-json}",
+    }], new AbortController().signal)).resolves.toBeNull();
+  });
 
   it("exposes domain-specific tools only to authorized specialists", () => {
     expect(listSpecialistTools("data-analyst")).toContain("data.profile");
