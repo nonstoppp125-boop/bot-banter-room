@@ -94,12 +94,15 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
+          import path from "node:path";
           const config = JSON.parse(fs.readFileSync(process.env.CONFIG_PATH, "utf8"));
           const d1 = (config.d1_databases ?? []).filter((item) => item.binding === "ACTION_DB");
           if (d1.length !== 1 || !d1[0].database_id || !d1[0].database_name) {
             throw new Error("ACTION_DB binding is missing or invalid.");
           }
-          if (d1[0].migrations_dir !== "migrations/group05") {
+          const configuredMigrationDir = path.resolve(path.dirname(process.env.CONFIG_PATH), d1[0].migrations_dir ?? "migrations");
+          const expectedMigrationDir = path.resolve("migrations/group05");
+          if (configuredMigrationDir !== expectedMigrationDir) {
             throw new Error("Refusing to apply any migration directory other than migrations/group05.");
           }
           for (const key of ["CF_ACCESS_TEAM_DOMAIN", "CF_ACCESS_AUD", "CF_ACCESS_ALLOWED_EMAIL_DOMAINS"]) {
