@@ -2,6 +2,7 @@ import {
   clearSessionCookie, createD1SessionStore, createSessionCookie, generateSessionToken,
   hashSessionToken, readSessionCookie, type D1SessionDatabase,
 } from "./session-auth";
+import { createD1WorkspaceAccessStore } from "./workspace-store";
 
 type AuthDatabase = D1SessionDatabase & {
   prepare: (query: string) => { bind: (...values: unknown[]) => {
@@ -120,7 +121,9 @@ export async function handleSessionStatus(request: Request, env: PasswordAuthEnv
   if (!token) return json({ authenticated: false }, 401);
   try {
     const session = await createD1SessionStore(env.ACTION_DB).getActive(token, new Date().toISOString());
-    return session ? json({ authenticated: true }) : json({ authenticated: false }, 401);
+    if (!session?.workspaceId) return json({ authenticated: false }, 401);
+    const membership = await createD1WorkspaceAccessStore(env.ACTION_DB).getMembership(session.workspaceId, session.userId);
+    return membership ? json({ authenticated: true }) : json({ authenticated: false }, 401);
   } catch { return json({ error: "Session lookup failed." }, 500); }
 }
 export async function handleSessionLogout(request: Request, env: PasswordAuthEnv): Promise<Response> {
