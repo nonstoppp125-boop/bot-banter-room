@@ -61,6 +61,15 @@ const migrationDir = path.relative(
 if (!migrationDir || path.isAbsolute(migrationDir)) {
   throw new Error("Could not resolve the isolated Group 05 migration directory.");
 }
+const resolvedMigrationDir = path.resolve(path.dirname(path.resolve(configPath)), migrationDir);
+const expectedMigrationDir = path.resolve("migrations/group05");
+if (resolvedMigrationDir !== expectedMigrationDir || !fs.statSync(resolvedMigrationDir).isDirectory()) {
+  throw new Error("Resolved migration directory is not the isolated Group 05 directory.");
+}
+const migrationFiles = fs.readdirSync(resolvedMigrationDir).filter((name) => name.endsWith(".sql"));
+if (migrationFiles.length !== 1 || migrationFiles[0] !== "0005_memory_foundation.sql") {
+  throw new Error("Refusing to configure unexpected Group 05 migration files.");
+}
 config.d1_databases.push({
   binding: "ACTION_DB",
   database_name: process.env.CLOUDFLARE_D1_DATABASE_NAME,
