@@ -61,6 +61,19 @@ const SPECIALIST_TOOL_PERMISSIONS: Record<string, readonly AgentPermission[]> = 
   research: ["research:search", "research:extract"],
   "web-intelligence": ["research:search", "research:extract"],
   coding: ["coding:validate-command"],
+  "data-analyst": ["data:profile", "report:aggregate"],
+  "business-analyst": ["business:requirements"],
+  "content-writer": ["content:validate"],
+  "content-reviewer": ["content:validate"],
+  seo: ["seo:audit"],
+  "marketing-strategist": ["campaign:validate"],
+  "quality-reviewer": ["quality:check"],
+  "security-reviewer": ["security:scan"],
+  automation: ["workflow:validate"],
+  reporting: ["report:aggregate"],
+  linkedin: ["social:validate"], "social-media": ["social:validate"],
+  instagram: ["social:validate"], facebook: ["social:validate"],
+  youtube: ["social:validate"], "x-platform": ["social:validate"], tiktok: ["social:validate"],
 };
 
 function specialist(

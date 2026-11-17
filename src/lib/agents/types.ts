@@ -43,7 +43,11 @@ export type SpecialistGenerationResult = {
 };
 
 /** A mountable agent. Chat agents stream via `run`; specialists return text via `generate`. */
-export type AgentPermission = "llm:inference" | "research:search" | "research:extract" | "coding:validate-command";
+export type AgentPermission =
+  | "llm:inference" | "research:search" | "research:extract" | "coding:validate-command"
+  | "data:profile" | "business:requirements" | "content:validate" | "seo:audit"
+  | "campaign:validate" | "quality:check" | "security:scan" | "workflow:validate"
+  | "report:aggregate" | "social:validate";
 
 export type AgentCapability =
   | "chat"

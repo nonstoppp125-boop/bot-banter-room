@@ -23,7 +23,7 @@ import {
   type ResearchSource,
 } from "./research";
 import { DEFAULT_AGENT_ID, getAgent, getSpecialist, listAgents } from "./registry";
-import { invokeSpecialistTool } from "./specialist-tools";
+import { auditSpecialistOutput, invokeSpecialistTool } from "./specialist-tools";
 import type { AgentEnv, AgentRunInput, SpecialistGenerationResult } from "./types";
 
 const MAX_MESSAGES = 100;
@@ -181,18 +181,21 @@ async function generateSpecialist(
     const generated: SpecialistGenerationResult = await agent.generateWithUsage({
       apiKey, model, messages, signal,
     });
+    const audit = await auditSpecialistOutput(id, generated.text, signal);
+    const output = audit
+      ? generated.text + "\n\nINTERNAL SPECIALIST TOOL CHECK (structural only; not factual verification):\n" + JSON.stringify(audit)
+      : generated.text;
     if (usageTotals) {
-      addUsage(
-        usageTotals,
-        generated.usage,
-        JSON.stringify(messages).length,
-        generated.text.length,
-      );
+      addUsage(usageTotals, generated.usage, JSON.stringify(messages).length, output.length);
     }
-    return generated.text;
+    return output;
   }
   if (!agent.generate) throw new Error(`Specialist ${id} has no generator`);
-  const output = await agent.generate({ apiKey, model, messages, signal });
+  const generated = await agent.generate({ apiKey, model, messages, signal });
+  const audit = await auditSpecialistOutput(id, generated, signal);
+  const output = audit
+    ? generated + "\n\nINTERNAL SPECIALIST TOOL CHECK (structural only; not factual verification):\n" + JSON.stringify(audit)
+    : generated;
   if (usageTotals) addUsage(usageTotals, { inputTokens: undefined, outputTokens: undefined }, JSON.stringify(messages).length, output.length);
   return output;
 }

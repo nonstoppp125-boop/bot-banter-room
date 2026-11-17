@@ -54,7 +54,12 @@ const agentDefinitions: AgentDefinition[] = [
   reportingAgent,
 ];
 
-const supportedPermissions = new Set<AgentPermission>(["llm:inference", "research:search", "research:extract", "coding:validate-command"]);
+const supportedPermissions = new Set<AgentPermission>([
+  "llm:inference", "research:search", "research:extract", "coding:validate-command",
+  "data:profile", "business:requirements", "content:validate", "seo:audit",
+  "campaign:validate", "quality:check", "security:scan", "workflow:validate",
+  "report:aggregate", "social:validate",
+]);
 
 const supportedCapabilities = new Set<AgentCapability>([
   "chat",
