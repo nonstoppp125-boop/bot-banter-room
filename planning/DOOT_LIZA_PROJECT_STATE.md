@@ -444,3 +444,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Added interactive `/linkedin-studio` strategy/calendar/post-outline UI. It is draft-only and page-state-only; no server persistence, LinkedIn OAuth or publishing is enabled.
 - Local Termux state, Cloudflare D1/Access provisioning, Telegram/OAuth credentials, always-on queue worker, real external-action executors and production acceptance remain unverified or blocked.
 - No merge to `main` and no production deployment.
+
+
+## 2026-11-17 — Group 03 production acceptance
+
+- Group 03 is now COMPLETED (20/20). The prior 19/20 deployment-blocked entries above are historical and superseded by this record.
+- Production `main` commit `5a9815bba89aab26106f1ef78712a85d9c5baf9a` deployed to the correct Cloudflare Worker `bot-banter-room`; GitHub Actions run `44048477857` and Cloudflare Workers Builds check both succeeded.
+- Deployment log confirms `ACTION_DB` and `ASSETS` bindings. User verified homepage rendering and a successful live Groq chat reply (`Hello! 👋 How can I help you today?`). No later-group D1 migrations were applied.
+- Group 04 follow-up fix: multi-agent final synthesis now uses `buildLizaSystem(messages)` so it respects the latest user's language; default and multi-agent streamed responses run the lightweight `evaluateLizaResponse` monitor. Regression test added for Bengali multi-agent synthesis.
+- Latest Group 04 CI run: `44078749026`, commit `66a805509c18799079a517d6138de435823f8c12`; pending at checkpoint. Do not claim Group 04 verified until this run completes.
+- Current branch: `work/group06-manager-planner`. Next: finish Group 04 acceptance, then continue in dependency order to Group 05.
