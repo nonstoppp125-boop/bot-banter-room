@@ -158,9 +158,21 @@ export async function handleCloudflareAccessSessionRequest(
       "INSERT OR IGNORE INTO workspace_members (workspace_id,user_id,role,created_at) VALUES (?,?,'owner',?)",
     ).bind(workspaceId, user.id, now).run();
 
+    const sessionStore = createD1SessionStore(database);
+    const existingToken = readSessionCookie(request.headers.get("cookie"));
+    if (existingToken) {
+      const existingSession = await sessionStore.getActive(existingToken, now);
+      if (existingSession?.userId === user.id && existingSession.workspaceId === workspaceId) {
+        return new Response(null, {
+          status: 204,
+          headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
+        });
+      }
+    }
+
     const token = generateSessionToken();
     const expiresAt = new Date(Date.parse(now) + 8 * 60 * 60 * 1000).toISOString();
-    await createD1SessionStore(database).create({
+    await sessionStore.create({
       id: "s_" + crypto.randomUUID().replace(/-/g, ""),
       userId: user.id,
       workspaceId,
