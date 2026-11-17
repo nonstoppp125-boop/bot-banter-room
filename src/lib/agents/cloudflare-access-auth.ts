@@ -146,8 +146,8 @@ export async function handleCloudflareAccessSessionRequest(
     await database.prepare(
       "INSERT INTO users (id,email,display_name,created_at,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,display_name=excluded.display_name,updated_at=excluded.updated_at",
     ).bind(userId, identity.email, identity.name, now, now).run();
-    const user = await database.prepare("SELECT id FROM users WHERE email=? AND deleted_at IS NULL LIMIT 1")
-      .bind(identity.email).first<{ id: string }>();
+    const user = await database.prepare("SELECT id FROM users WHERE id=? AND email=? AND deleted_at IS NULL LIMIT 1")
+      .bind(userId, identity.email).first<{ id: string }>();
     if (!user?.id) return json({ error: "User account could not be provisioned." }, 500);
     const workspaceId = "w_" + await sha256Hex("cloudflare-access:workspace:" + user.id);
     const workspaceName = identity.name.slice(0, 120) + "'s workspace";
