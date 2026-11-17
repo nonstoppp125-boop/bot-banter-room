@@ -49,6 +49,7 @@ describe("production D1 config preparation", () => {
     });
     expect(result.d1_databases.some((item) => item.binding === "OTHER_DB")).toBe(true);
     expect(result.secrets.required).toContain("GROQ_API_KEY");
+    expect(result.triggers.crons).toContain("* * * * *");
   });
 
   it("limits ACTION_DB to the explicitly selected group migration directory", () => {
