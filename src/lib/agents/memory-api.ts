@@ -9,6 +9,17 @@ const MAX_BODY_BYTES = 8_192;
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Cookie" } });
 
+function resolveExpiry(value: unknown, now: string): { valid: boolean; expiresAt: string | null } {
+  if (value === undefined || value === null || value === "") return { valid: true, expiresAt: null };
+  if (typeof value !== "string") return { valid: false, expiresAt: null };
+  const timestamp = Date.parse(value);
+  const current = Date.parse(now);
+  if (!Number.isFinite(timestamp) || timestamp <= current || timestamp > current + 3_650 * 86_400_000) {
+    return { valid: false, expiresAt: null };
+  }
+  return { valid: true, expiresAt: new Date(timestamp).toISOString() };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -88,7 +99,7 @@ export async function handleMemoryRequest(request: Request, env: MemoryApiEnv): 
         body["content"].length > 4_000 || !CATEGORIES.has(body["category"] as MemoryCategory)) {
         return json({ error: "Provide memory content (max 4,000 characters) and a valid category." }, 400);
       }
-      const memory = {
+      const expiry = resolveExpiry(body["expiresAt"], now);\n      if (!expiry.valid) return json({ error: "Expiry must be a future date within 10 years." }, 400);\n      const memory = {
         id: crypto.randomUUID().replace(/-/g, ""),
         workspaceId: session.workspaceId,
         userId: session.userId,
@@ -97,7 +108,7 @@ export async function handleMemoryRequest(request: Request, env: MemoryApiEnv): 
         source: "user-entered" as const,
         createdAt: now,
         updatedAt: now,
-        expiresAt: null,
+        expiresAt: expiry.expiresAt,
       };
       await store.create(memory);
       return json({ memory }, 201);
@@ -110,10 +121,10 @@ export async function handleMemoryRequest(request: Request, env: MemoryApiEnv): 
         typeof body["expectedUpdatedAt"] !== "string") {
         return json({ error: "Memory content, category and expectedUpdatedAt are required." }, 400);
       }
-      const updated = await store.update({
+      const expiry = resolveExpiry(body["expiresAt"], now);\n      if (!expiry.valid) return json({ error: "Expiry must be a future date within 10 years." }, 400);\n      const updated = await store.update({
         id: body["id"], workspaceId: session.workspaceId, userId: session.userId,
         expectedUpdatedAt: body["expectedUpdatedAt"], category: body["category"] as MemoryCategory,
-        content: body["content"].trim(), updatedAt: now,
+        content: body["content"].trim(), updatedAt: now, expiresAt: expiry.expiresAt,
       });
       return updated ? json({ updated: true }) : json({ error: "Memory not found or changed. Refresh and try again." }, 409);
     }
