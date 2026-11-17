@@ -53,4 +53,4 @@ The production D1 binding exists, but Group 03 intentionally did not apply the m
 Memory retrieval is bounded and heuristic, not semantic search. Conflict detection is conservative: Liza asks the user to resolve contradictions rather than guessing. Expiry cleanup is lazy on memory list/search; this is not a scheduled database-wide purge. Users must not save secrets or highly sensitive information.
 
 **GROUP 05 IMPLEMENTATION: COMPLETE (20/20).**  
-**Do not start Group 06 until the production D1 migration/release gate is resolved.**
+**Roadmap remains on Group 05 until the production D1 migration/release gate is resolved.** The current feature branch contains later-group baseline code; no later-group implementation work is being advanced as part of this checkpoint.
