@@ -8,7 +8,7 @@ import type { D1TaskDatabase } from "./task-store";
 
 type QueueRow = {
   id: string; workspace_id: string; user_id: string; status: string;
-  input_summary: string; plan_json: string; attempt_count: number;
+  input_summary: string; plan_json: string; worker_attempt_count: number;
 };
 type QueueDatabase = D1TaskDatabase;
 type QueueEnv = Omit<AgentEnv, "ACTION_DB"> & { ACTION_DB?: QueueDatabase | undefined };
@@ -24,7 +24,7 @@ export function createD1QueueStore(database: QueueDatabase) {
   return {
     recoverExpired: async (now: string) => {
       const result = await database.prepare(
-        "UPDATE agent_tasks SET status = CASE WHEN attempt_count < ? THEN 'queued' ELSE 'failed' END, lease_owner = NULL, lease_expires_at = NULL, heartbeat_at = NULL, updated_at = ? WHERE status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?"
+        "UPDATE agent_tasks SET status = CASE WHEN worker_attempt_count < ? THEN 'queued' ELSE 'failed' END, lease_owner = NULL, lease_expires_at = NULL, heartbeat_at = NULL, updated_at = ? WHERE status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?"
       ).bind(MAX_ATTEMPTS, now, now).run();
       if (result.success === false) throw new Error("D1 expired-lease recovery failed.");
       return result.meta?.changes ?? 0;
@@ -34,7 +34,7 @@ export function createD1QueueStore(database: QueueDatabase) {
         throw new Error("Invalid queue lease claim.");
       }
       const row = await database.prepare(
-        "UPDATE agent_tasks SET status = 'running', lease_owner = ?, lease_expires_at = ?, heartbeat_at = ?, attempt_count = attempt_count + 1, updated_at = ? WHERE id = (SELECT id FROM agent_tasks WHERE status = 'queued' AND attempt_count < ? ORDER BY created_at ASC LIMIT 1) AND status = 'queued' RETURNING id, workspace_id, user_id, status, input_summary, plan_json, attempt_count"
+        "UPDATE agent_tasks SET status = 'running', lease_owner = ?, lease_expires_at = ?, heartbeat_at = ?, worker_attempt_count = worker_attempt_count + 1, updated_at = ? WHERE id = (SELECT id FROM agent_tasks WHERE status = 'queued' AND attempt_count < ? ORDER BY created_at ASC LIMIT 1) AND status = 'queued' RETURNING id, workspace_id, user_id, status, input_summary, plan_json, attempt_count"
       ).bind(input.owner, input.leaseUntil, input.now, input.now, MAX_ATTEMPTS).first<QueueRow>();
       return row;
     },
