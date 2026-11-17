@@ -28,7 +28,7 @@ Never paste secret values into pull requests, chat, source files, or workflow lo
 
 ## 3. Group 05 migration boundary
 
-The release workflow configures exactly one D1 binding named ACTION_DB with migrations_dir set to migrations/group05. It applies only:
+The release workflow configures exactly one D1 binding named ACTION_DB. It resolves migrations_dir relative to the generated Wrangler config so that it points to the repository's migrations/group05 directory, then validates the resolved absolute path before applying anything. It applies only:
 
 migrations/group05/0005_memory_foundation.sql
 
