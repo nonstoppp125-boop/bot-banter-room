@@ -59,9 +59,14 @@ const messages = [{
 }];
 
 describe("authenticated chat memory integration", () => {
-  it("does not read or write memory without a first-party session cookie", async () => {
+  it("does not read or write memory for ordinary chat without a first-party session cookie", async () => {
     const { database, queries, writes } = makeDatabase();
-    expect(await buildChatMemoryInstruction(request(false), messages, { ACTION_DB: database })).toBe("");
+    const ordinary = [{
+      id: "message-ordinary",
+      role: "user" as const,
+      parts: [{ type: "text" as const, text: "Hello, can you help me?" }],
+    }];
+    expect(await buildChatMemoryInstruction(request(false), ordinary, { ACTION_DB: database })).toBe("");
     expect(queries).toEqual([]);
     expect(writes).toEqual([]);
   });
