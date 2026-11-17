@@ -90,6 +90,19 @@ describe("authenticated chat memory integration", () => {
     expect(writes).toEqual([]);
   });
 
+  it("does not save or echo credential-like explicit memory requests", async () => {
+    const { database, writes } = makeDatabase();
+    const secretMessage = [{
+      id: "message-secret",
+      role: "user" as const,
+      parts: [{ type: "text" as const, text: "Remember my api_key=super-secret-value" }],
+    }];
+    const instruction = await buildChatMemoryInstruction(request(), secretMessage, { ACTION_DB: database });
+    expect(writes.some((query) => query.includes("INSERT INTO memories"))).toBe(false);
+    expect(instruction).toContain("No new durable memory was saved");
+    expect(instruction).not.toContain("super-secret-value");
+  });
+
   it("does not persist ordinary chat as durable memory", async () => {
     const { database, writes } = makeDatabase();
     const ordinary = [{
