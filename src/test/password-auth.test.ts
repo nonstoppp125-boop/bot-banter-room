@@ -71,7 +71,15 @@ describe("first-party password authentication", () => {
     expect(response.status).toBe(401);
     expect((await handleSessionStatus(new Request("https://liza.example/api/auth/session"), env)).status).toBe(401);
   });
-  it("rejects oversized login bodies even without a Content-Length header", async () => {\n    const oversized = new Request("https://liza.example/api/auth/login", {\n      method: "POST",\n      headers: { origin: "https://liza.example", "content-type": "application/json" },\n      body: "x".repeat(4_097),\n    });\n    expect((await handlePasswordLogin(oversized, env)).status).toBe(413);\n  });\n  it("rejects malformed password hash configuration", async () => {
+  it("rejects oversized login bodies even without a Content-Length header", async () => {
+    const oversized = new Request("https://liza.example/api/auth/login", {
+      method: "POST",
+      headers: { origin: "https://liza.example", "content-type": "application/json" },
+      body: "x".repeat(4_097),
+    });
+    expect((await handlePasswordLogin(oversized, env)).status).toBe(413);
+  });
+  it("rejects malformed password hash configuration", async () => {
     env.LIZA_AUTH_PASSWORD_HASH = "plaintext";
     expect((await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password: "x" }), env)).status).toBe(503);
   });
