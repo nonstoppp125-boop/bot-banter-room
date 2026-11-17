@@ -151,16 +151,17 @@ describe("authenticated Manager task execution", () => {
     const state = makeDatabase("queued", true, summary);
     const { database, rows } = state;
     const plan = buildManagerPlan(summary, listAgents());
+    const approvalNow = new Date(Date.now() - 60_000).toISOString();
     const approval = await createManagerTaskApproval(database as never, {
       taskId: "task-1", workspaceId: "workspace-1", userId: "user-1",
-      inputSummary: summary, plan, now: "2026-11-16T12:00:00.000Z",
+      inputSummary: summary, plan, now: approvalNow,
     });
     rows[0]!["plan_json"] = JSON.stringify({ ...plan, approval });
     expect(state.approvalRow).not.toBeNull();
     state.approvalRow!["status"] = "approved";
     state.approvalRow!["decided_by_user_id"] = "workspace-admin";
     state.approvalRow!["decision_reason"] = "Reviewed and approved";
-    state.approvalRow!["decided_at"] = "2026-11-16T12:05:00.000Z";
+    state.approvalRow!["decided_at"] = new Date(Date.parse(approvalNow) + 30_000).toISOString();
     let invoked = false;
     const response = await handleTaskExecutionRequest(post({ taskId: "task-1" }), env(database), async ({ managerPlan }) => {
       invoked = true;
