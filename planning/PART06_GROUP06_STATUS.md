@@ -214,3 +214,11 @@ No merge to main; no production deployment.
 - Added queue lease/recovery/heartbeat tests and cron-config assertion.
 - CI run `44124226237` passed: dependency audit 0 vulnerabilities; TypeScript PASS; 57 test files / 438 tests PASS; local workerd streaming smoke PASS; production build PASS; generated Wrangler config validation PASS.
 - **Not yet runtime-verified against Cloudflare D1:** migration 0016 has not been applied and no production deployment was performed. The scheduled consumer is implemented and CI-tested, but live D1 persistence/cron execution remains a release-time verification item. No merge or production deployment was performed.
+
+## 2026-11-17 — Queue execution and retry-boundary verification
+
+- Added end-to-end worker tests proving a low-risk queued Manager task is claimed, executed through the injected specialist runner and persisted as completed; a high-risk task without valid approval fails closed without invoking the runner.
+- Separated the automatic worker-attempt counter from the existing manual retry counter. Manual retry resets the worker-attempt budget; expired worker leases are retried only within the worker's own two-attempt ceiling.
+- Manual stale recovery now clears lease owner, expiry and heartbeat metadata so an abandoned lease cannot remain attached to a terminal task.
+- Verified commit: `3d880396618d956d62a3fad89cc3f27132c2d9e3`; GitHub Actions run `44125261714`: SUCCESS — dependency audit 0 vulnerabilities; TypeScript PASS; 57 test files / 440 tests PASS; local workerd streaming smoke PASS; production build PASS; generated Wrangler config validation PASS.
+- No D1 migration was applied, no production deployment occurred and no merge was performed. Live D1/cron execution remains a release-time gate.
