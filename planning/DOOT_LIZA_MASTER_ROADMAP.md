@@ -161,30 +161,37 @@ G04.20 Regression-test multilingual behaviour. [VERIFIED]
 PART 06 — GROUP 05: MEMORY AND PERSONALIZATION
 ==================================================
 
-G05.01 Separate conversation context from durable memory.
-G05.02 Design memory data structures.
-G05.03 Extract useful user preferences.
-G05.04 Store project-specific knowledge.
-G05.05 Retrieve relevant memories.
-G05.06 Rank memory relevance.
-G05.07 Prevent unrelated memory leakage.
-G05.08 Resolve conflicting memories.
-G05.09 Update outdated information.
-G05.10 Support user-controlled memory.
-G05.11 Support memory inspection.
-G05.12 Support memory correction.
-G05.13 Support memory deletion.
-G05.14 Establish retention policies.
-G05.15 Protect sensitive information.
-G05.16 Add memory access controls.
-G05.17 Test context across sessions.
-G05.18 Test memory isolation.
-G05.19 Test retrieval accuracy.
-G05.20 Document memory limitations.
+G05.01 Separate conversation context from durable memory. [VERIFIED]
+G05.02 Design memory data structures. [VERIFIED]
+G05.03 Extract useful user preferences. [VERIFIED]
+G05.04 Store project-specific knowledge. [VERIFIED]
+G05.05 Retrieve relevant memories. [VERIFIED]
+G05.06 Rank memory relevance. [VERIFIED]
+G05.07 Prevent unrelated memory leakage. [VERIFIED]
+G05.08 Resolve conflicting memories. [VERIFIED]
+G05.09 Update outdated information. [VERIFIED]
+G05.10 Support user-controlled memory. [VERIFIED]
+G05.11 Support memory inspection. [VERIFIED]
+G05.12 Support memory correction. [VERIFIED]
+G05.13 Support memory deletion. [VERIFIED]
+G05.14 Establish retention policies. [VERIFIED]
+G05.15 Protect sensitive information. [VERIFIED]
+G05.16 Add memory access controls. [VERIFIED]
+G05.17 Test context across sessions. [VERIFIED]
+G05.18 Test memory isolation. [VERIFIED]
+G05.19 Test retrieval accuracy. [VERIFIED]
+G05.20 Document memory limitations. [VERIFIED]
 
 ==================================================
 PART 07 — GROUP 06: MANAGER AGENT AND PLANNER
 ==================================================
+
+
+Group 05 acceptance — 2026-11-17:
+- G05.01–G05.20 implementation verified (20/20); see planning/PART05_GROUP05_IMPLEMENTATION.md.
+- CI run 44080900423: 56/56 test files, 431/431 tests, TypeScript, dependency audit (0 vulnerabilities), Worker streaming smoke, production build, and generated Wrangler config all passed.
+- Production activation remains blocked until the Group 05 D1 schema can be applied without prematurely applying later-group migrations, followed by live authenticated memory CRUD/chat smoke tests.
+- Group 06 must not start until this production release gate is resolved.
 
 G06.01 Define ManagerAgent contract.
 G06.02 Detect task intent.
