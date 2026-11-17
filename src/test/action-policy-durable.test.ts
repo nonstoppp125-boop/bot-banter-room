@@ -115,4 +115,24 @@ describe("durable external action boundary", () => {
     await expect(executeVerifiedApprovedAction({ ...input, approvalStore: null })).rejects.toThrow(/storage/i);
   });
 
+
+  it("allows only one winner when two workers claim the same D1 idempotency key", async () => {
+    const claimed = new Set<string>();
+    const store = createD1ActionStore({
+      prepare: () => ({
+        bind: (key: unknown) => ({
+          run: async () => {
+            const value = String(key);
+            if (claimed.has(value)) return { success: true, meta: { changes: 0 } };
+            claimed.add(value);
+            return { success: true, meta: { changes: 1 } };
+          },
+        }),
+      }),
+    });
+    const results = await Promise.all([store.claim("concurrent-action"), store.claim("concurrent-action")]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(results.filter((value) => !value)).toHaveLength(1);
+  });
+
 });
