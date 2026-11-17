@@ -7,6 +7,15 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Cloudflare's Preview deploy command (wrangler preview) requires this block.
+  // An empty block is correct because Group 03 uses the same top-level runtime settings.
+  nitro: {
+    cloudflare: {
+      wrangler: {
+        previews: {},
+      },
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
