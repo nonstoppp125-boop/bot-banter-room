@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe("production D1 config preparation", () => {
-  it("adds exactly one ACTION_DB binding and resolves migrations relative to generated config", () => {
+  it("adds exactly one ACTION_DB binding and resolves default migrations relative to generated config", () => {
     const { root, configPath } = fixture();
     const config = {
       name: "doot",
@@ -49,6 +49,26 @@ describe("production D1 config preparation", () => {
     });
     expect(result.d1_databases.some((item) => item.binding === "OTHER_DB")).toBe(true);
     expect(result.secrets.required).toContain("GROQ_API_KEY");
+  });
+
+  it("limits ACTION_DB to the explicitly selected group migration directory", () => {
+    const { root, configPath } = fixture();
+    const groupMigrations = path.join(root, "migrations", "group05");
+    fs.mkdirSync(groupMigrations, { recursive: true });
+    fs.writeFileSync(path.join(groupMigrations, "0005_memory_foundation.sql"), "SELECT 1;");
+
+    const result = addProductionD1Binding({}, {
+      configPath,
+      databaseName: "doot-production",
+      databaseId: "123e4567-e89b-12d3-a456-426614174000",
+      migrationsDir: "migrations/group05",
+      projectRoot: root,
+    });
+
+    expect(result.d1_databases[0]).toMatchObject({
+      binding: "ACTION_DB",
+      migrations_dir: "../../migrations/group05",
+    });
   });
 
   it("replaces an existing ACTION_DB binding instead of creating duplicates", () => {
@@ -82,7 +102,18 @@ describe("production D1 config preparation", () => {
     })).toThrow("CLOUDFLARE_D1_DATABASE_ID");
   });
 
-  it("refuses deployment configuration when migrations are absent", () => {
+  it("rejects migration paths outside the repository", () => {
+    const { root, configPath } = fixture();
+    expect(() => addProductionD1Binding({}, {
+      configPath,
+      databaseName: "doot-production",
+      databaseId: "123e4567-e89b-12d3-a456-426614174000",
+      migrationsDir: "../outside",
+      projectRoot: root,
+    })).toThrow("must stay inside the repository");
+  });
+
+  it("refuses deployment configuration when the selected migrations directory is absent", () => {
     const { root, configPath } = fixture();
     fs.rmSync(path.join(root, "migrations"), { recursive: true, force: true });
     expect(() => addProductionD1Binding({}, {
