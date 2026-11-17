@@ -724,7 +724,7 @@ export async function saveExplicitMemoryFromMessage(
       now,
       limit: 100,
     });
-    const normalized = extracted.content.toLocaleLowerCase().replace(/\\s+/g, " ").trim();
+    const normalized = extracted.content.toLocaleLowerCase().replace(/\s+/g, " ").trim();
     if (existing.some((memory) =>
       memory.category === extracted.category &&
       memory.content.toLocaleLowerCase().replace(/\\s+/g, " ").trim() === normalized
