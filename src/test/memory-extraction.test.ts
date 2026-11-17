@@ -27,6 +27,8 @@ describe("explicit memory extraction", () => {
 
   it("rejects credential-like content and oversized requests", () => {
     expect(extractExplicitMemory("Remember my api_key=super-secret")).toBeNull();
+    expect(extractExplicitMemory("Remember this: Bearer abcdefghijklmnop")).toBeNull();
+    expect(extractExplicitMemory("Remember this: ghp_abcdefghijklmnopqrstuvwxyz1234567890")).toBeNull();
     expect(extractExplicitMemory("Remember this: " + "x".repeat(4_500))).toBeNull();
   });
 
