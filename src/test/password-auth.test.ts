@@ -9,7 +9,7 @@ async function encodedHash(password: string) {
   ));
   const b64 = (bytes: Uint8Array) => {
     let raw = ""; for (const byte of bytes) raw += String.fromCharCode(byte);
-    return btoa(raw).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+    return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   };
   return "pbkdf2$310000$" + b64(salt) + "$" + b64(bits);
 }
