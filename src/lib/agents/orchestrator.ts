@@ -11,6 +11,7 @@ import {
 } from "./linkedin-content-studio";
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { buildLizaSystem } from "./liza-prompt";
+import { extractExplicitMemory } from "./memory-extraction";
 import { evaluateLizaResponse } from "./response-quality";
 import { runDelegatedAgentWorkflow } from "./coordination";
 import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan, restoreManagerPlan } from "./manager";
@@ -696,6 +697,57 @@ async function checkChatRateLimit(request: Request, env: AgentEnv): Promise<Resp
   }
 }
 
+/** Persists only a direct, explicit remember command from the authenticated user. */
+export async function saveExplicitMemoryFromMessage(
+  request: Request,
+  env: AgentEnv,
+  messages: UIMessage[],
+): Promise<boolean> {
+  const latest = [...messages].reverse().find((message) => message.role === "user");
+  const text = latest?.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("\n") ?? "";
+  const extracted = extractExplicitMemory(text);
+  const database = env.ACTION_DB;
+  const token = readSessionCookie(request.headers.get("cookie"));
+  if (!extracted || !database || !token) return false;
+
+  try {
+    const now = new Date().toISOString();
+    const session = await createD1SessionStore(database).getActive(token, now);
+    if (!session?.workspaceId) return false;
+    const store = createD1MemoryStore(database);
+    const existing = await store.list({
+      workspaceId: session.workspaceId,
+      userId: session.userId,
+      now,
+      limit: 100,
+    });
+    const normalized = extracted.content.toLocaleLowerCase().replace(/\\s+/g, " ").trim();
+    if (existing.some((memory) =>
+      memory.category === extracted.category &&
+      memory.content.toLocaleLowerCase().replace(/\\s+/g, " ").trim() === normalized
+    )) return false;
+
+    await store.create({
+      id: "m_" + crypto.randomUUID().replace(/-/g, ""),
+      workspaceId: session.workspaceId,
+      userId: session.userId,
+      category: extracted.category,
+      content: extracted.content,
+      source: "user-entered",
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: null,
+    });
+    return true;
+  } catch {
+    // Memory is optional; unavailable storage must never block ordinary chat.
+    return false;
+  }
+}
+
 /** Handles a chat request: checks configuration, validates input, then delegates. */
 export async function handleChatRequest(request: Request): Promise<Response> {
   const env = getAgentEnv(request);
@@ -722,6 +774,7 @@ export async function handleChatRequest(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  await saveExplicitMemoryFromMessage(request, env, body["messages"]);
   const memoryContext = await loadUserMemoryContext(request, env, body["messages"]);
   const input: AgentRunInput = { messages: body["messages"], env, signal: request.signal, memoryContext };
 
