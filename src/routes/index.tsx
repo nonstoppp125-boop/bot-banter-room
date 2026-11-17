@@ -41,6 +41,7 @@ function Index() {
     onError: (e) => setError(e.message || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।"),
   });
   const busy = status === "submitted" || status === "streaming";
+  const signOut = async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); window.location.replace("/login"); };
 
   const send = (text: string) => {
     if (!text.trim() || busy) return;
@@ -70,8 +71,9 @@ function Index() {
           >
             Memory
           </a>
+          <button onClick={() => void signOut()} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign out</button>
           <button
-            onClick={() => setMessages([])}
+            onClick={() => setMessages([])
             aria-label="নতুন চ্যাট"
             className="grid size-9 place-items-center rounded-lg text-foreground hover:bg-accent"
           >
