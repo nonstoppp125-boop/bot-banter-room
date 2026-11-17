@@ -8,7 +8,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -122,9 +122,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [sessionReady, setSessionReady] = useState(false);
 
   // Cloudflare Access supplies the signed identity assertion; exchange it once
-  // for the app's own HttpOnly session before Memory API requests are made.
+  // for the app's own HttpOnly session before child routes make Memory API requests.
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/auth/session", {
@@ -132,14 +133,20 @@ function RootComponent() {
       credentials: "same-origin",
       cache: "no-store",
       signal: controller.signal,
-    }).catch(() => undefined);
+    })
+      .catch(() => undefined)
+      .finally(() => setSessionReady(true));
     return () => controller.abort();
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {sessionReady ? <Outlet /> : (
+        <main className="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">
+          Loading Liza…
+        </main>
+      )}
     </QueryClientProvider>
   );
 }
