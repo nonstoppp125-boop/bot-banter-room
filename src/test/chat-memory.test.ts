@@ -74,6 +74,15 @@ describe("authenticated chat memory integration", () => {
     expect(queries.some((query) => query.includes("FROM workspace_members"))).toBe(true);
     expect(instruction).toContain("USER-APPROVED DURABLE MEMORY");
     expect(instruction).toContain("Always reply in Bengali script");
+    expect(instruction).toContain("successfully saved");
+  });
+
+  it("does not claim an explicit memory was saved when no session exists", async () => {
+    const { database, writes } = makeDatabase();
+    const instruction = await buildChatMemoryInstruction(request(false), messages, { ACTION_DB: database });
+    expect(instruction).toContain("No new durable memory was saved");
+    expect(instruction).not.toContain("successfully saved");
+    expect(writes).toEqual([]);
   });
 
   it("does not persist ordinary chat as durable memory", async () => {
