@@ -25,9 +25,15 @@ Branch: `work/group06-manager-planner`
 - G08.19 — Per-agent attempts, outcomes, duration and workflow concurrency metrics.
 - G08.20 — Unit/integration coverage for routing, dependency order, handoff, context isolation, concurrency, failure, retries, timeout, cancellation, delegation and chat API integration.
 
-## Partial / infrastructure-dependent
+## G08.17 — Duplicate external-action prevention
 
-- G08.17 — A fail-closed durable action-claim contract, Cloudflare D1 adapter, exact persisted-approval verifier and approved-action wrapper exist. The approval request/inbox/decision API is now wired. No production D1 binding or real external-action publisher is provisioned; duplicate external actions are not claimed to be prevented end-to-end until runtime integration is verified.
+IMPLEMENTED AT CODE / CI LEVEL.
+
+- Fail-closed authorization requires a valid idempotency key, human approval and durable storage.
+- Cloudflare D1 adapter uses `INSERT OR IGNORE` against the primary-key `action_claims` table; only a confirmed single-row insert wins.
+- `executeVerifiedApprovedAction` verifies the persisted approval, approving user, workspace, action type, exact payload hash and expiry before claiming the idempotency key and invoking the supplied executor.
+- Duplicate and concurrent claims are rejected before the executor runs. Missing storage, malformed keys, unconfirmed D1 writes and invalid approvals fail closed.
+- The application still has no enabled external publisher; the wrapper is an authorization boundary, not a production side-effect integration.
 
 ## Verification
 
@@ -37,7 +43,7 @@ Branch: `work/group06-manager-planner`
 
 ## Status
 
-GROUP 08: PARTIALLY IMPLEMENTED — all coordination primitives are implemented; G08.17 awaits provisioned durable storage and an approved external-action executor.
+GROUP 08: COMPLETE AT CODE / CI LEVEL. Production D1 migration and external-action adapters remain release-time activation gates; no live publisher is enabled.
 No merge to `main`; no production deployment.
 
 
@@ -45,3 +51,10 @@ No merge to `main`; no production deployment.
 - Exact workspace/action/payload/expiry approval verification is enforced before an atomic D1 idempotency claim.
 - Authenticated approval request and decision API is wired; external action adapters remain disabled and require a live D1 binding plus platform credentials.
 - CI run `43809939660`: SUCCESS.
+
+## 2026-11-17 — Group 08 code-level acceptance refresh
+
+- Added a concurrent D1 action-claim regression test: two simultaneous requests for the same idempotency key produce exactly one winner.
+- G08.17 is complete at code level: D1 primary-key claim adapter, exact persisted-approval verifier and execute-after-claim wrapper are implemented and fail closed. No external publisher is wired or enabled.
+- GitHub Actions run `44128458440`: SUCCESS — dependency audit 0 vulnerabilities; TypeScript PASS; 57 test files / 449 tests PASS; local workerd streaming smoke PASS; production build PASS; generated Wrangler config validation PASS.
+- **Group 08: COMPLETE at code and CI level.** Applying production D1 migrations and enabling a real external-action executor remain separately authorized release work. No merge or production deployment was performed.

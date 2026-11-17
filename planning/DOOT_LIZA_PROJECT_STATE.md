@@ -129,7 +129,7 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 ## 2026-11-16 — CI verification refresh
 - GitHub Actions run `43798972433`: SUCCESS — 16 test files / 175 tests, TypeScript, production build and Nitro-generated Wrangler validation.
 - Group 07 G07.01–G07.25 code-level acceptance criteria are complete; 22 specialist agents and 13 permission-scoped tool IDs are CI-verified in run `44127627987` (57 test files / 448 tests).
-- Group 08 coordination primitives are substantially implemented; durable external-action idempotency remains unconfigured.
+- Group 08 G08.01–G08.20 code-level acceptance is complete and CI-verified (57 test files / 449 tests, run `44128458440`); production D1 migration and real external-action publisher remain disabled release gates.
 - Group 09 research primitives are partially implemented; semantic claim verification/full-page inspection remain open.
 - Group 10 remains offline LinkedIn intelligence; OAuth/account access is not claimed.
 
