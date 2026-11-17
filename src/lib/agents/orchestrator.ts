@@ -1,7 +1,8 @@
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
 import { groqModel } from "./groq";
-import { LIZA_SYSTEM } from "./liza-default";
+import { buildChatMemoryInstruction } from "./chat-memory";
+import { buildLizaSystem } from "./liza-prompt";
 import { getAgent, getSpecialist } from "./registry";
 import type { AgentEnv, AgentRunInput } from "./types";
 
@@ -9,7 +10,11 @@ import type { AgentEnv, AgentRunInput } from "./types";
 export function getAgentEnv(request: Request): AgentEnv {
   const env = (request as Request & { runtime?: { cloudflare?: { env?: AgentEnv } } }).runtime
     ?.cloudflare?.env;
-  return { GROQ_API_KEY: env?.GROQ_API_KEY, DOOT_MULTI_AGENT: env?.DOOT_MULTI_AGENT };
+  return {
+    GROQ_API_KEY: env?.GROQ_API_KEY,
+    DOOT_MULTI_AGENT: env?.DOOT_MULTI_AGENT,
+    ACTION_DB: env?.ACTION_DB,
+  };
 }
 
 export function isMultiAgentEnabled(env: AgentEnv): boolean {
@@ -18,7 +23,7 @@ export function isMultiAgentEnabled(env: AgentEnv): boolean {
 
 /** Problem Solver + Quality Reviewer in parallel, then one streamed synthesis. */
 export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
-  const { messages, env, signal } = input;
+  const { messages, env, signal, systemInstruction } = input;
   const apiKey = env.GROQ_API_KEY!;
   const modelMessages = await convertToModelMessages(messages);
 
@@ -40,7 +45,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
 
   const result = streamText({
     model: groqModel(apiKey),
-    instructions: `${LIZA_SYSTEM}\n\nWrite the final answer to the user using these internal specialist notes. Do not mention the specialists.\n\n${notes.join("\n\n")}`,
+    instructions: `${systemInstruction ?? "You are Liza, the assistant inside Doot."}\n\nWrite the final answer to the user using these internal specialist notes. Do not mention the specialists.\n\n${notes.join("\n\n")}`,
     messages: modelMessages,
     abortSignal: signal,
   });
@@ -68,7 +73,13 @@ export async function handleChatRequest(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const input = { messages, env, signal: request.signal };
+  const memoryInstruction = await buildChatMemoryInstruction(request, messages, env);
+  const input: AgentRunInput = {
+    messages,
+    env,
+    signal: request.signal,
+    systemInstruction: buildLizaSystem(messages) + memoryInstruction,
+  };
   if (isMultiAgentEnabled(env)) return runMultiAgent(input);
   return getAgent(typeof agentId === "string" ? agentId : undefined).run!(input);
 }
