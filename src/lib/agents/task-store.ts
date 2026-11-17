@@ -29,14 +29,14 @@ export function createD1TaskStore(database:D1TaskDatabase){
   claim:async(input:{id:string;workspaceId:string;userId:string;updatedAt:string})=>{if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!Number.isFinite(Date.parse(input.updatedAt)))throw new Error("Invalid task claim.");const result=await database.prepare("UPDATE agent_tasks SET status=?, updated_at=? WHERE id=? AND workspace_id=? AND user_id=? AND status=?").bind("running",input.updatedAt,input.id,input.workspaceId,input.userId,"queued").run();if(result.success===false)throw new Error("D1 task claim failed.");return result.meta?.changes===1;},
   retry:async(input:{id:string;workspaceId:string;userId:string;updatedAt:string})=>{
    if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!Number.isFinite(Date.parse(input.updatedAt)))throw new Error("Invalid task retry.");
-   const result=await database.prepare("UPDATE agent_tasks SET status = 'queued', attempt_count = attempt_count + 1, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'failed' AND attempt_count < 2").bind(input.updatedAt,input.id,input.workspaceId,input.userId).run();
+   const result=await database.prepare("UPDATE agent_tasks SET status = 'queued', attempt_count = attempt_count + 1, worker_attempt_count = 0, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'failed' AND attempt_count < 2").bind(input.updatedAt,input.id,input.workspaceId,input.userId).run();
    if(result.success===false)throw new Error("D1 task retry failed.");
    return result.meta?.changes===1;
   },
   recoverStale:async(input:{id:string;workspaceId:string;userId:string;staleBefore:string;updatedAt:string})=>{
    if(!ID.test(input.id)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!Number.isFinite(Date.parse(input.staleBefore))||!Number.isFinite(Date.parse(input.updatedAt))||Date.parse(input.staleBefore)>=Date.parse(input.updatedAt))throw new Error("Invalid stale task recovery.");
    const resultJson=serialize({error:"Task was manually recovered after its execution lease became stale; no background worker heartbeat is configured.",recoveredAt:input.updatedAt,recovery:"manual-stale-recovery"},2_000);
-   const result=await database.prepare("UPDATE agent_tasks SET status = 'failed', result_json = ?, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'running' AND updated_at < ?").bind(resultJson,input.updatedAt,input.id,input.workspaceId,input.userId,input.staleBefore).run();
+   const result=await database.prepare("UPDATE agent_tasks SET status = 'failed', result_json = ?, lease_owner = NULL, lease_expires_at = NULL, heartbeat_at = NULL, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'running' AND updated_at < ?").bind(resultJson,input.updatedAt,input.id,input.workspaceId,input.userId,input.staleBefore).run();
    if(result.success===false)throw new Error("D1 stale task recovery failed.");
    return result.meta?.changes===1;
   },
