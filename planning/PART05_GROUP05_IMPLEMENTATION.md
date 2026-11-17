@@ -65,3 +65,10 @@ Memory retrieval is bounded and heuristic, not semantic search. Conflict detecti
 - This is a release-safety change only. It has not been applied to the remote D1 database and no production deployment has been triggered.
 - Latest CI run `44082878485` on `303f5159ed88258b9c81462f0c467fde71cc256e` passed: 56 test files / 434 tests, TypeScript, production dependency audit, Worker streaming smoke test, production build and generated Wrangler config validation.
 - The current branch still contains later-group source. It must not be merged or deployed wholesale; a clean Group 04/05-only release artifact and authenticated production smoke test remain required.
+
+## Release-isolation audit — 2026-11-17
+
+- The current production `main` baseline does not contain the Group 05 memory route, session bootstrap route, or their supporting modules. In particular, `src/routes/api/auth/session.ts` and `src/routes/api/memories.ts` are absent from `main`.
+- Group 05's authenticated memory API depends on the Cloudflare Access session bootstrap to provision the user, workspace, membership and session records. The isolated five-table migration alone is therefore not sufficient to activate memory.
+- The feature branch contains the session bootstrap and memory implementation, but it is not a safe release candidate: comparison against production `main` reports 566 commits ahead, 6 behind and 245 changed files. Its orchestrator and home route also contain substantial later-group code, so copying those files wholesale would violate the ordered-group release boundary.
+- No merge, production migration or deployment was performed. The remaining Group 05 gate is to assemble and verify a minimal Group 04/05 release that includes only the necessary conversational, Access-session and memory changes, then configure the Access application, deploy, apply `migrations/group05`, and run authenticated live CRUD/chat tests.
