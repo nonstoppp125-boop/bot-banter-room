@@ -3,6 +3,7 @@ import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { groqModel } from "./groq";
 import { buildChatMemoryInstruction } from "./chat-memory";
 import { createD1SessionStore, readSessionCookie } from "./session-auth";
+import { createD1WorkspaceAccessStore } from "./workspace-store";
 import { buildLizaSystem } from "./liza-prompt";
 import { getAgent, getSpecialist } from "./registry";
 import type { AgentEnv, AgentRunInput } from "./types";
@@ -69,6 +70,8 @@ export async function handleChatRequest(request: Request): Promise<Response> {
   try {
     const session = await createD1SessionStore(env.ACTION_DB).getActive(sessionToken, new Date().toISOString());
     if (!session?.workspaceId) return Response.json({ error: "An active workspace session is required." }, { status: 401 });
+    const membership = await createD1WorkspaceAccessStore(env.ACTION_DB).getMembership(session.workspaceId, session.userId);
+    if (!membership) return Response.json({ error: "Workspace membership is required." }, { status: 403 });
   } catch {
     return Response.json({ error: "Authentication could not be verified." }, { status: 503 });
   }
