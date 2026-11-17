@@ -731,7 +731,7 @@ export async function saveExplicitMemoryFromMessage(
     )) return false;
 
     await store.create({
-      id: "m_" + crypto.randomUUID().replace(/-/g, ""),
+      id: "m-" + crypto.randomUUID().replace(/-/g, ""),
       workspaceId: session.workspaceId,
       userId: session.userId,
       category: extracted.category,
