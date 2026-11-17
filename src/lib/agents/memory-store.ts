@@ -37,6 +37,12 @@ function restore(row: {
   if (!CATEGORIES.has(row.category as MemoryCategory) || row.source !== "user-entered") {
     throw new Error("Stored memory metadata is invalid.");
   }
+  const expire = async (input: { workspaceId: string; userId: string; now: string }) => {
+    await database.prepare(
+      "UPDATE memories SET deleted_at = ?, updated_at = ? WHERE workspace_id = ? AND user_id = ? AND deleted_at IS NULL AND expires_at IS NOT NULL AND expires_at <= ? AND " + membership
+    ).bind(input.now, input.now, input.workspaceId, input.userId, input.now).run();
+  };
+
   return {
     id: row.id, workspaceId: row.workspace_id, userId: row.user_id,
     category: row.category as MemoryCategory, content: row.content,
@@ -49,10 +55,12 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
   if (!database || typeof database.prepare !== "function") throw new Error("A valid D1 memory database is required.");
   const columns = "id, workspace_id, user_id, category, content, source, created_at, updated_at, expires_at";
   const membership = "EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = memories.workspace_id AND wm.user_id = memories.user_id)";
-  const validate = (input: { id: string; workspaceId: string; userId: string; category: MemoryCategory; content: string; createdAt: string; updatedAt: string }) => {
+  const validate = (input: { id: string; workspaceId: string; userId: string; category: MemoryCategory; content: string; createdAt: string; updatedAt: string; expiresAt?: string | null }) => {
     if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.userId) ||
       !CATEGORIES.has(input.category) || !input.content.trim() || input.content.length > 4_000 ||
-      SECRET_PATTERN.test(input.content) || !validTime(input.createdAt) || !validTime(input.updatedAt)) {
+      SECRET_PATTERN.test(input.content) || !validTime(input.createdAt) || !validTime(input.updatedAt) ||
+      (input.expiresAt !== undefined && input.expiresAt !== null &&
+        (!validTime(input.expiresAt) || Date.parse(input.expiresAt) <= Date.parse(input.updatedAt)))) {
       throw new Error("Memory content or metadata is invalid. Do not store passwords, tokens or secrets.");
     }
   };
@@ -60,7 +68,7 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
   return {
     create: async (input: UserMemory) => {
       validate(input);
-      if (input.source !== "user-entered" || (input.expiresAt !== null && !validTime(input.expiresAt))) {
+      if (input.source !== "user-entered" || (input.expiresAt !== null && (!validTime(input.expiresAt) || Date.parse(input.expiresAt) <= Date.parse(input.createdAt)))) {
         throw new Error("Only explicit user-entered memories with valid expiry are accepted.");
       }
       const result = await database.prepare(
@@ -73,6 +81,7 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
       if (!ID.test(input.workspaceId) || !ID.test(input.userId) || !validTime(input.now)) return [];
       const limit = input.limit ?? 100;
       if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("Memory list limit must be between 1 and 100.");
+      await expire(input);
       const result = await database.prepare(
         `SELECT ${columns} FROM memories WHERE workspace_id = ? AND user_id = ? AND deleted_at IS NULL AND (expires_at IS NULL OR expires_at > ?) AND ${membership} ORDER BY updated_at DESC LIMIT ?`
       ).bind(input.workspaceId, input.userId, input.now, limit).all<Parameters<typeof restore>[0]>();
@@ -85,6 +94,7 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
       if (!ID.test(input.workspaceId) || !ID.test(input.userId) || !validTime(input.now) || query.length < 2) return [];
       const limit = input.limit ?? 10;
       if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("Memory search limit must be between 1 and 50.");
+      await expire(input);
       const records = await database.prepare(
         `SELECT ${columns} FROM memories WHERE workspace_id = ? AND user_id = ? AND deleted_at IS NULL AND (expires_at IS NULL OR expires_at > ?) AND ${membership} ORDER BY updated_at DESC LIMIT 100`
       ).bind(input.workspaceId, input.userId, input.now).all<Parameters<typeof restore>[0]>();
@@ -105,13 +115,13 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
 
     update: async (input: {
       id: string; workspaceId: string; userId: string; expectedUpdatedAt: string;
-      category: MemoryCategory; content: string; updatedAt: string;
+      category: MemoryCategory; content: string; updatedAt: string; expiresAt?: string | null;
     }) => {
-      validate({ ...input, createdAt: input.updatedAt });
+      validate({ ...input, createdAt: input.updatedAt, expiresAt: input.expiresAt ?? null });
       if (!validTime(input.expectedUpdatedAt)) throw new Error("Invalid memory version.");
       const result = await database.prepare(
-        `UPDATE memories SET category = ?, content = ?, source = 'user-entered', updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND updated_at = ? AND deleted_at IS NULL AND ${membership}`
-      ).bind(input.category, clean(input.content, 4_000), input.updatedAt, input.id, input.workspaceId, input.userId, input.expectedUpdatedAt).run();
+        `UPDATE memories SET category = ?, content = ?, source = 'user-entered', updated_at = ?, expires_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND updated_at = ? AND deleted_at IS NULL AND ${membership}`
+      ).bind(input.category, clean(input.content, 4_000), input.updatedAt, input.expiresAt ?? null, input.id, input.workspaceId, input.userId, input.expectedUpdatedAt).run();
       if (result.success === false) throw new Error("D1 memory update failed.");
       return result.meta?.changes === 1;
     },
