@@ -35,8 +35,6 @@ jobs:
           name: dependency-usage-report
           path: ${{ runner.temp }}/dependency-usage-report.md
           if-no-files-found: error
-      - name: Audit production dependencies
-        run: npm run security:audit
       - name: TypeScript
         run: npm run typecheck
       - name: Unit and integration tests
@@ -72,3 +70,7 @@ jobs:
           }
           console.log("Validated generated Worker config:", path);
           NODE
+      # Keep the security gate blocking, but run functional verification first so
+      # an upstream advisory without a patched release does not hide test results.
+      - name: Audit production dependencies
+        run: npm run security:audit
