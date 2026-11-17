@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_deploy:
-        description: "Explicitly authorize production D1 migrations and deployment"
+        description: "Explicitly authorize Group 05 D1 migration and production deployment"
         required: true
         type: boolean
         default: false
@@ -72,10 +72,11 @@ jobs:
           fi
           CONFIG="${configs[0]}"
           echo "path=$CONFIG" >> "$GITHUB_OUTPUT"
-      - name: Inject production ACTION_DB binding
+      - name: Inject Group 05-scoped production ACTION_DB binding
         env:
           CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
           CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+          CLOUDFLARE_D1_MIGRATIONS_DIR: migrations/group05
         run: node scripts/configure-production-d1.mjs "${{ steps.config.outputs.path }}"
       - name: Validate generated Wrangler configuration
         env:
