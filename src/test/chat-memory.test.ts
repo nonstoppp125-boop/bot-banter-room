@@ -47,6 +47,7 @@ describe("authenticated chat memory context", () => {
     expect(context).toContain("USER-AUTHORED SAVED MEMORY");
     expect(context).toContain("Prefer concise Bengali script responses");
     expect(context).toContain("untrusted reference data");
+    expect(context).toContain("If saved memories conflict, do not guess which is current");
     expect(queries.some((query) => query.includes("workspace_id = ? AND user_id = ?"))).toBe(true);
   });
 
