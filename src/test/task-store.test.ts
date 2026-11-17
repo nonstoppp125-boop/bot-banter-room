@@ -99,6 +99,7 @@ describe("durable agent task store", () => {
     expect(statement).toContain("status = 'failed'");
     expect(statement).toContain("attempt_count < 2");
     expect(statement).toContain("attempt_count = attempt_count + 1");
+    expect(statement).toContain("worker_attempt_count = 0");
     expect(values).toEqual(["2026-11-16T10:04:00Z", "task-1", "w1", "u1"]);
   });
 
@@ -122,6 +123,7 @@ describe("durable agent task store", () => {
     expect(statement).toContain("status = 'running'");
     expect(statement).toContain("updated_at < ?");
     expect(statement).toContain("status = 'failed'");
+    expect(statement).toContain("lease_expires_at = NULL");
     expect(values.slice(1)).toEqual(["2026-11-16T10:05:00Z", "task-1", "w1", "u1", "2026-11-16T10:00:00Z"]);
   });
 
