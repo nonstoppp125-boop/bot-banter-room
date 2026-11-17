@@ -84,10 +84,13 @@ jobs:
           if (d1.length !== 1 || !d1[0].database_id || !d1[0].database_name) {
             throw new Error("ACTION_DB binding is missing or invalid.");
           }
+          if (!config.previews || typeof config.previews !== "object" || Array.isArray(config.previews)) {
+            throw new Error("Generated Wrangler config is missing the required previews object.");
+          }
           // Group 03's generated Nitro config does not declare a rate-limit binding,
           // and the Group 03 runtime does not consume CHAT_RATE_LIMITER. Validate only
           // bindings actually required by this release; later groups may add rate limiting.
-          console.log("Validated ACTION_DB binding; no D1 migrations or undeclared bindings required.");
+          console.log("Validated ACTION_DB and previews configuration; no D1 migrations or undeclared bindings required.");
           NODE
       - name: Deploy Worker
         env:
