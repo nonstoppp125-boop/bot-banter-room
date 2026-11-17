@@ -5,7 +5,7 @@ describe("permission-controlled specialist tools", () => {
   it("exposes only tools granted to the selected specialist", () => {
     expect(listSpecialistTools("research")).toEqual(["research.search", "research.extract"]);
     expect(listSpecialistTools("coding")).toEqual(["coding.validate-command"]);
-    expect(listSpecialistTools("data-analyst")).toEqual([]);
+    expect(listSpecialistTools("data-analyst")).toEqual(["data.profile", "report.aggregate"]);
   });
 
 

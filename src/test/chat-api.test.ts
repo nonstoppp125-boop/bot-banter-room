@@ -410,7 +410,7 @@ describe("POST /api/chat orchestrator", () => {
     expect(specialists.find((agent) => agent.id === "research")?.permissions).toContain("research:search");
     expect(specialists.find((agent) => agent.id === "web-intelligence")?.permissions).toContain("research:extract");
     expect(specialists.find((agent) => agent.id === "coding")?.permissions).toContain("coding:validate-command");
-    expect(specialists.find((agent) => agent.id === "data-analyst")?.permissions).toEqual(["llm:inference"]);
+    expect(specialists.find((agent) => agent.id === "data-analyst")?.permissions).toEqual(["llm:inference", "data:profile", "report:aggregate"]);
 
     const results = await Promise.all(
       specialists.map((agent) => {
