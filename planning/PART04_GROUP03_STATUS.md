@@ -103,3 +103,17 @@ Therefore the existing workflow is not yet safe to run for the approved Group-03
 - Production Worker deployment has not yet been dispatched. It requires one manual GitHub Actions workflow dispatch; the available repository integration can merge and inspect workflows but cannot dispatch a workflow run.
 
 **Current Group 03 status: 19/20 — release pipeline merged and CI green; final live deployment/smoke verification pending. Do not start Group 04.**
+
+
+## Final production acceptance — 2026-11-17
+
+The prior 19/20 status above is superseded by this acceptance record.
+
+- The Group 03 release workflow was isolated from later-group migrations and merged to `main` through PR #4, followed by the validation correction in PR #6.
+- Production deployment was run against the correct Cloudflare Worker `bot-banter-room` from commit `5a9815bba89aab26106f1ef78712a85d9c5baf9a`.
+- GitHub Actions deployment run `44048477857` succeeded. Cloudflare Workers Builds check succeeded for script `bot-banter-room`; the deployment log confirmed `ACTION_DB` and `ASSETS` bindings, upload and trigger deployment, and the production workers.dev URL.
+- Live browser smoke test: homepage rendered as Liza; user sent `Hello` and received `Hello! 👋 How can I help you today?`, confirming the deployed chat request reached Groq and returned a response.
+- Provider quota telemetry and local workerd streaming smoke coverage are implemented on the feature branch and were included in the 419-test CI checkpoint `43894029439`.
+- No later-group D1 migrations were applied. This is intentional: Group 03 runtime does not consume those later-group schemas. The `ACTION_DB` binding exists; migration rollout remains scoped to the groups that own those tables.
+
+**GROUP 03 STATUS: COMPLETED (20/20).** Evidence: successful production Worker deployment, configured runtime secret, live homepage and chat smoke test, quota telemetry tests, local Worker streaming test, TypeScript/tests/build/config validation. Group 04 may proceed.
