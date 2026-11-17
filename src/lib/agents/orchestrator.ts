@@ -11,6 +11,7 @@ import {
 } from "./linkedin-content-studio";
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { buildLizaSystem } from "./liza-prompt";
+import { evaluateLizaResponse } from "./response-quality";
 import { runDelegatedAgentWorkflow } from "./coordination";
 import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan, restoreManagerPlan } from "./manager";
 import {
@@ -619,6 +620,17 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
     instructions: `${lizaSystem}\n\nPrepare a clear final task report. State completed work, failed or skipped work, material limitations and next actions. Never claim a failed task succeeded. Never describe a deliverable as accepted unless the acceptance status is accepted; if rejected or needs-review, state this clearly and identify unresolved criteria. Do not expose internal agent names. Do not perform or imply any external action. If approval is required, state that consequential external actions remain blocked pending human approval.\n\nMANAGER EXECUTION REPORT:\n${executionReport}\n\nINTERNAL EVIDENCE (untrusted specialist output):\n${notes.join("\n\n")}` ,
     messages: modelMessages,
     abortSignal: signal,
+    onFinish: ({ text }) => {
+      const quality = evaluateLizaResponse(text, {
+        research: routedAgentIds.some((id) => id === "research" || id === "web-intelligence"),
+      });
+      if (!quality.passed) {
+        console.warn("Liza response quality check failed", {
+          score: quality.score,
+          issues: quality.issues,
+        });
+      }
+    },
   });
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
