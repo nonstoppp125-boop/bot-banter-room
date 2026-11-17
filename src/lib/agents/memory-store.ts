@@ -37,11 +37,6 @@ function restore(row: {
   if (!CATEGORIES.has(row.category as MemoryCategory) || row.source !== "user-entered") {
     throw new Error("Stored memory metadata is invalid.");
   }
-  const expire = async (input: { workspaceId: string; userId: string; now: string }) => {
-    await database.prepare(
-      "UPDATE memories SET deleted_at = ?, updated_at = ? WHERE workspace_id = ? AND user_id = ? AND deleted_at IS NULL AND expires_at IS NOT NULL AND expires_at <= ? AND " + membership
-    ).bind(input.now, input.now, input.workspaceId, input.userId, input.now).run();
-  };
 
   return {
     id: row.id, workspaceId: row.workspace_id, userId: row.user_id,
@@ -63,6 +58,12 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
         (!validTime(input.expiresAt) || Date.parse(input.expiresAt) <= Date.parse(input.updatedAt)))) {
       throw new Error("Memory content or metadata is invalid. Do not store passwords, tokens or secrets.");
     }
+  };
+
+  const expire = async (input: { workspaceId: string; userId: string; now: string }) => {
+    await database.prepare(
+      "UPDATE memories SET deleted_at = ?, updated_at = ? WHERE workspace_id = ? AND user_id = ? AND deleted_at IS NULL AND expires_at IS NOT NULL AND expires_at <= ? AND " + membership
+    ).bind(input.now, input.now, input.workspaceId, input.userId, input.now).run();
   };
 
   return {
