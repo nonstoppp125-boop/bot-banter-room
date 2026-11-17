@@ -2,6 +2,7 @@ import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
 import { groqModel } from "./groq";
 import { buildChatMemoryInstruction } from "./chat-memory";
+import { createD1SessionStore, readSessionCookie } from "./session-auth";
 import { buildLizaSystem } from "./liza-prompt";
 import { getAgent, getSpecialist } from "./registry";
 import type { AgentEnv, AgentRunInput } from "./types";
@@ -55,6 +56,15 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
 /** Handles a chat request: checks the key, validates the body, delegates to an agent. */
 export async function handleChatRequest(request: Request): Promise<Response> {
   const env = getAgentEnv(request);
+  if (!env.ACTION_DB) return Response.json({ error: "Authentication service is not configured." }, { status: 503 });
+  const sessionToken = readSessionCookie(request.headers.get("cookie"));
+  if (!sessionToken) return Response.json({ error: "Authentication required." }, { status: 401 });
+  try {
+    const session = await createD1SessionStore(env.ACTION_DB).getActive(sessionToken, new Date().toISOString());
+    if (!session?.workspaceId) return Response.json({ error: "An active workspace session is required." }, { status: 401 });
+  } catch {
+    return Response.json({ error: "Authentication could not be verified." }, { status: 503 });
+  }
   if (!env.GROQ_API_KEY) {
     return Response.json(
       { error: "GROQ_API_KEY is not configured on the server" },
