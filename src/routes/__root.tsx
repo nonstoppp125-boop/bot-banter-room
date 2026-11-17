@@ -123,6 +123,19 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Cloudflare Access supplies the signed identity assertion; exchange it once
+  // for the app's own HttpOnly session before Memory API requests are made.
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/auth/session", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
