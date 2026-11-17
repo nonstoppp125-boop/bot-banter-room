@@ -200,7 +200,7 @@ async function generateSpecialist(
   const output = audit
     ? generated + "\n\nINTERNAL SPECIALIST TOOL CHECK (structural only; not factual verification):\n" + JSON.stringify(audit)
     : generated;
-  if (usageTotals) addUsage(usageTotals, { inputTokens: undefined, outputTokens: undefined }, JSON.stringify(messages).length, output.length);
+  if (usageTotals) addUsage(usageTotals, { inputTokens: undefined, outputTokens: undefined }, JSON.stringify(specialistMessages).length, output.length);
   return output;
 }
 
