@@ -462,3 +462,15 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - CI run `44078832670`, code commit `66a805509c18799079a517d6138de435823f8c12` (docs checkpoint `d66c62f748a8cba1dbefcb3d70a09db50214061d`): 55 test files / 420 tests PASS; TypeScript PASS; production dependency audit 0 vulnerabilities; workerd streaming smoke PASS; production build PASS; Wrangler config PASS.
 - Cloudflare automatic Workers Builds check failed for the feature-branch snapshot. No feature-branch production deployment was made. Group 03's separately deployed `main` Worker remains the production release.
 - Next dependency-ordered group: Group 05 — Memory and Personalization. Current feature branch `work/group06-manager-planner` includes memory source that requires a fresh Group 05 requirements-to-source audit before any completion claim.
+
+
+## 2026-11-17 — Group 05 implementation acceptance
+
+- Group 05 (Memory and Personalization) implementation is COMPLETE (20/20); see `planning/PART05_GROUP05_IMPLEMENTATION.md`.
+- Durable memory only persists explicit remember commands in Bangla, Banglish, or English. Memory is user-authored, secret-filtered, workspace-isolated, bounded, ranked for relevance, and labelled as untrusted context.
+- Added Memory settings navigation and UI for inspection, creation, editing, deletion, and optional retention dates. Expired records are lazily soft-deleted. Conflicting memories require user confirmation.
+- Fixed multilingual extraction continuation, case-insensitive category classification, Bengali project classification, duplicate whitespace normalization, accepted memory ID format, and irrelevant preference retrieval.
+- Consolidated CI run `44080900423`, commit `e36b1b8b407d01101b3745210ca71310ec4f3255`: 56/56 test files and 431/431 tests passed; TypeScript passed; production dependency audit found 0 vulnerabilities; Worker streaming smoke, production build, and generated Wrangler config validation passed.
+- Cloudflare automatic Workers Builds check failed for the feature-branch snapshot. No feature-branch deployment was attempted.
+- **Production activation is still pending:** Group 03 deployed `ACTION_DB`, but did not apply D1 migrations because the migration set contains later-group schemas. The memories table is in `0005_workspace_core.sql`; apply it only through a safe migration sequence that does not prematurely deploy later groups, then run live authenticated memory CRUD and chat smoke tests.
+- Per the required group order, **Group 06 is not started**. Remain on Group 05 until the production D1 migration/release gate is resolved.
