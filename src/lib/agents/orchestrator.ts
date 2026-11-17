@@ -727,7 +727,7 @@ export async function saveExplicitMemoryFromMessage(
     const normalized = extracted.content.toLocaleLowerCase().replace(/\s+/g, " ").trim();
     if (existing.some((memory) =>
       memory.category === extracted.category &&
-      memory.content.toLocaleLowerCase().replace(/\\s+/g, " ").trim() === normalized
+      memory.content.toLocaleLowerCase().replace(/\s+/g, " ").trim() === normalized
     )) return false;
 
     await store.create({
