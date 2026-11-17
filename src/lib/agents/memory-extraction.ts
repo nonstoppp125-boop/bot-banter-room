@@ -23,7 +23,7 @@ function inferCategory(content: string): MemoryCategory {
 
 /** Detects an explicit memory command even when security checks reject its content. */
 export function hasExplicitMemoryTrigger(text: string): boolean {
-  const normalized = text.replace(/[\\u0000-\\u001f\\u007f]/g, " ").trim();
+  const normalized = text.replace(/[\u0000-\u001f\u007f]/g, " ").trim();
   return Boolean(normalized && normalized.length <= 4_500 && EXPLICIT_TRIGGERS.some((trigger) => trigger.test(normalized)));
 }
 
