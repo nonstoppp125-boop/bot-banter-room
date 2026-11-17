@@ -21,6 +21,7 @@ export function addProductionD1Binding(
     configPath: string;
     databaseName?: string;
     databaseId?: string;
+    migrationsDir?: string;
     projectRoot?: string;
   },
 ): WranglerConfig & {
