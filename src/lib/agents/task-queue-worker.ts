@@ -34,7 +34,7 @@ export function createD1QueueStore(database: QueueDatabase) {
         throw new Error("Invalid queue lease claim.");
       }
       const row = await database.prepare(
-        "UPDATE agent_tasks SET status = 'running', lease_owner = ?, lease_expires_at = ?, heartbeat_at = ?, worker_attempt_count = worker_attempt_count + 1, updated_at = ? WHERE id = (SELECT id FROM agent_tasks WHERE status = 'queued' AND attempt_count < ? ORDER BY created_at ASC LIMIT 1) AND status = 'queued' RETURNING id, workspace_id, user_id, status, input_summary, plan_json, attempt_count"
+        "UPDATE agent_tasks SET status = 'running', lease_owner = ?, lease_expires_at = ?, heartbeat_at = ?, worker_attempt_count = worker_attempt_count + 1, updated_at = ? WHERE id = (SELECT id FROM agent_tasks WHERE status = 'queued' AND worker_attempt_count < ? ORDER BY created_at ASC LIMIT 1) AND status = 'queued' RETURNING id, workspace_id, user_id, status, input_summary, plan_json, worker_attempt_count"
       ).bind(input.owner, input.leaseUntil, input.now, input.now, MAX_ATTEMPTS).first<QueueRow>();
       return row;
     },
