@@ -136,26 +136,26 @@ G03.20 Test production binding and deployment. [VERIFIED — correct Worker depl
 ==================================================PART 05 — GROUP 04: LIZA CONVERSATIONAL INTELLIGENCE
 ==================================================
 
-G04.01 Establish permanent Liza identity.
-G04.02 Create professional system persona.
-G04.03 Support Bangla script.
-G04.04 Support English.
-G04.05 Support Banglish.
-G04.06 Detect language and preferred response style.
-G04.07 Preserve conversational context.
-G04.08 Improve natural conversational quality.
-G04.09 Support concise and detailed responses.
-G04.10 Understand user intent.
-G04.11 Ask for clarification when necessary.
-G04.12 Explain technical concepts appropriately.
-G04.13 Support structured answers.
-G04.14 Improve factual accuracy.
-G04.15 Require citations for research outputs.
-G04.16 Resist prompt injection.
-G04.17 Protect internal instructions.
-G04.18 Handle ambiguous and conflicting instructions.
-G04.19 Add response quality evaluation.
-G04.20 Regression-test multilingual behaviour.
+G04.01 Establish permanent Liza identity. [VERIFIED]
+G04.02 Create professional system persona. [VERIFIED]
+G04.03 Support Bangla script. [VERIFIED]
+G04.04 Support English. [VERIFIED]
+G04.05 Support Banglish. [VERIFIED]
+G04.06 Detect language and preferred response style. [VERIFIED]
+G04.07 Preserve conversational context. [VERIFIED]
+G04.08 Improve natural conversational quality. [VERIFIED]
+G04.09 Support concise and detailed responses. [VERIFIED]
+G04.10 Understand user intent. [VERIFIED]
+G04.11 Ask for clarification when necessary. [VERIFIED]
+G04.12 Explain technical concepts appropriately. [VERIFIED]
+G04.13 Support structured answers. [VERIFIED]
+G04.14 Improve factual accuracy. [VERIFIED]
+G04.15 Require citations for research outputs. [VERIFIED]
+G04.16 Resist prompt injection. [VERIFIED]
+G04.17 Protect internal instructions. [VERIFIED]
+G04.18 Handle ambiguous and conflicting instructions. [VERIFIED]
+G04.19 Add response quality evaluation. [VERIFIED]
+G04.20 Regression-test multilingual behaviour. [VERIFIED]
 
 ==================================================
 PART 06 — GROUP 05: MEMORY AND PERSONALIZATION
@@ -1051,3 +1051,7 @@ END OF COMPLETE MASTER ROADMAP
 
 - The Group 06 implementation includes authenticated synchronous execution of persisted Manager tasks, approval-bound unlock and a manual retry control. These are not background queue processing.
 - See `planning/PART06_GROUP06_STATUS.md` for exact security and runtime boundaries.
+
+## Group 04 acceptance — 2026-11-17
+
+Group 04 source integration and consolidated CI are complete. Latest CI run `44078832670` on commit `d66c62f748a8cba1dbefcb3d70a09db50214061d`: production dependency audit found 0 vulnerabilities; TypeScript PASS; 55 test files / 420 tests PASS; local workerd streaming smoke test PASS; production build PASS; generated Wrangler config validation PASS. The Cloudflare automatic Workers Builds check for this feature-branch commit reported failure; no production deployment was attempted from this branch. The separately verified `main` production Worker remains deployed and live from Group 03.
