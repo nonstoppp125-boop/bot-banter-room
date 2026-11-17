@@ -21,7 +21,7 @@ function fakeDb(firstResult: unknown = null) {
 
 describe("D1 background task queue", () => {
   it("atomically claims only one queued task and increments its bounded attempt", async () => {
-    const row = { id: "task-1", workspace_id: "workspace-1", user_id: "user-1", status: "running", input_summary: "research", plan_json: "{}", attempt_count: 1 };
+    const row = { id: "task-1", workspace_id: "workspace-1", user_id: "user-1", status: "running", input_summary: "research", plan_json: "{}", worker_attempt_count: 1 };
     const { db, calls } = fakeDb(row);
     const store = createD1QueueStore(db);
     const claimed = await store.claimNext({ owner: "worker-1", now: "2026-11-17T10:00:00.000Z", leaseUntil: "2026-11-17T10:01:30.000Z" });
@@ -37,7 +37,7 @@ describe("D1 background task queue", () => {
     const store = createD1QueueStore(db);
     await store.recoverExpired("2026-11-17T10:00:00.000Z");
     expect(calls[0]?.sql).toContain("lease_expires_at <= ?");
-    expect(calls[0]?.sql).toContain("attempt_count < ?");
+    expect(calls[0]?.sql).toContain("worker_attempt_count < ?");
     expect(calls[0]?.values).toEqual([2, "2026-11-17T10:00:00.000Z", "2026-11-17T10:00:00.000Z"]);
   });
 
