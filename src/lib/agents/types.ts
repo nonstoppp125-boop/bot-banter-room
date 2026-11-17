@@ -3,6 +3,8 @@ import type { ModelMessage, UIMessage } from "ai";
 /** Worker bindings this app reads. Names must match the Cloudflare config. */
 export type AgentEnv = {
   GROQ_API_KEY?: string | undefined;
+  Groq_API_Key?: string | undefined;
+  Groq_API_KEY?: string | undefined;
   /** Plain-text Worker variable; multi-agent runs only when exactly "true". */
   DOOT_MULTI_AGENT?: string | undefined;
 };

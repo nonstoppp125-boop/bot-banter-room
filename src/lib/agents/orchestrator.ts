@@ -9,7 +9,12 @@ import type { AgentEnv, AgentRunInput } from "./types";
 export function getAgentEnv(request: Request): AgentEnv {
   const env = (request as Request & { runtime?: { cloudflare?: { env?: AgentEnv } } }).runtime
     ?.cloudflare?.env;
-  return { GROQ_API_KEY: env?.GROQ_API_KEY, DOOT_MULTI_AGENT: env?.DOOT_MULTI_AGENT };
+  // Cloudflare binding names are case-sensitive. Support the legacy mixed-case
+  // name already configured in this Worker as well as the canonical name.
+  return {
+    GROQ_API_KEY: env?.GROQ_API_KEY ?? env?.Groq_API_Key ?? env?.Groq_API_KEY,
+    DOOT_MULTI_AGENT: env?.DOOT_MULTI_AGENT,
+  };
 }
 
 export function isMultiAgentEnabled(env: AgentEnv): boolean {
@@ -60,12 +65,32 @@ export async function handleChatRequest(request: Request): Promise<Response> {
   let messages: UIMessage[];
   let agentId: unknown;
   try {
-    const body = await request.json();
-    messages = body?.messages;
-    agentId = body?.agentId;
-    if (!Array.isArray(messages)) throw new Error("Invalid messages");
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength > 1_000_000) {
+      return Response.json({ error: "Request is too large" }, { status: 413 });
+    }
+    const body: unknown = await request.json();
+    if (!body || typeof body !== "object") throw new Error("Invalid body");
+    const data = body as { messages?: unknown; agentId?: unknown };
+    if (!Array.isArray(data.messages) || data.messages.length === 0 || data.messages.length > 40) {
+      throw new Error("Invalid messages");
+    }
+    const validMessages = data.messages.every((message) => {
+      if (!message || typeof message !== "object") return false;
+      const item = message as { role?: unknown; parts?: unknown };
+      return ["user", "assistant"].includes(String(item.role)) &&
+        Array.isArray(item.parts) &&
+        item.parts.length > 0 &&
+        item.parts.every((part) => part && typeof part === "object" &&
+          (part as { type?: unknown }).type === "text" &&
+          typeof (part as { text?: unknown }).text === "string" &&
+          ((part as { text: string }).text.length <= 20_000));
+    });
+    if (!validMessages) throw new Error("Invalid message content");
+    messages = data.messages as UIMessage[];
+    agentId = data.agentId;
   } catch {
-    return Response.json({ error: "Invalid request" }, { status: 400 });
+    return Response.json({ error: "Invalid request. Check message format and limits." }, { status: 400 });
   }
 
   const input = { messages, env, signal: request.signal };
