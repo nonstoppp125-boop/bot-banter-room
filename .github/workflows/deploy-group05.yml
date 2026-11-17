@@ -105,6 +105,10 @@ jobs:
           if (configuredMigrationDir !== expectedMigrationDir) {
             throw new Error("Refusing to apply any migration directory other than migrations/group05.");
           }
+          const migrationFiles = fs.readdirSync(expectedMigrationDir).filter((name) => name.endsWith(".sql"));
+          if (migrationFiles.length !== 1 || migrationFiles[0] !== "0005_memory_foundation.sql") {
+            throw new Error("Refusing to apply unexpected Group 05 migration files.");
+          }
           for (const key of ["CF_ACCESS_TEAM_DOMAIN", "CF_ACCESS_AUD", "CF_ACCESS_ALLOWED_EMAIL_DOMAINS"]) {
             if (typeof config.vars?.[key] !== "string" || !config.vars[key]) {
               throw new Error("Required Cloudflare Access variable is missing: " + key);
