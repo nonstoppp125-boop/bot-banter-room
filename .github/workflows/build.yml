@@ -24,3 +24,5 @@ jobs:
         # The task-approval test requires a later Manager group absent from this release branch.
         run: npm test -- --exclude src/test/task-approval.test.ts
       - run: npm run build
+      - name: Validate Group 05 release configuration script syntax
+        run: node --check scripts/configure-group05-production.mjs
