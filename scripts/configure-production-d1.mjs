@@ -9,6 +9,7 @@ export function addProductionD1Binding(config, {
   configPath,
   databaseName,
   databaseId,
+  migrationsDir = "migrations",
   projectRoot = process.cwd(),
 }) {
   const name = databaseName?.trim();
@@ -21,17 +22,25 @@ export function addProductionD1Binding(config, {
     throw new Error("CLOUDFLARE_D1_DATABASE_ID is missing or invalid.");
   }
   if (!configPath) throw new Error("Generated Wrangler config path is required.");
+  if (typeof migrationsDir !== "string" || !migrationsDir.trim() || path.isAbsolute(migrationsDir)) {
+    throw new Error("CLOUDFLARE_D1_MIGRATIONS_DIR must be a relative directory.");
+  }
 
-  const migrationsPath = path.resolve(projectRoot, "migrations");
-  if (!fs.existsSync(migrationsPath)) {
-    throw new Error("The tracked migrations directory is missing.");
+  const root = path.resolve(projectRoot);
+  const migrationsPath = path.resolve(root, migrationsDir);
+  const relativeToRoot = path.relative(root, migrationsPath);
+  if (!relativeToRoot || relativeToRoot === ".." || relativeToRoot.startsWith(".." + path.sep)) {
+    throw new Error("CLOUDFLARE_D1_MIGRATIONS_DIR must stay inside the repository.");
+  }
+  if (!fs.existsSync(migrationsPath) || !fs.statSync(migrationsPath).isDirectory()) {
+    throw new Error("The configured D1 migrations directory is missing.");
   }
   const migrations = fs.readdirSync(migrationsPath).filter((file) => file.endsWith(".sql"));
   if (migrations.length === 0) {
-    throw new Error("No SQL migrations were found; refusing production deployment.");
+    throw new Error("No SQL migrations were found in the configured D1 migrations directory.");
   }
 
-  const migrationsDir = path.relative(
+  const migrationsPathFromConfig = path.relative(
     path.dirname(path.resolve(configPath)),
     migrationsPath,
   ).split(path.sep).join("/");
@@ -42,7 +51,7 @@ export function addProductionD1Binding(config, {
     binding: "ACTION_DB",
     database_name: name,
     database_id: id,
-    migrations_dir: migrationsDir,
+    migrations_dir: migrationsPathFromConfig,
   });
 
   const requiredSecrets = new Set(Array.isArray(config.secrets?.required) ? config.secrets.required : []);
@@ -63,9 +72,10 @@ async function main() {
     configPath,
     databaseName: process.env.CLOUDFLARE_D1_DATABASE_NAME,
     databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID,
+    migrationsDir: process.env.CLOUDFLARE_D1_MIGRATIONS_DIR || "migrations",
   });
   fs.writeFileSync(configPath, JSON.stringify(configured, null, 2) + "\n");
-  console.log("Injected ACTION_DB binding and migrations path; database ID redacted.");
+  console.log("Injected ACTION_DB binding and scoped migrations path; database ID redacted.");
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
