@@ -118,7 +118,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
-        run: npx --yes wrangler@4.162.0 d1 migrations apply "$CLOUDFLARE_D1_DATABASE_NAME" --remote --yes --config "${{ steps.config.outputs.path }}"
+        run: npx --yes wrangler@4.162.0 d1 migrations apply "$CLOUDFLARE_D1_DATABASE_NAME" --remote --config "${{ steps.config.outputs.path }}"
 
       - name: Deploy Group 05 Worker
         env:
