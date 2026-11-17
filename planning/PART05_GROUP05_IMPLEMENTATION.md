@@ -6,7 +6,7 @@
 ## Scope and behavior
 
 - Conversation history and durable memory remain separate. Durable memory is loaded only from an authenticated session and the active workspace.
-- The existing `memories` table from `migrations/0005_workspace_core.sql` stores user-authored entries with category, source, timestamps, optional expiry, and soft deletion.
+- The Group 05-scoped `migrations/group05/0005_memory_foundation.sql` migration creates only the identity, workspace-membership, session and durable-memory tables required for this group. It stores user-authored entries with category, source, timestamps, optional expiry, and soft deletion.
 - Chat extraction stores only a direct English, Bengali-script, or Banglish remember command. Ordinary chat is not promoted to durable memory.
 - Extraction classifies preference, project, workflow, and other entries. Bengali project terms and case-insensitive English preference terms are covered.
 - The D1 store enforces user + workspace scope and live membership on writes, reads, edits, expiry cleanup, and deletion.
@@ -35,9 +35,9 @@
 
 ## Verification
 
-GitHub Actions run **44080900423**, commit `e36b1b8b407d01101b3745210ca71310ec4f3255`:
+GitHub Actions run **44082878485**, exact commit `303f5159ed88258b9c81462f0c467fde71cc256e`:
 
-- 56 test files passed; 431 tests passed
+- 56 test files passed; 434 tests passed
 - TypeScript passed
 - Production dependency audit: 0 vulnerabilities
 - Cloudflare Worker streaming runtime smoke test passed
@@ -48,7 +48,7 @@ The Cloudflare automatic Workers Builds check for this feature-branch commit rep
 
 ## Production activation gate and limitations
 
-The production D1 binding exists, but Group 03 intentionally did not apply the migration set because it contains schemas owned by later groups. The memory table is created by `0005_workspace_core.sql`. Group 05 is not production-active until a controlled migration plan applies the required schema without prematurely applying later-group migrations, followed by authenticated live CRUD/chat smoke tests.
+The production D1 binding exists, but Group 03 intentionally did not apply the migration set because it contains schemas owned by later groups. The isolated Group 05 migration is `migrations/group05/0005_memory_foundation.sql`; the manual deployment workflow now scopes `ACTION_DB` to `migrations/group05`. CI verifies this configuration and the migration's five-table allowlist. Group 05 is not production-active until a clean Group 04/05-only release is prepared, the isolated migration is applied to production, and authenticated live CRUD/chat smoke tests pass.
 
 Memory retrieval is bounded and heuristic, not semantic search. Conflict detection is conservative: Liza asks the user to resolve contradictions rather than guessing. Expiry cleanup is lazy on memory list/search; this is not a scheduled database-wide purge. Users must not save secrets or highly sensitive information.
 
@@ -63,5 +63,5 @@ Memory retrieval is bounded and heuristic, not semantic search. Conflict detecti
 - Updated the manual deploy workflow to select only `migrations/group05`, rather than the repository-wide migration directory.
 - Added regression tests for migration-directory scoping, path traversal rejection and the exact Group 05 table allowlist.
 - This is a release-safety change only. It has not been applied to the remote D1 database and no production deployment has been triggered.
-- CI for these latest changes is pending. The prior 431-test run remains valid only for its exact earlier commit.
+- Latest CI run `44082878485` on `303f5159ed88258b9c81462f0c467fde71cc256e` passed: 56 test files / 434 tests, TypeScript, production dependency audit, Worker streaming smoke test, production build and generated Wrangler config validation.
 - The current branch still contains later-group source. It must not be merged or deployed wholesale; a clean Group 04/05-only release artifact and authenticated production smoke test remain required.
