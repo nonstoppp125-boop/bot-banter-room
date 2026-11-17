@@ -53,7 +53,6 @@ describe("D1 background task queue", () => {
     expect(calls[1]?.sql).toContain("status = 'running'");
   });
 
-
   it("executes a claimed low-risk Manager task and persists its final output", async () => {
     const inputSummary = "Research current trends in cloud computing";
     const plan = buildManagerPlan(inputSummary, listAgents());
@@ -98,6 +97,28 @@ describe("D1 background task queue", () => {
     );
     expect(runner).not.toHaveBeenCalled();
     expect(calls.at(-1)?.values[0]).toBe("failed");
+  });
+
+  it("cancels a stalled output stream on timeout and records failure, not user cancellation", async () => {
+    const inputSummary = "Research current trends in cloud computing";
+    const plan = buildManagerPlan(inputSummary, listAgents());
+    const row = {
+      id: "task-queue-timeout", workspace_id: "workspace-1", user_id: "user-1",
+      status: "running", input_summary: inputSummary, plan_json: JSON.stringify(plan),
+      worker_attempt_count: 1,
+    };
+    const { db, calls } = fakeDb(row);
+    await processD1TaskQueue(
+      { ACTION_DB: db, GROQ_API_KEY: "test-key" },
+      {
+        now: () => new Date("2026-11-17T10:00:00.000Z"),
+        owner: () => "worker-timeout-1",
+        timeoutMs: 5,
+        runner: async () => new Response(new ReadableStream<Uint8Array>({ start() {} })),
+      },
+    );
+    expect(calls.at(-1)?.values[0]).toBe("failed");
+    expect(String(calls.at(-1)?.values[1])).toContain("timed out");
   });
 
   it("does not process without a configured D1 binding", async () => {
