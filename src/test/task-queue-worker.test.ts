@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createD1QueueStore, processD1TaskQueue } from "@/lib/agents/task-queue-worker";
+import { buildManagerPlan } from "@/lib/agents/manager";
+import { listAgents } from "@/lib/agents/registry";
 
 function fakeDb(firstResult: unknown = null) {
   const calls: Array<{ sql: string; values: unknown[] }> = [];
@@ -49,6 +51,53 @@ describe("D1 background task queue", () => {
     expect(calls[0]?.sql).toContain("lease_owner = ?");
     expect(calls[1]?.sql).toContain("lease_owner = ?");
     expect(calls[1]?.sql).toContain("status = 'running'");
+  });
+
+
+  it("executes a claimed low-risk Manager task and persists its final output", async () => {
+    const inputSummary = "Research current trends in cloud computing";
+    const plan = buildManagerPlan(inputSummary, listAgents());
+    const row = {
+      id: "task-queue-1", workspace_id: "workspace-1", user_id: "user-1",
+      status: "running", input_summary: inputSummary, plan_json: JSON.stringify(plan),
+      worker_attempt_count: 1,
+    };
+    const { db, calls } = fakeDb(row);
+    const result = await processD1TaskQueue(
+      { ACTION_DB: db, GROQ_API_KEY: "test-key" },
+      {
+        now: () => new Date("2026-11-17T10:00:00.000Z"),
+        owner: () => "worker-test-1",
+        runner: async () => new Response('0:"Queue execution result"\\n'),
+      },
+    );
+    expect(result).toEqual({ recovered: 1, claimed: true, taskId: "task-queue-1" });
+    expect(calls).toHaveLength(3);
+    expect(calls[2]?.sql).toContain("lease_owner = ?");
+    expect(calls[2]?.values[0]).toBe("completed");
+    expect(String(calls[2]?.values[1])).toContain("Queue execution result");
+  });
+
+  it("fails closed when a high-risk queued task has no valid approval", async () => {
+    const inputSummary = "Publish this announcement to LinkedIn";
+    const plan = buildManagerPlan(inputSummary, listAgents());
+    const row = {
+      id: "task-queue-risk", workspace_id: "workspace-1", user_id: "user-1",
+      status: "running", input_summary: inputSummary, plan_json: JSON.stringify(plan),
+      worker_attempt_count: 1,
+    };
+    const { db, calls } = fakeDb(row);
+    const runner = vi.fn(async () => new Response('0:"must not run"\\n'));
+    await processD1TaskQueue(
+      { ACTION_DB: db, GROQ_API_KEY: "test-key" },
+      {
+        now: () => new Date("2026-11-17T10:00:00.000Z"),
+        owner: () => "worker-risk-1",
+        runner,
+      },
+    );
+    expect(runner).not.toHaveBeenCalled();
+    expect(calls.at(-1)?.values[0]).toBe("failed");
   });
 
   it("does not process without a configured D1 binding", async () => {
