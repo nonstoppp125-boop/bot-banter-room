@@ -18,11 +18,44 @@ export type PasswordAuthEnv = {
 const json = (body: unknown, status = 200) => Response.json(body, {
   status, headers: { "Cache-Control": "no-store", "Vary": "Cookie" },
 });
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const HASH = /^pbkdf2\$310000\$([A-Za-z0-9_-]{22})\$([A-Za-z0-9_-]{43})$/;
+const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+const HASH = /^pbkdf2\\$310000\\$([A-Za-z0-9_-]{22})\\$([A-Za-z0-9_-]{43})$/;
+const MAX_LOGIN_BODY_BYTES = 4_096;
+type LoginBodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 413 };
+async function readLoginBody(request: Request): Promise<LoginBodyResult> {
+  const declared = request.headers.get("content-length");
+  if (declared !== null) {
+    if (!/^\\d+$/.test(declared)) return { ok: false, status: 400 };
+    if (Number(declared) > MAX_LOGIN_BODY_BYTES) return { ok: false, status: 413 };
+  }
+  if (!request.body) return { ok: false, status: 400 };
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > MAX_LOGIN_BODY_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413 };
+      }
+      chunks.push(value);
+    }
+    if (!total) return { ok: false, status: 400 };
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    try { return { ok: true, value: JSON.parse(new TextDecoder().decode(bytes)) }; }
+    catch { return { ok: false, status: 400 }; }
+  } catch { return { ok: false, status: 400 }; }
+  finally { reader.releaseLock(); }
+}
 function b64url(bytes: Uint8Array): string {
   let raw = ""; for (const byte of bytes) raw += String.fromCharCode(byte);
-  return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return btoa(raw).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
 }
 function fromB64url(value: string): Uint8Array {
   const raw = atob(value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4));
@@ -75,8 +108,8 @@ async function issueSession(request: Request, env: PasswordAuthEnv, email: strin
   const token = generateSessionToken();
   const expiresAt = new Date(Date.parse(now) + 12 * 60 * 60 * 1000).toISOString();
   await createD1SessionStore(env.ACTION_DB).create({
-    id: "s_" + crypto.randomUUID().replace(/-/g, ""), userId, workspaceId,
-    tokenHash: await hashSessionToken(token), createdAt: now, expiresAt,
+    id: "s_" + crypto.randomUUID().replace(/-/g, ""),
+    userId, workspaceId, tokenHash: await hashSessionToken(token), createdAt: now, expiresAt,
   });
   return new Response(null, { status: 204, headers: {
     "Set-Cookie": createSessionCookie(token, 12 * 60 * 60),
@@ -89,13 +122,9 @@ export async function handlePasswordLogin(request: Request, env: PasswordAuthEnv
   if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return json({ error: "JSON content type is required." }, 415);
   const auth = configured(env);
   if (!auth || !env.ACTION_DB) return json({ error: "Password login is not configured." }, 503);
-  let body: unknown;
-  try {
-    const length = Number(request.headers.get("content-length") ?? 0);
-    if (length > 4096) return json({ error: "Request is too large." }, 413);
-    body = await request.json();
-  } catch { return json({ error: "Invalid login request." }, 400); }
-  const input = body as { email?: unknown; password?: unknown } | null;
+  const parsed = await readLoginBody(request);
+  if (!parsed.ok) return json({ error: parsed.status === 413 ? "Login request is too large." : "Invalid login request." }, parsed.status);
+  const input = parsed.value as { email?: unknown; password?: unknown } | null;
   if (!input || typeof input.email !== "string" || typeof input.password !== "string" ||
       input.email.length > 254 || input.password.length > 256) return json({ error: "Invalid email or password." }, 400);
   try {
