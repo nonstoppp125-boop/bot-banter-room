@@ -11,7 +11,7 @@ type QueueRow = {
   input_summary: string; plan_json: string; attempt_count: number;
 };
 type QueueDatabase = D1TaskDatabase;
-type QueueEnv = AgentEnv & { ACTION_DB?: QueueDatabase };
+type QueueEnv = Omit<AgentEnv, "ACTION_DB"> & { ACTION_DB?: QueueDatabase | undefined };
 type QueueRunner = (input: { messages: UIMessage[]; env: AgentEnv; signal: AbortSignal; managerPlan?: unknown }) => Promise<Response>;
 
 const LEASE_MS = 90_000;
