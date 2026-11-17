@@ -63,6 +63,7 @@ const testDatabase = {
     return { bind(...values: unknown[]) {
       return { first: async <T = Record<string, unknown>>() => query.includes("FROM sessions")
         ? { id: "session-1", user_id: "user-1", workspace_id: "workspace-1", expires_at: "2027-01-01T00:00:00.000Z", created_at: "2026-11-17T00:00:00.000Z" } as T
+        : query.includes("FROM workspace_members") ? { workspace_id: "workspace-1", user_id: "user-1", role: "owner" } as T
         : null };
     }};
   },
