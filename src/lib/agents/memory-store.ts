@@ -22,7 +22,9 @@ export type D1MemoryDatabase = {
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
 const CATEGORIES = new Set<MemoryCategory>(["preference", "project", "workflow", "other"]);
-const SECRET_PATTERN = /(?:password|api[_ -]?key|secret|access token|refresh token|private key|one[- ]time password|\botp\b)\s*[:=]/i;
+const SECRET_PATTERN =
+  /(?:password|api[_ -]?key|secret|access token|refresh token|private key|one[- ]time password|\botp\b)\s*[:=]|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bBearer\s+[A-Za-z0-9._~-]{12,}|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{12,}|AKIA[0-9A-Z]{16})\b/i;
+const GLOBAL_PREFERENCE_PATTERN = /(?:reply|response|answer|language|script|tone|style|format|concise|brief|short|বাং(?:লা|লিশ)|বাংলা|ইংরেজি|সংক্ষিপ্ত|ভাষা|লিপি)/iu;
 
 function clean(value: string, max: number): string {
   return value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ").trim().slice(0, max);
@@ -107,7 +109,7 @@ export function createD1MemoryStore(database: D1MemoryDatabase) {
         // does not overlap with the current task (e.g. reply language or brevity).
         const score = terms.reduce((total, term) => total + (text.includes(term) ? 1 : 0), 0) +
           (text.includes(query) ? terms.length + 1 : 0) +
-          (memory.category === "preference" ? 1 : 0);
+          (memory.category === "preference" && GLOBAL_PREFERENCE_PATTERN.test(text) ? 1 : 0);
         return { memory, score };
       }).filter((item) => item.score > 0)
         .sort((a, b) => b.score - a.score || b.memory.updatedAt.localeCompare(a.memory.updatedAt))
