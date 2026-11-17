@@ -60,6 +60,7 @@ export function addProductionD1Binding(config, {
   return {
     ...config,
     d1_databases,
+    triggers: { ...(config.triggers ?? {}), crons: [...new Set([...(config.triggers?.crons ?? []), "* * * * *"])] },
     secrets: { ...(config.secrets ?? {}), required: [...requiredSecrets] },
   };
 }
