@@ -61,10 +61,13 @@ async function readOutput(response: Response, signal: AbortSignal): Promise<stri
   if (!response.ok || !response.body) throw new Error("Specialist execution returned no readable response.");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
+  const cancelOnAbort = () => { void reader.cancel(signal.reason).catch(() => {}); };
+  if (signal.aborted) cancelOnAbort();
+  else signal.addEventListener("abort", cancelOnAbort, { once: true });
   let buffer = "", output = "";
   try {
     while (true) {
-      if (signal.aborted) throw new Error("Queue task execution timed out.");
+      if (signal.aborted) throw new Error("Queue task execution timed out or lost its lease.");
       const { done, value } = await reader.read();
       buffer += decoder.decode(value, { stream: !done });
       const lines = buffer.split("\n"); buffer = lines.pop() ?? "";
@@ -81,15 +84,19 @@ async function readOutput(response: Response, signal: AbortSignal): Promise<stri
     if (buffer.startsWith("0:")) {
       try { const part: unknown = JSON.parse(buffer.slice(2)); if (typeof part === "string") output += part; } catch { /* Ignore malformed trailing record. */ }
     }
+    if (signal.aborted) throw new Error("Queue task execution timed out or lost its lease.");
     if (!output.trim()) throw new Error("Specialist workflow returned no final text.");
     return output.trim();
-  } finally { reader.releaseLock(); }
+  } finally {
+    signal.removeEventListener("abort", cancelOnAbort);
+    reader.releaseLock();
+  }
 }
 
 /** Runs one durable D1 task per scheduled invocation; leases make concurrent workers safe. */
 export async function processD1TaskQueue(
   env: QueueEnv,
-  options: { runner?: QueueRunner; now?: () => Date; owner?: () => string } = {},
+  options: { runner?: QueueRunner; now?: () => Date; owner?: () => string; timeoutMs?: number } = {},
 ): Promise<{ recovered: number; claimed: boolean; taskId?: string }> {
   if (!env.ACTION_DB) throw new Error("ACTION_DB is not configured for the task queue.");
   const nowFn = options.now ?? (() => new Date());
@@ -100,7 +107,8 @@ export async function processD1TaskQueue(
   const task = await store.claimNext({ owner, now, leaseUntil: new Date(Date.parse(now) + LEASE_MS).toISOString() });
   if (!task) return { recovered, claimed: false };
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort("Queue execution timeout."), 75_000);
+  const timeoutMs = options.timeoutMs ?? 75_000;
+  const timeout = setTimeout(() => controller.abort("Queue execution timeout."), timeoutMs);
   const heartbeat = setInterval(() => {
     const beat = nowFn().toISOString();
     void store.heartbeat({ id: task.id, owner, now: beat, leaseUntil: new Date(Date.parse(beat) + LEASE_MS).toISOString() })
@@ -128,7 +136,8 @@ export async function processD1TaskQueue(
   } catch (error) {
     const failedAt = nowFn().toISOString();
     const detail = error instanceof Error ? error.message.slice(0, 500) : "Queue execution failed.";
-    await store.finish({ id: task.id, owner, status: controller.signal.aborted ? "cancelled" : "failed", result: { error: detail, failedAt }, now: failedAt });
+    // Queue workers have no user-cancel path: timeout, lease loss and execution errors are failures.
+    await store.finish({ id: task.id, owner, status: "failed", result: { error: detail, failedAt }, now: failedAt });
     return { recovered, claimed: true, taskId: task.id };
   } finally {
     clearTimeout(timeout);
