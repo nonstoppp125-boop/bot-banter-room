@@ -1,16 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handleSessionLogoutRequest, type CloudflareAccessAuthEnv } from "@/lib/agents/cloudflare-access-auth";
-
-function getAuthEnv(request: Request): CloudflareAccessAuthEnv {
-  return (request as Request & { runtime?: { cloudflare?: { env?: CloudflareAccessAuthEnv } } })
-    .runtime?.cloudflare?.env ?? {};
+import { handleSessionLogout, type PasswordAuthEnv } from "@/lib/agents/password-auth";
+function getEnv(request: Request): PasswordAuthEnv {
+  return (request as Request & { runtime?: { cloudflare?: { env?: PasswordAuthEnv } } }).runtime?.cloudflare?.env ?? {};
 }
-
 export const Route = createFileRoute("/api/auth/logout")({
-  server: {
-    handlers: {
-      POST: async ({ request }) => handleSessionLogoutRequest(request, getAuthEnv(request)),
-      HEAD: async () => new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } }),
-    },
-  },
+  server: { handlers: { POST: async ({ request }) => handleSessionLogout(request, getEnv(request)) } },
 });
