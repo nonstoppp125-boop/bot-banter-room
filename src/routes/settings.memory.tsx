@@ -16,6 +16,7 @@ function MemorySettingsPage() {
   const [items, setItems] = useState<Memory[]>([]);
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<Memory["category"]>("preference");
+  const [expiresAt, setExpiresAt] = useState("");
   const [editing, setEditing] = useState<Memory | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -43,12 +44,12 @@ function MemorySettingsPage() {
         method: editing ? "PATCH" : "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(editing
-          ? { id: editing.id, expectedUpdatedAt: editing.updatedAt, category, content: content.trim() }
-          : { category, content: content.trim() }),
+          ? { id: editing.id, expectedUpdatedAt: editing.updatedAt, category, content: content.trim(), expiresAt: expiresAt ? new Date(expiresAt + "T23:59:59.000Z").toISOString() : null }
+          : { category, content: content.trim(), expiresAt: expiresAt ? new Date(expiresAt + "T23:59:59.000Z").toISOString() : null }),
       });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "Memory could not be saved.");
-      setContent(""); setEditing(null); setNotice(editing ? "Memory updated." : "Memory saved.");
+      setContent(""); setEditing(null); setExpiresAt(""); setNotice(editing ? "Memory updated." : "Memory saved.");
       await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Memory could not be saved."); }
     finally { setBusy(false); }
@@ -65,7 +66,7 @@ function MemorySettingsPage() {
       });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || "Memory could not be deleted.");
-      if (editing?.id === item.id) { setEditing(null); setContent(""); }
+      if (editing?.id === item.id) { setEditing(null); setContent(""); setExpiresAt(""); }
       setNotice("Memory deleted."); await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Memory could not be deleted."); }
     finally { setBusy(false); }
@@ -90,9 +91,12 @@ function MemorySettingsPage() {
           </select>
           <label className="mt-4 block text-sm font-medium" htmlFor="memory-content">What should be remembered?</label>
           <textarea id="memory-content" value={content} onChange={(event) => setContent(event.target.value)} maxLength={4000} rows={4} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-sm" placeholder="Write a preference, project detail or workflow…" />
+          <label className="mt-4 block text-sm font-medium" htmlFor="memory-expiry">Retention (optional)</label>
+          <input id="memory-expiry" type="date" value={expiresAt} min={new Date().toISOString().slice(0, 10)} onChange={(event) => setExpiresAt(event.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" />
+          <p className="mt-1 text-xs text-muted-foreground">Leave blank to keep the memory until you delete it.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={() => void save()} disabled={busy || !content.trim()} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">{busy ? "Saving…" : editing ? "Save changes" : "Add memory"}</button>
-            {editing && <button onClick={() => { setEditing(null); setContent(""); }} disabled={busy} className="rounded-lg border border-border px-4 py-2 text-sm">Cancel edit</button>}
+            {editing && <button onClick={() => { setEditing(null); setContent(""); setExpiresAt(""); }} disabled={busy} className="rounded-lg border border-border px-4 py-2 text-sm">Cancel edit</button>}
           </div>
         </section>
         <section>
@@ -101,9 +105,9 @@ function MemorySettingsPage() {
             items.length === 0 ? <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">No saved memories yet.</p> :
             <div className="space-y-3">{items.map((item) => (
               <article key={item.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-2 flex items-center justify-between gap-3"><span className="rounded-full bg-muted px-2 py-1 text-xs">{item.category}</span><span className="text-xs text-muted-foreground">Updated {new Date(item.updatedAt).toLocaleDateString()}</span></div>
+                <div className="mb-2 flex items-center justify-between gap-3"><span className="rounded-full bg-muted px-2 py-1 text-xs">{item.category}</span><span className="text-xs text-muted-foreground">Updated {new Date(item.updatedAt).toLocaleDateString()} · {item.expiresAt ? `Expires ${new Date(item.expiresAt).toLocaleDateString()}` : "No expiry"}</span></div>
                 <p className="whitespace-pre-wrap break-words text-sm">{item.content}</p>
-                <div className="mt-3 flex gap-3 text-sm"><button disabled={busy} onClick={() => { setEditing(item); setContent(item.content); setCategory(item.category); }} className="underline">Edit</button><button disabled={busy} onClick={() => void remove(item)} className="text-destructive underline">Delete</button></div>
+                <div className="mt-3 flex gap-3 text-sm"><button disabled={busy} onClick={() => { setEditing(item); setContent(item.content); setCategory(item.category); setExpiresAt(item.expiresAt ? new Date(item.expiresAt).toISOString().slice(0, 10) : ""); }} className="underline">Edit</button><button disabled={busy} onClick={() => void remove(item)} className="text-destructive underline">Delete</button></div>
               </article>
             ))}</div>}
         </section>
