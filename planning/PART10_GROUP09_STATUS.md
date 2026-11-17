@@ -21,8 +21,8 @@ Branch: `work/group06-manager-planner`
 
 ## Remaining limitations
 
-- G09.06 — Semantic claim verification is not guaranteed. Citation presence, publisher diversity and freshness do not prove a claim true or that two sources semantically agree.
-- Search and extraction depend on a configured Tavily API key and provider availability/quotas.
+- G09.06 — Implemented as a separate Groq semantic evidence-review pass. Each supported/contradicted assessment must cite an exact quote and source ID that is validated against the retrieved source text; invalid evidence is downgraded to unknown. This is a same-model second pass, not an independent model or proof of truth.
+- Search, extraction and semantic review depend on configured Tavily/Groq API keys and provider availability/quotas. A second Groq pass adds token usage to research requests.
 - No broad arbitrary-URL crawler or unrestricted direct-fetch tool is enabled.
 - Market and competitor analysis remains bounded by the sources actually returned; no live source means no live research claim.
 
@@ -33,7 +33,7 @@ Branch: `work/group06-manager-planner`
 
 ## Status
 
-GROUP 09: PARTIALLY IMPLEMENTED — search and selected-page extraction are integrated; semantic claim verification remains open.
+GROUP 09: COMPLETE AT CODE / CI LEVEL — semantic evidence alignment is integrated; production deployment and live provider credentials remain runtime gates.
 No merge to `main`; no production deployment.
 
 
@@ -48,3 +48,13 @@ No merge to `main`; no production deployment.
 - Added a regression test proving two differently labeled pages on the same hostname remain single-source evidence.
 - This reduces false corroboration but does not provide semantic entailment or contradiction detection; G09.06 remains open.
 - GitHub Actions run `43826138186`: SUCCESS — TypeScript, 46 test files / 342 tests, production build and Nitro-generated Wrangler validation.
+
+## 2026-11-17 — G09.06 semantic evidence review
+
+- Added a bounded second-pass Groq semantic review over research-specialist claims and the exact retrieved source excerpts.
+- The verifier emits up to 12 claim assessments: `supported`, `contradicted` or `unknown`. A non-unknown verdict requires an exact quote and source ID that match the supplied source content; invalid or fabricated quotations are downgraded to `unknown`.
+- Inputs are bounded to 12,000 claim characters, 8 sources and 3,000 source-content characters each. Outputs are schema-checked; malformed responses and provider errors become an explicit unavailable status. Caller cancellation propagates.
+- Publication dates, publisher, retrieval date and URLs are supplied to the verifier so stale/undated evidence can be qualified.
+- The final synthesis is explicitly instructed that this is a same-model assessment, not proof of truth or an independent-model verification.
+- GitHub Actions run `44129498884`: SUCCESS — dependency audit 0 vulnerabilities; TypeScript PASS; 58 test files / 455 tests PASS; local workerd streaming smoke PASS; production build PASS; generated Wrangler config validation PASS.
+- **Group 09: COMPLETE at code and CI level.** Tavily/Groq credentials and provider quotas remain runtime requirements. No merge or production deployment was performed.

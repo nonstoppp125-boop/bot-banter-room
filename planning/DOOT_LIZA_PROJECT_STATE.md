@@ -130,13 +130,13 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - GitHub Actions run `43798972433`: SUCCESS — 16 test files / 175 tests, TypeScript, production build and Nitro-generated Wrangler validation.
 - Group 07 G07.01–G07.25 code-level acceptance criteria are complete; 22 specialist agents and 13 permission-scoped tool IDs are CI-verified in run `44127627987` (57 test files / 448 tests).
 - Group 08 G08.01–G08.20 code-level acceptance is complete and CI-verified (57 test files / 449 tests, run `44128458440`); production D1 migration and real external-action publisher remain disabled release gates.
-- Group 09 research primitives are partially implemented; semantic claim verification/full-page inspection remain open.
+- Group 09 G09.01–G09.20 code-level acceptance is complete and CI-verified. G09.06 uses a bounded same-model second-pass evidence assessment with exact quote/source-ID validation (run `44129498884`, 58 test files / 455 tests).
 - Group 10 remains offline LinkedIn intelligence; OAuth/account access is not claimed.
 
 
 ## 2026-11-16 — Group 08/09 progress
 - Group 08 coordination primitives are implemented and CI-verified; durable external-action idempotency remains partial until D1 provisioning and an approved executor.
-- Group 09 now includes selected-page extraction through Tavily Extract in addition to search; source content is retained as untrusted evidence and extraction failures preserve search snippets.
+- Group 09 includes Tavily Search/Extract, untrusted-source handling, citation/freshness checks and semantic evidence alignment. Live Tavily/Groq credentials remain required for runtime research.
 - CI run `43799513815`: SUCCESS — TypeScript, 16 test files / 178 tests, production build and Wrangler validation.
 - Semantic claim verification remains an explicit limitation.
 
