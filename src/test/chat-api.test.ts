@@ -224,6 +224,19 @@ describe("POST /api/chat orchestrator", () => {
     expect(state.streamSystems[0]).toContain("REVIEWER-NOTE");
   });
 
+  it("uses the latest user language for multi-agent final synthesis", async () => {
+    const bengaliMessages = [
+      { id: "bn-1", role: "user", parts: [{ type: "text", text: "বাংলায় উত্তর দাও" }] },
+    ];
+    const res = await handleChatRequest(
+      req({ messages: bengaliMessages }, { ...KEY, DOOT_MULTI_AGENT: "true" }),
+    );
+    expect(res.status).toBe(200);
+    await res.text();
+    expect(state.streamSystems).toHaveLength(1);
+    expect(state.streamSystems[0]).toContain("Reply in Bengali script");
+  });
+
   it("runs quality review with explicit failure evidence when a specialist fails", async () => {
     state.failProblemSolver = true;
 
