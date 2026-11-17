@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadUserMemoryContext } from "@/lib/agents/orchestrator";
+import { loadUserMemoryContext, saveExplicitMemoryFromMessage } from "@/lib/agents/orchestrator";
 import type { AgentEnv } from "@/lib/agents/types";
 import type { UIMessage } from "ai";
 
@@ -60,6 +60,45 @@ describe("authenticated chat memory context", () => {
     const { database } = makeDatabase(false);
     const context = await loadUserMemoryContext(new Request("https://liza.example/api/chat", { headers: { cookie } }), { ACTION_DB: database }, messages);
     expect(context).toBeUndefined();
+  });
+
+  it("persists only explicit remember requests in the authenticated workspace", async () => {
+    const { database, queries } = makeDatabase();
+    const explicit = [{
+      id: "message-remember", role: "user",
+      parts: [{ type: "text", text: "মনে রেখো, আমি বাংলা লিপিতে উত্তর পছন্দ করি" }],
+    }] as UIMessage[];
+    expect(await saveExplicitMemoryFromMessage(
+      new Request("https://liza.example/api/chat", { headers: { cookie } }),
+      { ACTION_DB: database },
+      explicit,
+    )).toBe(true);
+    expect(queries.some((query) => query.includes("INSERT INTO memories"))).toBe(true);
+  });
+
+  it("does not store ordinary chat, duplicate memories or unauthenticated requests", async () => {
+    const ordinary = [{
+      id: "message-ordinary", role: "user",
+      parts: [{ type: "text", text: "I prefer concise replies." }],
+    }] as UIMessage[];
+    const { database, queries } = makeDatabase();
+    expect(await saveExplicitMemoryFromMessage(
+      new Request("https://liza.example/api/chat", { headers: { cookie } }),
+      { ACTION_DB: database },
+      ordinary,
+    )).toBe(false);
+    expect(queries).toEqual([]);
+
+    const duplicate = [{
+      id: "message-duplicate", role: "user",
+      parts: [{ type: "text", text: "Remember that Prefer concise Bengali script responses" }],
+    }] as UIMessage[];
+    expect(await saveExplicitMemoryFromMessage(
+      new Request("https://liza.example/api/chat", { headers: { cookie } }),
+      { ACTION_DB: database },
+      duplicate,
+    )).toBe(false);
+    expect(queries.some((query) => query.includes("INSERT INTO memories"))).toBe(false);
   });
 
   it("does not query on a short, non-searchable user message", async () => {
