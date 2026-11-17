@@ -24,7 +24,7 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
 const CATEGORIES = new Set<MemoryCategory>(["preference", "project", "workflow", "other"]);
 const SECRET_PATTERN =
   /(?:password|api[_ -]?key|secret|access token|refresh token|private key|one[- ]time password|\botp\b)\s*[:=]|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bBearer\s+[A-Za-z0-9._~-]{12,}|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{12,}|AKIA[0-9A-Z]{16})\b/i;
-const GLOBAL_PREFERENCE_PATTERN = /(?:reply|response|answer|language|script|tone|style|format|concise|brief|short|বাং(?:লা|লিশ)|বাংলা|ইংরেজি|সংক্ষিপ্ত|ভাষা|লিপি)/iu;
+const GLOBAL_PREFERENCE_PATTERN = /(?:reply|response|answer|language|script|tone|style|format|concise|brief|short|bangla|bengali|banglish|english|romanized|বাং(?:লা|লিশ)|বাংলা|বাংলিশ|ইংরেজি|সংক্ষিপ্ত|ভাষা|লিপি)/iu;
 
 function clean(value: string, max: number): string {
   return value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ").trim().slice(0, max);
