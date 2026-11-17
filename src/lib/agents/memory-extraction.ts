@@ -15,7 +15,7 @@ const EXPLICIT_TRIGGERS = [
 ];
 
 function inferCategory(content: string): MemoryCategory {
-  if (/\b(project|repository|app|প্রজেক্ট|প্রকল্প)\b/i.test(content)) return "project";
+  if (/\b(project|repository|app)\b|প্রজেক্ট|প্রকল্প/i.test(content)) return "project";
   if (/\b(workflow|process|routine|steps?)\b|কাজের নিয়ম|পদ্ধতি|ধাপ/u.test(content)) return "workflow";
   if (/\b(prefer|preference|like|dislike|want|always|never)\b|পছন্দ|ভালো লাগে|চাই|সবসময়|কখনোই/u.test(content)) return "preference";
   return "other";
