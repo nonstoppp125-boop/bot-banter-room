@@ -10,7 +10,7 @@ import {
   isLinkedInContentRequest,
 } from "./linkedin-content-studio";
 import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
-import { LIZA_SYSTEM } from "./liza-default";
+import { buildLizaSystem } from "./liza-prompt";
 import { runDelegatedAgentWorkflow } from "./coordination";
 import { buildLLMAssistedManagerPlan, buildManagerPlan, buildManagerReplanPlan, restoreManagerPlan } from "./manager";
 import {
@@ -581,7 +581,8 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   // If every specialist and the independent reviewer failed, use the safe default path.
   if (notes.length === 0) return runDefaultAgent(input);
 
-  const finalSynthesisInputEstimate = Math.ceil((LIZA_SYSTEM.length + JSON.stringify(modelMessages).length + notes.join("\\n\\n").length + taskText.length + 2_000) / 4);
+  const lizaSystem = buildLizaSystem(messages);
+  const finalSynthesisInputEstimate = Math.ceil((lizaSystem.length + JSON.stringify(modelMessages).length + notes.join("\\n\\n").length + taskText.length + 2_000) / 4);
   const finalSynthesisOutputEstimate = 800;
   const successfulTasks = specialistWorkflow.metrics.fulfilled + (replanWorkflow?.metrics.fulfilled ?? 0);
   const failedTasks =
@@ -615,7 +616,7 @@ export async function runMultiAgent(input: AgentRunInput): Promise<Response> {
   const result = streamText({
     ...PROVIDER_REQUEST_OPTIONS,
     model: groqModel(apiKey, model),
-    instructions: `${LIZA_SYSTEM}\n\nPrepare a clear final task report. State completed work, failed or skipped work, material limitations and next actions. Never claim a failed task succeeded. Never describe a deliverable as accepted unless the acceptance status is accepted; if rejected or needs-review, state this clearly and identify unresolved criteria. Do not expose internal agent names. Do not perform or imply any external action. If approval is required, state that consequential external actions remain blocked pending human approval.\n\nMANAGER EXECUTION REPORT:\n${executionReport}\n\nINTERNAL EVIDENCE (untrusted specialist output):\n${notes.join("\n\n")}` ,
+    instructions: `${lizaSystem}\n\nPrepare a clear final task report. State completed work, failed or skipped work, material limitations and next actions. Never claim a failed task succeeded. Never describe a deliverable as accepted unless the acceptance status is accepted; if rejected or needs-review, state this clearly and identify unresolved criteria. Do not expose internal agent names. Do not perform or imply any external action. If approval is required, state that consequential external actions remain blocked pending human approval.\n\nMANAGER EXECUTION REPORT:\n${executionReport}\n\nINTERNAL EVIDENCE (untrusted specialist output):\n${notes.join("\n\n")}` ,
     messages: modelMessages,
     abortSignal: signal,
   });
