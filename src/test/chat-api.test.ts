@@ -100,6 +100,14 @@ describe("POST /api/chat orchestrator", () => {
     expect((await handleChatRequest(req({ messages: "x" }, KEY))).status).toBe(400);
   });
 
+  it("rejects oversized streamed chat bodies before invoking an agent", async () => {
+    const oversized = req("x".repeat(1_048_577), KEY);
+    const response = await handleChatRequest(oversized);
+    expect(response.status).toBe(413);
+    expect(state.generateCalls).toBe(0);
+    expect(state.streamSystems).toHaveLength(0);
+  });
+
   it("by default makes one Groq call (no specialists), even for unknown agentId", async () => {
     const res = await handleChatRequest(req({ messages: msgs, agentId: "nope" }, KEY));
     expect(res.status).toBe(200);
