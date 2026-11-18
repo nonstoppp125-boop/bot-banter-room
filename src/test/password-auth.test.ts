@@ -58,6 +58,7 @@ describe("first-party password authentication", () => {
   it("creates a workspace session after valid owner credentials", async () => {
     const password = "correct horse battery staple";
     env.LIZA_AUTH_PASSWORD_HASH = await encodedHash(password);
+    expect(env.LIZA_AUTH_PASSWORD_HASH).toMatch(/^pbkdf2\\$100000\\$/);
     const response = await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password }), env);
     expect(response.status).toBe(204);
     const cookie = response.headers.get("set-cookie") ?? "";
@@ -81,6 +82,8 @@ describe("first-party password authentication", () => {
   });
   it("rejects malformed password hash configuration", async () => {
     env.LIZA_AUTH_PASSWORD_HASH = "plaintext";
+    expect((await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password: "x" }), env)).status).toBe(503);
+    env.LIZA_AUTH_PASSWORD_HASH = "pbkdf2$310000$" + "A".repeat(22) + "$" + "A".repeat(43);
     expect((await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password: "x" }), env)).status).toBe(503);
   });
 });
