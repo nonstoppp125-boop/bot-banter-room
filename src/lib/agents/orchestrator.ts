@@ -19,6 +19,42 @@ export function getAgentEnv(request: Request): AgentEnv {
   };
 }
 
+
+const MAX_CHAT_BODY_BYTES = 1_048_576;
+type ChatBodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 413 };
+
+async function readChatBody(request: Request): Promise<ChatBodyResult> {
+  const declared = request.headers.get("content-length");
+  if (declared !== null) {
+    if (!/^\\d+$/.test(declared)) return { ok: false, status: 400 };
+    if (Number(declared) > MAX_CHAT_BODY_BYTES) return { ok: false, status: 413 };
+  }
+  if (!request.body) return { ok: false, status: 400 };
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > MAX_CHAT_BODY_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413 };
+      }
+      chunks.push(value);
+    }
+    if (!total) return { ok: false, status: 400 };
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    try { return { ok: true, value: JSON.parse(new TextDecoder().decode(bytes)) }; }
+    catch { return { ok: false, status: 400 }; }
+  } catch { return { ok: false, status: 400 }; }
+  finally { reader.releaseLock(); }
+}
+
 export function isMultiAgentEnabled(env: AgentEnv): boolean {
   return env.DOOT_MULTI_AGENT === "true";
 }
@@ -76,16 +112,19 @@ export async function handleChatRequest(request: Request): Promise<Response> {
     return Response.json({ error: "Authentication could not be verified." }, { status: 503 });
   }
 
-  let messages: UIMessage[];
-  let agentId: unknown;
-  try {
-    const body = await request.json();
-    messages = body?.messages;
-    agentId = body?.agentId;
-    if (!Array.isArray(messages)) throw new Error("Invalid messages");
-  } catch {
+  const parsed = await readChatBody(request);
+  if (!parsed.ok) {
+    return Response.json(
+      { error: parsed.status === 413 ? "Chat request is too large." : "Invalid request" },
+      { status: parsed.status },
+    );
+  }
+  const body = parsed.value as { messages?: unknown; agentId?: unknown } | null;
+  if (!body || !Array.isArray(body.messages)) {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
+  const messages = body.messages as UIMessage[];
+  const agentId = body.agentId;
 
   const memoryInstruction = await buildChatMemoryInstruction(request, messages, env);
   const input: AgentRunInput = {
