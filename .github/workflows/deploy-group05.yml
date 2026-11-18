@@ -46,7 +46,8 @@ jobs:
             if [ -z "${!key:-}" ]; then echo "Missing required secret: $key"; exit 1; fi
           done
           [[ "$LIZA_AUTH_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]
-          [[ "$LIZA_AUTH_PASSWORD_HASH" =~ ^pbkdf2\$310000\$[A-Za-z0-9_-]{22}\$[A-Za-z0-9_-]{43}$ ]]
+          hash_pattern='^pbkdf2\$310000\$[A-Za-z0-9_-]{22}\$[A-Za-z0-9_-]{43}$'
+          [[ "$LIZA_AUTH_PASSWORD_HASH" =~ $hash_pattern ]]
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Run Group 05 release tests
