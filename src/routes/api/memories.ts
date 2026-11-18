@@ -13,7 +13,13 @@ export const Route = createFileRoute("/api/memories")({
       POST: async ({ request }) => handleMemoryRequest(request, getMemoryEnv(request)),
       PATCH: async ({ request }) => handleMemoryRequest(request, getMemoryEnv(request)),
       DELETE: async ({ request }) => handleMemoryRequest(request, getMemoryEnv(request)),
-      HEAD: async () => new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } }),
+      HEAD: async ({ request }) => {
+        const response = await handleMemoryRequest(
+          new Request(request.url, { method: "GET", headers: request.headers }),
+          getMemoryEnv(request),
+        );
+        return new Response(null, { status: response.status, headers: response.headers });
+      },
     },
   },
 });
