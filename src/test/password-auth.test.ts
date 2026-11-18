@@ -5,13 +5,13 @@ async function encodedHash(password: string) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = new Uint8Array(await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 310_000 }, key, 256,
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 }, key, 256,
   ));
   const b64 = (bytes: Uint8Array) => {
     let raw = ""; for (const byte of bytes) raw += String.fromCharCode(byte);
     return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   };
-  return "pbkdf2$310000$" + b64(salt) + "$" + b64(bits);
+  return "pbkdf2$100000$" + b64(salt) + "$" + b64(bits);
 }
 function database() {
   const users = new Set<string>();
@@ -58,6 +58,7 @@ describe("first-party password authentication", () => {
   it("creates a workspace session after valid owner credentials", async () => {
     const password = "correct horse battery staple";
     env.LIZA_AUTH_PASSWORD_HASH = await encodedHash(password);
+    expect(env.LIZA_AUTH_PASSWORD_HASH).toMatch(/^pbkdf2\\$100000\\$/);
     const response = await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password }), env);
     expect(response.status).toBe(204);
     const cookie = response.headers.get("set-cookie") ?? "";
@@ -110,6 +111,8 @@ describe("first-party password authentication", () => {
   });
   it("rejects malformed password hash configuration", async () => {
     env.LIZA_AUTH_PASSWORD_HASH = "plaintext";
+    expect((await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password: "x" }), env)).status).toBe(503);
+    env.LIZA_AUTH_PASSWORD_HASH = "pbkdf2$310000$" + "A".repeat(22) + "$" + "A".repeat(43);
     expect((await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password: "x" }), env)).status).toBe(503);
   });
 });
