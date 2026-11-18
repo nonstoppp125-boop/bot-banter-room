@@ -26,7 +26,7 @@ type ChatBodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 
 async function readChatBody(request: Request): Promise<ChatBodyResult> {
   const declared = request.headers.get("content-length");
   if (declared !== null) {
-    if (!/^\\d+$/.test(declared)) return { ok: false, status: 400 };
+    if (!/^\d+$/.test(declared)) return { ok: false, status: 400 };
     if (Number(declared) > MAX_CHAT_BODY_BYTES) return { ok: false, status: 413 };
   }
   if (!request.body) return { ok: false, status: 400 };
