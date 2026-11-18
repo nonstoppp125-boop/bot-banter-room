@@ -11,12 +11,18 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - run: npm install --no-audit --no-fund
+      - name: Run baseline and Group 05 tests
+        # The task-approval test requires a later Manager group absent from this release branch.
+        run: npm test -- --exclude src/test/task-approval.test.ts
       - run: npm run build
+      - name: Validate Group 05 release configuration script syntax
+        run: node --check scripts/configure-group05-production.mjs

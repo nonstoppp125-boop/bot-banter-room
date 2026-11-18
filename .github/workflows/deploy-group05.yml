@@ -1,0 +1,105 @@
+name: Group 05 Production Release
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_release:
+        description: "Authorize Group 05 production migration and deployment"
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: doot-group05-production
+  cancel-in-progress: false
+jobs:
+  release:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    steps:
+      - name: Require explicit Group 05 release approval
+        env:
+          CONFIRM_RELEASE: ${{ inputs.confirm_release }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRM_RELEASE" != "true" ]; then echo "Release not authorized."; exit 1; fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate required production secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+          LIZA_AUTH_EMAIL: ${{ secrets.LIZA_AUTH_EMAIL }}
+          LIZA_AUTH_PASSWORD_HASH: ${{ secrets.LIZA_AUTH_PASSWORD_HASH }}
+        run: |
+          set -euo pipefail
+          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_D1_DATABASE_NAME CLOUDFLARE_D1_DATABASE_ID LIZA_AUTH_EMAIL LIZA_AUTH_PASSWORD_HASH; do
+            if [ -z "${!key:-}" ]; then echo "Missing required secret: $key"; exit 1; fi
+          done
+          [[ "$LIZA_AUTH_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]
+          hash_pattern='^pbkdf2\$310000\$[A-Za-z0-9_-]{22}\$[A-Za-z0-9_-]{43}$'
+          [[ "$LIZA_AUTH_PASSWORD_HASH" =~ $hash_pattern ]]
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run Group 05 release tests
+        run: npm test -- --exclude src/test/task-approval.test.ts
+      - name: Build production Worker
+        run: npm run build
+      - name: Locate generated Wrangler configuration
+        id: config
+        run: |
+          set -euo pipefail
+          mapfile -t configs < <(find .output -type f \( -name wrangler.json -o -name wrangler.jsonc \) -print)
+          if [ "${#configs[@]}" -ne 1 ]; then echo "Expected exactly one generated Wrangler config."; exit 1; fi
+          echo "path=${configs[0]}" >> "$GITHUB_OUTPUT"
+      - name: Configure isolated Group 05 migration
+        env:
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+        run: node scripts/configure-group05-production.mjs "${{ steps.config.outputs.path }}"
+      - name: Validate isolated migration configuration
+        env:
+          CONFIG_PATH: ${{ steps.config.outputs.path }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import path from "node:path";
+          const config=JSON.parse(fs.readFileSync(process.env.CONFIG_PATH,"utf8"));
+          const d1=(config.d1_databases??[]).filter(x=>x.binding==="ACTION_DB");
+          if(d1.length!==1||!d1[0].database_id||!d1[0].database_name)throw new Error("ACTION_DB binding invalid");
+          const dir=path.resolve(path.dirname(process.env.CONFIG_PATH),d1[0].migrations_dir??"migrations");
+          if(dir!==path.resolve("migrations/group05"))throw new Error("Unexpected migration directory");
+          const files=fs.readdirSync(dir).filter(x=>x.endsWith(".sql"));
+          if(files.length!==1||files[0]!=="0005_memory_foundation.sql")throw new Error("Unexpected migration files");
+          console.log("Validated isolated Group 05 migration configuration.");
+          NODE
+      - name: Apply only Group 05 D1 migration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+        run: npx --yes wrangler@4.162.0 d1 migrations apply "$CLOUDFLARE_D1_DATABASE_NAME" --remote --config "${{ steps.config.outputs.path }}"
+      - name: Configure first-party authentication secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIZA_AUTH_EMAIL: ${{ secrets.LIZA_AUTH_EMAIL }}
+          LIZA_AUTH_PASSWORD_HASH: ${{ secrets.LIZA_AUTH_PASSWORD_HASH }}
+        run: |
+          set -euo pipefail
+          printf %s "$LIZA_AUTH_EMAIL" | npx --yes wrangler@4.162.0 secret put LIZA_AUTH_EMAIL --config "${{ steps.config.outputs.path }}"
+          printf %s "$LIZA_AUTH_PASSWORD_HASH" | npx --yes wrangler@4.162.0 secret put LIZA_AUTH_PASSWORD_HASH --config "${{ steps.config.outputs.path }}"
+      - name: Deploy Group 05 Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.162.0 deploy --config "${{ steps.config.outputs.path }}"

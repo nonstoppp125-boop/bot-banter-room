@@ -1,7 +1,8 @@
 import type { ModelMessage, UIMessage } from "ai";
+import type { ChatMemoryEnv } from "./chat-memory";
 
 /** Worker bindings this app reads. Names must match the Cloudflare config. */
-export type AgentEnv = {
+export type AgentEnv = ChatMemoryEnv & {
   GROQ_API_KEY?: string | undefined;
   /** Plain-text Worker variable; multi-agent runs only when exactly "true". */
   DOOT_MULTI_AGENT?: string | undefined;
@@ -11,6 +12,8 @@ export type AgentRunInput = {
   messages: UIMessage[];
   env: AgentEnv;
   signal: AbortSignal;
+  /** Per-request language and approved-memory context, built by the orchestrator. */
+  systemInstruction?: string;
 };
 
 export type SpecialistInput = {

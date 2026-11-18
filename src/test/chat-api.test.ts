@@ -57,12 +57,24 @@ vi.mock("@ai-sdk/openai", async () => {
 import { handleChatRequest } from "@/lib/agents/orchestrator";
 import { DEFAULT_AGENT_ID, getAgent, listAgents } from "@/lib/agents/registry";
 
-function req(body: unknown, env: Record<string, string> = {}) {
+const sessionToken = "A".repeat(43);
+const testDatabase = {
+  prepare(query: string) {
+    return { bind(...values: unknown[]) {
+      return { first: async <T = Record<string, unknown>>() => query.includes("FROM sessions")
+        ? { id: "session-1", user_id: "user-1", workspace_id: "workspace-1", expires_at: "2027-01-01T00:00:00.000Z", created_at: "2026-11-17T00:00:00.000Z" } as T
+        : query.includes("FROM workspace_members") ? { workspace_id: "workspace-1", user_id: "user-1", role: "owner" } as T
+        : null };
+    }};
+  },
+};
+function req(body: unknown, env: Record<string, unknown> = {}) {
   const r = new Request("http://x/api/chat", {
     method: "POST",
+    headers: { cookie: "__Host-liza_session=" + sessionToken },
     body: typeof body === "string" ? body : JSON.stringify(body),
   }) as Request & { runtime?: unknown };
-  r.runtime = { cloudflare: { env } };
+  r.runtime = { cloudflare: { env: { ACTION_DB: testDatabase, ...env } } };
   return r;
 }
 
@@ -86,6 +98,14 @@ describe("POST /api/chat orchestrator", () => {
   it("returns 400 for an invalid body", async () => {
     expect((await handleChatRequest(req("not json", KEY))).status).toBe(400);
     expect((await handleChatRequest(req({ messages: "x" }, KEY))).status).toBe(400);
+  });
+
+  it("rejects oversized streamed chat bodies before invoking an agent", async () => {
+    const oversized = req("x".repeat(1_048_577), KEY);
+    const response = await handleChatRequest(oversized);
+    expect(response.status).toBe(413);
+    expect(state.generateCalls).toBe(0);
+    expect(state.streamSystems).toHaveLength(0);
   });
 
   it("by default makes one Groq call (no specialists), even for unknown agentId", async () => {
