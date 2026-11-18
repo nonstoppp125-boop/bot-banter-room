@@ -78,19 +78,23 @@ async function verifyPassword(password: string, encoded: string): Promise<boolea
   let difference = 0; for (let i = 0; i < actual.length; i++) difference |= actual[i]! ^ expected[i]!;
   return difference === 0;
 }
-async function provisionOwner(database: AuthDatabase, email: string): Promise<{ userId: string; workspaceId: string }> {
+async function provisionOwner(database: AuthDatabase, email: string, setStage: (stage: string) => void): Promise<{ userId: string; workspaceId: string }> {
   const now = new Date().toISOString();
   const userId = "u_" + await sha256("liza-password-user:" + email);
   const workspaceId = "w_" + await sha256("liza-password-workspace:" + userId);
+  setStage("owner_user_upsert");
   await database.prepare(
     "INSERT INTO users (id,email,display_name,created_at,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,updated_at=excluded.updated_at",
   ).bind(userId, email, email.split("@")[0]!, now, now).run();
+  setStage("owner_user_read");
   const user = await database.prepare("SELECT id FROM users WHERE id=? AND email=? AND deleted_at IS NULL LIMIT 1")
     .bind(userId, email).first<{ id: string }>();
   if (!user?.id) throw new Error("Owner account provisioning failed.");
+  setStage("workspace_upsert");
   await database.prepare(
     "INSERT OR IGNORE INTO workspaces (id,owner_user_id,name,created_at,updated_at) VALUES (?,?,?,?,?)",
   ).bind(workspaceId, userId, "Liza Workspace", now, now).run();
+  setStage("workspace_membership_upsert");
   await database.prepare(
     "INSERT OR IGNORE INTO workspace_members (workspace_id,user_id,role,created_at) VALUES (?,?,'owner',?)",
   ).bind(workspaceId, userId, now).run();
@@ -101,16 +105,18 @@ function configured(env: PasswordAuthEnv): { email: string; passwordHash: string
   const passwordHash = env.LIZA_AUTH_PASSWORD_HASH?.trim();
   return email && EMAIL.test(email) && passwordHash && HASH.test(passwordHash) ? { email, passwordHash } : null;
 }
-async function issueSession(request: Request, env: PasswordAuthEnv, email: string): Promise<Response> {
+async function issueSession(request: Request, env: PasswordAuthEnv, email: string, setStage: (stage: string) => void): Promise<Response> {
   if (!env.ACTION_DB) return json({ error: "Session storage is unavailable." }, 503);
-  const { userId, workspaceId } = await provisionOwner(env.ACTION_DB, email);
+  const { userId, workspaceId } = await provisionOwner(env.ACTION_DB, email, setStage);
   const now = new Date().toISOString();
   const token = generateSessionToken();
   const expiresAt = new Date(Date.parse(now) + 12 * 60 * 60 * 1000).toISOString();
+  setStage("session_insert");
   await createD1SessionStore(env.ACTION_DB).create({
     id: "s_" + crypto.randomUUID().replace(/-/g, ""),
     userId, workspaceId, tokenHash: await hashSessionToken(token), createdAt: now, expiresAt,
   });
+  setStage("session_cookie");
   return new Response(null, { status: 204, headers: {
     "Set-Cookie": createSessionCookie(token, 12 * 60 * 60),
     "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
@@ -127,21 +133,33 @@ export async function handlePasswordLogin(request: Request, env: PasswordAuthEnv
   const input = parsed.value as { email?: unknown; password?: unknown } | null;
   if (!input || typeof input.email !== "string" || typeof input.password !== "string" ||
       input.email.length > 254 || input.password.length > 256) return json({ error: "Invalid email or password." }, 400);
+  let stage = "login_attempt_upsert";
   try {
     const key = await sha256(auth.email);
     const now = new Date().toISOString();
     await env.ACTION_DB.prepare(
       "INSERT INTO auth_login_attempts (email_hash,window_started_at,attempts) VALUES (?,?,1) ON CONFLICT(email_hash) DO UPDATE SET attempts=CASE WHEN window_started_at < ? THEN 1 ELSE attempts+1 END,window_started_at=CASE WHEN window_started_at < ? THEN excluded.window_started_at ELSE window_started_at END",
     ).bind(key, now, new Date(Date.now() - 15 * 60_000).toISOString(), new Date(Date.now() - 15 * 60_000).toISOString()).run();
+    stage = "login_attempt_read";
     const attempts = await env.ACTION_DB.prepare("SELECT attempts FROM auth_login_attempts WHERE email_hash=? LIMIT 1")
       .bind(key).first<{ attempts: number }>();
     if ((attempts?.attempts ?? 0) > 5) return json({ error: "Too many login attempts. Try again in 15 minutes." }, 429);
+    stage = "password_verification";
     const validEmail = input.email.trim().toLowerCase() === auth.email;
     const validPassword = await verifyPassword(input.password, auth.passwordHash);
     if (!validEmail || !validPassword) return json({ error: "Email or password is incorrect." }, 401);
+    stage = "login_attempt_clear";
     await env.ACTION_DB.prepare("DELETE FROM auth_login_attempts WHERE email_hash=?").bind(key).run();
-    return await issueSession(request, env, auth.email);
-  } catch { return json({ error: "Login could not be completed." }, 500); }
+    return await issueSession(request, env, auth.email, (nextStage) => { stage = nextStage; });
+  } catch (error) {
+    const detail = error instanceof Error ? error : new Error("Unknown non-Error exception");
+    console.error("[auth] password login failed", {
+      stage,
+      errorName: detail.name.slice(0, 80),
+      errorMessage: detail.message.slice(0, 300),
+    });
+    return json({ error: "Login could not be completed." }, 500);
+  }
 }
 export async function handleSessionStatus(request: Request, env: PasswordAuthEnv): Promise<Response> {
   if (request.method !== "GET") return json({ error: "Method not allowed." }, 405);

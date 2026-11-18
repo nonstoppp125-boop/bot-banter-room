@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { handlePasswordLogin, handleSessionStatus } from "@/lib/agents/password-auth";
 
 async function encodedHash(password: string) {
@@ -78,6 +78,35 @@ describe("first-party password authentication", () => {
       body: "x".repeat(4_097),
     });
     expect((await handlePasswordLogin(oversized, env)).status).toBe(413);
+  });
+  it("logs the failing login stage without exposing credentials", async () => {
+    const password = "correct horse battery staple";
+    env.LIZA_AUTH_PASSWORD_HASH = await encodedHash(password);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const failingEnv = {
+      ...env,
+      ACTION_DB: {
+        prepare() {
+          throw new Error("D1_ERROR: no such table: auth_login_attempts");
+        },
+      },
+    };
+    try {
+      const response = await handlePasswordLogin(
+        request({ email: env.LIZA_AUTH_EMAIL, password }),
+        failingEnv,
+      );
+      expect(response.status).toBe(500);
+      expect(log).toHaveBeenCalledWith("[auth] password login failed", expect.objectContaining({
+        stage: "login_attempt_upsert",
+        errorName: "Error",
+      }));
+      const logged = JSON.stringify(log.mock.calls);
+      expect(logged).not.toContain(password);
+      expect(logged).not.toContain(env.LIZA_AUTH_PASSWORD_HASH);
+    } finally {
+      log.mockRestore();
+    }
   });
   it("rejects malformed password hash configuration", async () => {
     env.LIZA_AUTH_PASSWORD_HASH = "plaintext";
