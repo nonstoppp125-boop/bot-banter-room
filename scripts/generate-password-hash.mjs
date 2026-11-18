@@ -12,9 +12,9 @@ const finish = () => {
   process.stderr.write("\n");
   if (password.length < 16 || password.length > 256) throw new Error("Password must be 16–256 characters.");
   const salt = randomBytes(16);
-  const derived = pbkdf2Sync(password, salt, 310000, 32, "sha256");
+  const derived = pbkdf2Sync(password, salt, 100000, 32, "sha256");
   password = "";
-  process.stdout.write("pbkdf2$310000$" + salt.toString("base64url") + "$" + derived.toString("base64url") + "\n");
+  process.stdout.write("pbkdf2$100000$" + salt.toString("base64url") + "$" + derived.toString("base64url") + "\n");
 };
 process.stdin.on("data", (chunk) => {
   for (const byte of chunk) {
