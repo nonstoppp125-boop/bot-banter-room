@@ -5,13 +5,13 @@ async function encodedHash(password: string) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = new Uint8Array(await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 310_000 }, key, 256,
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 }, key, 256,
   ));
   const b64 = (bytes: Uint8Array) => {
     let raw = ""; for (const byte of bytes) raw += String.fromCharCode(byte);
     return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   };
-  return "pbkdf2$310000$" + b64(salt) + "$" + b64(bits);
+  return "pbkdf2$100000$" + b64(salt) + "$" + b64(bits);
 }
 function database() {
   const users = new Set<string>();
