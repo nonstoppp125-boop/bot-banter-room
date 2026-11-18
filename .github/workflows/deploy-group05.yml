@@ -88,6 +88,36 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
         run: npx --yes wrangler@4.162.0 d1 migrations apply "$CLOUDFLARE_D1_DATABASE_NAME" --remote --config "${{ steps.config.outputs.path }}"
+      - name: Verify Group 05 production D1 schema (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+        run: |
+          set -euo pipefail
+          SQL="SELECT CASE WHEN
+            EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='users')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('users') WHERE name='id')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('users') WHERE name='email')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('users') WHERE name='deleted_at')
+            AND EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='workspaces')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('workspaces') WHERE name='owner_user_id')
+            AND EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='workspace_members')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('workspace_members') WHERE name='role')
+            AND EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='sessions')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('sessions') WHERE name='token_hash')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('sessions') WHERE name='revoked_at')
+            AND EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='auth_login_attempts')
+            AND EXISTS(SELECT 1 FROM pragma_table_info('auth_login_attempts') WHERE name='attempts')
+            AND EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='memories')
+            THEN 'GROUP05_SCHEMA_OK' ELSE 'GROUP05_SCHEMA_INVALID' END AS schema_status;"
+          OUTPUT="$(npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --config "${{ steps.config.outputs.path }}" --command "$SQL" 2>&1)" || { printf '%s\n' "$OUTPUT"; exit 1; }
+          printf '%s\n' "$OUTPUT"
+          if ! grep -q 'GROUP05_SCHEMA_OK' <<< "$OUTPUT"; then
+            echo "Group 05 production D1 schema verification failed."
+            exit 1
+          fi
+          echo "Group 05 production D1 schema verified (read-only)."
       - name: Configure first-party authentication secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
