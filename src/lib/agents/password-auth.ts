@@ -19,7 +19,7 @@ const json = (body: unknown, status = 200) => Response.json(body, {
   status, headers: { "Cache-Control": "no-store", "Vary": "Cookie" },
 });
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const HASH = /^pbkdf2\$310000\$([A-Za-z0-9_-]{22})\$([A-Za-z0-9_-]{43})$/;
+const HASH = /^pbkdf2\$100000\$([A-Za-z0-9_-]{22})\$([A-Za-z0-9_-]{43})$/;
 const MAX_LOGIN_BODY_BYTES = 4_096;
 type LoginBodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 413 };
 async function readLoginBody(request: Request): Promise<LoginBodyResult> {
@@ -72,7 +72,7 @@ async function verifyPassword(password: string, encoded: string): Promise<boolea
   const expected = fromB64url(match[2]!);
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const actual = new Uint8Array(await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 310_000 }, key, 256,
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 }, key, 256,
   ));
   if (actual.length !== expected.length) return false;
   let difference = 0; for (let i = 0; i < actual.length; i++) difference |= actual[i]! ^ expected[i]!;
