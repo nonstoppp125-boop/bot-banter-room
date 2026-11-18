@@ -58,7 +58,7 @@ describe("first-party password authentication", () => {
   it("creates a workspace session after valid owner credentials", async () => {
     const password = "correct horse battery staple";
     env.LIZA_AUTH_PASSWORD_HASH = await encodedHash(password);
-    expect(env.LIZA_AUTH_PASSWORD_HASH).toMatch(/^pbkdf2\\$100000\\$/);
+    expect(env.LIZA_AUTH_PASSWORD_HASH).toMatch(/^pbkdf2\$100000\$/);
     const response = await handlePasswordLogin(request({ email: env.LIZA_AUTH_EMAIL, password }), env);
     expect(response.status).toBe(204);
     const cookie = response.headers.get("set-cookie") ?? "";
