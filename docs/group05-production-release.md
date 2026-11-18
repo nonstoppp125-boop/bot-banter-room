@@ -7,12 +7,12 @@ This is a manual, gated release. Do not merge or deploy until repository CI chec
 In GitHub → repository Settings → Secrets and variables → Actions, add these secrets (repository or production environment):
 
 - `LIZA_AUTH_EMAIL`: the single owner login email.
-- `LIZA_AUTH_PASSWORD_HASH`: PBKDF2-SHA256 hash generated locally with `node scripts/generate-password-hash.mjs`. Use a unique password of at least 16 characters. The script reads it without echoing it.
+- `LIZA_AUTH_PASSWORD_HASH`: PBKDF2-SHA256 hash generated locally with `node scripts/generate-password-hash.mjs` (100,000 iterations, the Cloudflare Workers WebCrypto maximum). Use a unique password of at least 16 characters. The script reads it without echoing it. The previous 310,000-iteration hash format is incompatible and must be regenerated.
 - Login endpoint rejects request bodies larger than 4 KiB, including requests without a declared `Content-Length`.
 - Chat endpoint streams and caps request bodies at 1 MiB before JSON parsing; oversized requests receive HTTP 413.
 - Existing release secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_NAME`, and `CLOUDFLARE_D1_DATABASE_ID`.
 
-Never paste the password or hash into chat, pull requests, source files, or workflow logs. The release workflow installs the email and hash as encrypted Worker secrets; they are not written into Wrangler vars.
+Never paste the password or hash into chat, pull requests, source files, or workflow logs. After this fix is merged, replace the GitHub Actions `LIZA_AUTH_PASSWORD_HASH` secret with a newly generated `pbkdf2$100000$...` hash before authorizing production release. The release workflow installs the email and hash as encrypted Worker secrets; they are not written into Wrangler vars.
 
 ## 2. Group 05 migration boundary
 
