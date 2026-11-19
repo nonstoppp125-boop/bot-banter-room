@@ -508,3 +508,17 @@ Production activation remains unverified and requires separate explicit authoriz
 - PR #23 remains a documentation-only 10-Group roadmap/specification track.
 - Group 06 branch still carries 615 commits ahead / 100 behind current main. It is not a direct merge candidate. Continue dependency-closed file-level integration from a clean current-main base; retain the original branch as evidence.
 - No branch was merged, rebased, force-updated, migrated, or deployed during this audit. Production remains untouched.
+
+## 2026-11-19 — Group 06 source parity recheck against current main
+
+A direct blob-SHA comparison between `main` and `work/group06-manager-planner` confirms that the following Group 06 implementation files are already present on current `main` with identical content (not merely similar filenames):
+
+- `src/lib/agents/task-queue-worker.ts`
+- `src/lib/agents/manager.ts`
+- `src/lib/agents/task-api.ts`
+- `src/routes/tasks.tsx`
+- `src/routes/api/tasks.ts`
+- `src/test/task-queue-worker.test.ts`
+- `migrations/group06/0003_task_queue_leases.sql`
+
+Therefore, the earlier 615-commit history divergence does not mean these core Group 06 files need to be ported. The immediate integration task is narrowed: audit the remaining Group 06 file set and runtime/config evidence for parity, identify only genuinely missing or different files, and avoid copying already-identical source or migrations. Keep Group 06 production activation marked BLOCKED until binding, remote migration state, scheduled invocation, and authenticated end-to-end execution are independently verified. No migration, deploy, merge, rebase, or branch rewrite was performed.
