@@ -54,6 +54,8 @@ describe("approval-bound Manager task execution", () => {
 
   it.each([
     ["লিংকডইনে এই পোস্টটি প্রকাশ করো", "social.publish"],
+    ["ফেসবুকে পোস্ট করো", "social.publish"],
+    ["post to LinkedIn", "social.publish"],
     ["এই পোস্টটা পাবলিশ করে দাও", "social.publish"],
     ["এই ইমেইলটি পাঠিয়ে দাও", "external.message"],
     ["পুরোনো ড্রাফটটি মুছে ফেল", "destructive.delete"],
