@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useState } from "react";
-import { SquarePen } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { UIMessage } from "ai";
+import { History, Moon, SquarePen, Sun, Trash2 } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -34,8 +35,15 @@ export const Route = createFileRoute("/")({
 
 const suggestions = ["আমাকে একটা গল্প বলো", "Telegram বট কীভাবে বানাই?", "আজকের জন্য একটা রেসিপি দাও"];
 
+type SavedChat = { id: string; title: string; messages: UIMessage[]; updatedAt: number };
+
 function Index() {
   const [error, setError] = useState<string | null>(null);
+  const [savedChats, setSavedChats] = useState<SavedChat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [historyReady, setHistoryReady] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [dark, setDark] = useState(false);
   const [taskSaving, setTaskSaving] = useState<string | null>(null);
   const [taskNotice, setTaskNotice] = useState<string | null>(null);
   const [taskNoticeFor, setTaskNoticeFor] = useState<string | null>(null);
@@ -44,6 +52,53 @@ function Index() {
     onError: (e) => setError(e.message || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।"),
   });
   const busy = status === "submitted" || status === "streaming";
+
+  useEffect(() => {
+    try {
+      const isDark = localStorage.getItem("liza-theme") === "dark";
+      setDark(isDark);
+      document.documentElement.classList.toggle("dark", isDark);
+      const raw = localStorage.getItem("liza-chats");
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((item): item is SavedChat => item && typeof item.id === "string" && typeof item.title === "string" && Array.isArray(item.messages) && typeof item.updatedAt === "number").slice(0, 50);
+          setSavedChats(valid);
+          const latest = [...valid].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+          if (latest) { setMessages(latest.messages); setActiveChatId(latest.id); }
+        }
+      }
+    } catch { setError("Saved chat history could not be loaded."); }
+    finally { setHistoryReady(true); }
+  }, [setMessages]);
+
+  useEffect(() => {
+    if (historyReady && messages.length > 0 && !activeChatId) setActiveChatId("chat-" + Date.now());
+  }, [activeChatId, historyReady, messages.length]);
+
+  useEffect(() => {
+    if (!historyReady || !activeChatId || messages.length === 0) return;
+    const first = messages.find((message) => message.role === "user");
+    const title = first?.parts.filter((part) => part.type === "text").map((part) => part.text).join(" ").trim() || "নতুন চ্যাট";
+    const next: SavedChat = { id: activeChatId, title: title.slice(0, 64), messages, updatedAt: Date.now() };
+    setSavedChats((current) => [next, ...current.filter((chat) => chat.id !== activeChatId)].slice(0, 50));
+  }, [activeChatId, historyReady, messages]);
+
+  useEffect(() => {
+    if (!historyReady) return;
+    try { localStorage.setItem("liza-chats", JSON.stringify(savedChats)); }
+    catch { setError("Chat history could not be saved on this device."); }
+  }, [historyReady, savedChats]);
+
+  const toggleTheme = () => {
+    const next = !dark; setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("liza-theme", next ? "dark" : "light");
+  };
+  const startNewChat = () => { setMessages([]); setActiveChatId(null); setError(null); setTaskNotice(null); setTaskNoticeFor(null); setHistoryOpen(false); };
+  const openSavedChat = (chat: SavedChat) => { setMessages(chat.messages); setActiveChatId(chat.id); setError(null); setHistoryOpen(false); };
+  const deleteSavedChat = (id: string) => { setSavedChats((current) => current.filter((chat) => chat.id !== id)); if (activeChatId === id) startNewChat(); };
+
 
   const send = (text: string) => {
     if (!text.trim() || busy) return;
@@ -94,14 +149,16 @@ function Index() {
       <header className="flex items-center justify-between px-3 py-2">
         <span className="rounded-lg px-2 py-1.5 font-display text-lg font-medium">Liza</span>
         <nav aria-label="প্রধান নেভিগেশন" className="flex flex-wrap items-center gap-1"><a href="/tasks" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Tasks</a><a href="/linkedin-studio" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">LinkedIn Studio</a><a href="/analytics" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Analytics</a><a href="/login" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign in</a><a href="/settings/memory" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Memory</a><a href="/settings/integrations" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Integrations</a><a href="/settings/approvals" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Approvals</a><a href="/settings/privacy" className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Privacy</a><button onClick={() => { void fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).then((response) => { if (response.ok) window.location.reload(); else setError("Sign out failed."); }).catch(() => setError("Sign out failed.")); }} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Sign out</button></nav>
-        <button
-          onClick={() => setMessages([])}
-          aria-label="নতুন চ্যাট"
-          className="grid size-9 place-items-center rounded-lg text-foreground hover:bg-accent"
-        >
-          <SquarePen className="size-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setHistoryOpen((open) => !open)} aria-label="চ্যাট ইতিহাস" aria-expanded={historyOpen} className="grid size-9 place-items-center rounded-lg text-foreground hover:bg-accent"><History className="size-5" /></button>
+          <button onClick={toggleTheme} aria-label={dark ? "লাইট মোড" : "ডার্ক মোড"} className="grid size-9 place-items-center rounded-lg text-foreground hover:bg-accent">{dark ? <Sun className="size-5" /> : <Moon className="size-5" />}</button>
+          <button onClick={startNewChat} aria-label="নতুন চ্যাট" className="grid size-9 place-items-center rounded-lg text-foreground hover:bg-accent"><SquarePen className="size-5" /></button>
+        </div>
       </header>
+      {historyOpen && <aside aria-label="চ্যাট ইতিহাস" className="mx-3 mb-2 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-2">
+        <div className="mb-2 flex items-center justify-between px-2"><span className="text-sm font-medium">সাম্প্রতিক চ্যাট</span><button onClick={startNewChat} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent">নতুন চ্যাট</button></div>
+        {savedChats.length === 0 ? <p className="px-2 py-3 text-sm text-muted-foreground">এখনো কোনো সংরক্ষিত চ্যাট নেই।</p> : savedChats.map((chat) => <div key={chat.id} className="flex items-center gap-2 rounded-lg hover:bg-accent"><button onClick={() => openSavedChat(chat)} className="min-w-0 flex-1 truncate px-2 py-2 text-left text-sm text-foreground">{chat.title}</button><button onClick={() => deleteSavedChat(chat.id)} aria-label="চ্যাট মুছুন" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button></div>)}
+      </aside>}
 
       {empty ? (
         <main id="main-content" className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
