@@ -7,6 +7,60 @@ Baseline commit: 3f0b138105ab3781e920b8853c41ae0d188735ec
 Status: MASTER PLAN — IMPLEMENTATION PENDING AUDIT
 Product identity: Liza (previously Doot)
 
+
+==================================================
+FINAL MASTER STRUCTURE — EXACTLY 10 GROUPS
+==================================================
+
+The entire product roadmap is consolidated into exactly 10 active Groups.
+The 24 former Group workstreams are retained as detailed workstreams and task IDs;
+they are NOT separate active Groups and no task is discarded.
+
+GROUP 01 — Source Audit and Repository Integrity
+  Former workstream 01.
+GROUP 02 — Architecture and System Design
+  Former workstream 02.
+GROUP 03 — Backend, AI Provider and Runtime Foundation
+  Former workstream 03.
+GROUP 04 — Conversational Intelligence and Multilingual Experience
+  Former workstream 04.
+GROUP 05 — Memory, Personalization and User Data
+  Former workstream 05. IMPLEMENTATION COMPLETE (20/20); production activation
+  remains subject to its separately documented safe release gate.
+GROUP 06 — Autonomous Agent Workforce and DevPilot
+  Former workstreams 06, 07, 08, 09 and 15: Manager/Planner, specialist agents,
+  multi-agent coordination, research/web intelligence, Coding/Debugging/QA,
+  and the complete DevPilot A–Z lifecycle. CURRENT GROUP — IN PROGRESS.
+GROUP 07 — LinkedIn, Social Media, Growth and Business Intelligence
+  Former workstreams 10, 11, 12, 13 and 14.
+GROUP 08 — Integrations, Database, Identity, Workspace and Telegram
+  Former workstreams 16, 17, 18 and 19.
+GROUP 09 — Security, Web/App Experience, Infrastructure and Quality
+  Former workstreams 20, 21, 22 and 23.
+GROUP 10 — Final Acceptance and Product Release
+  Former workstream 24.
+
+BINDING PLATFORM PRIORITY
+1. WEB SYSTEM: primary product and first full-featured delivery target.
+2. ANDROID APP: secondary client, reusing the same backend and core logic.
+3. TELEGRAM: tertiary companion for intake, status, notifications, approvals
+   and essential controls; the full dashboard remains on Web.
+All three clients share one backend, identity, task state, permissions and source
+of truth. No separate agent implementations per client.
+
+TASK TRACEABILITY RULE
+Original task identifiers (G01.*, G02.*, G06.*, LI*, S*, BI*, C*, APP*, DB*,
+UX*, TG*, SEC*, PWA*, OPS*, QA*, REL*) are retained as stable workstream IDs
+so that no existing requirement, implementation evidence or test reference is lost.
+They do not define additional active Groups. All status reporting uses GROUP 01–10.
+
+DEVPILOT RULE
+The complete A–Z requirements in planning/AUTONOMOUS_DEVPILOT_MASTER_SPEC.md
+are mandatory within Groups 06, 08, 09 and 10. DevPilot remains PLANNED wherever
+source, tests and runtime evidence do not yet prove a capability. A tool/class
+existing is not proof of end-to-end autonomy.
+
+==================================================
 ==================================================
 PART 01 — PRODUCT VISION
 ==================================================
@@ -41,7 +95,7 @@ review results, request approval when necessary,
 and return measurable outcomes.
 
 ==================================================
-PART 02 — GROUP 01: COMPLETE SOURCE AUDIT
+PART 02 — WORKSTREAM 01 (CONSOLIDATED GROUP 01): COMPLETE SOURCE AUDIT
 ==================================================
 
 G01.01 Verify repository identity and remote.
@@ -84,7 +138,7 @@ Deliverables:
 - SOURCE_AUDIT_REPORT.md
 
 ==================================================
-PART 03 — GROUP 02: ARCHITECTURE AND SYSTEM DESIGN
+PART 03 — WORKSTREAM 02 (CONSOLIDATED GROUP 02): ARCHITECTURE AND SYSTEM DESIGN
 ==================================================
 
 G02.01 Map frontend architecture.
@@ -109,7 +163,7 @@ G02.19 Define observability and audit architecture.
 G02.20 Document architecture and dependency diagrams.
 
 ==================================================
-PART 04 — GROUP 03: BACKEND AND AI PROVIDER
+PART 04 — WORKSTREAM 03 (CONSOLIDATED GROUP 03): BACKEND AND AI PROVIDER
 ==================================================
 
 G03.01 Stabilize POST /api/chat. [IMPLEMENTED]
@@ -158,7 +212,7 @@ G04.19 Add response quality evaluation. [VERIFIED]
 G04.20 Regression-test multilingual behaviour. [VERIFIED]
 
 ==================================================
-PART 06 — GROUP 05: MEMORY AND PERSONALIZATION
+PART 06 — WORKSTREAM 05 (CONSOLIDATED GROUP 05): MEMORY AND PERSONALIZATION
 ==================================================
 
 G05.01 Separate conversation context from durable memory. [VERIFIED]
@@ -183,7 +237,7 @@ G05.19 Test retrieval accuracy. [VERIFIED]
 G05.20 Document memory limitations. [VERIFIED]
 
 ==================================================
-PART 07 — GROUP 06: MANAGER AGENT AND PLANNER
+PART 07 — WORKSTREAM 06 (CONSOLIDATED GROUP 06): MANAGER AGENT AND PLANNER
 ==================================================
 
 
@@ -215,7 +269,7 @@ G06.19 Verify completed deliverables.
 G06.20 Produce final task report.
 
 ==================================================
-PART 08 — GROUP 07: SPECIALIST AGENT WORKFORCE
+PART 08 — WORKSTREAM 07 (CONSOLIDATED GROUP 06): SPECIALIST AGENT WORKFORCE
 ==================================================
 
 G07.01 Establish reusable BaseAgent contract.
@@ -245,7 +299,7 @@ G07.24 Add specialist failure tests.
 G07.25 Never register nonfunctional placeholder agents.
 
 ==================================================
-PART 09 — GROUP 08: MULTI-AGENT COORDINATION
+PART 09 — WORKSTREAM 08 (CONSOLIDATED GROUP 06): MULTI-AGENT COORDINATION
 ==================================================
 
 G08.01 Implement task-to-agent routing.
@@ -270,7 +324,7 @@ G08.19 Add agent performance metrics.
 G08.20 Add multi-agent integration tests.
 
 ==================================================
-PART 10 — GROUP 09: RESEARCH AND WEB INTELLIGENCE
+PART 10 — WORKSTREAM 09 (CONSOLIDATED GROUP 06): RESEARCH AND WEB INTELLIGENCE
 ==================================================
 
 G09.01 Define authorized research tools.
@@ -295,7 +349,7 @@ G09.19 Add research quality review.
 G09.20 Add research evaluation tests.
 
 ==================================================
-PART 11 — GROUP 10: LINKEDIN INTELLIGENCE
+PART 11 — WORKSTREAM 10 (CONSOLIDATED GROUP 07): LINKEDIN INTELLIGENCE
 ==================================================
 
 LI01 Official LinkedIn API feasibility audit.
@@ -330,7 +384,7 @@ LI29 Profile performance reporting.
 LI30 LinkedIn intelligence dashboard.
 
 ==================================================
-PART 12 — GROUP 11: LINKEDIN CONTENT STUDIO
+PART 12 — WORKSTREAM 11 (CONSOLIDATED GROUP 07): LINKEDIN CONTENT STUDIO
 ==================================================
 
 LI31 Define content pillars.
@@ -368,7 +422,7 @@ LI62 Preview content before publication.
 LI63 Maintain content calendar history.
 
 ==================================================
-PART 13 — GROUP 12: LINKEDIN END-TO-END GROWTH
+PART 13 — WORKSTREAM 12 (CONSOLIDATED GROUP 07): LINKEDIN END-TO-END GROWTH
 ==================================================
 
 LI64 Human approval before publication.
@@ -409,7 +463,7 @@ must respect official LinkedIn API permissions and terms.
 No scraping or restriction bypassing.
 
 ==================================================
-PART 14 — GROUP 13: MULTI-PLATFORM SOCIAL WORKFORCE
+PART 14 — WORKSTREAM 13 (CONSOLIDATED GROUP 07): MULTI-PLATFORM SOCIAL WORKFORCE
 ==================================================
 
 S01 Instagram integration feasibility.
@@ -444,7 +498,7 @@ S29 Repurpose successful content.
 S30 Generate social performance reports.
 
 ==================================================
-PART 15 — GROUP 14: ANALYTICS AND BUSINESS INTELLIGENCE
+PART 15 — WORKSTREAM 14 (CONSOLIDATED GROUP 07): ANALYTICS AND BUSINESS INTELLIGENCE
 ==================================================
 
 BI01 Define unified analytics schema.
@@ -469,7 +523,7 @@ BI19 Add data freshness indicators.
 BI20 Add analytics accuracy tests.
 
 ==================================================
-PART 16 — GROUP 15: CODING AND TECHNICAL WORKFORCE
+PART 16 — WORKSTREAM 15 (CONSOLIDATED GROUP 06): CODING AND TECHNICAL WORKFORCE
 ==================================================
 
 C01 Understand project repositories.
@@ -499,7 +553,7 @@ C24 Maintain task execution logs.
 C25 Produce engineering reports.
 
 ==================================================
-PART 17 — GROUP 16: EXTERNAL APP CONNECTION HUB
+PART 17 — WORKSTREAM 16 (CONSOLIDATED GROUP 08): EXTERNAL APP CONNECTION HUB
 ==================================================
 
 APP01 Design centralized connection manager.
@@ -560,7 +614,7 @@ For every candidate record:
 Do not claim an integration works before real verification.
 
 ==================================================
-PART 18 — GROUP 17: DATABASE AND USER WORKSPACE
+PART 18 — WORKSTREAM 17 (CONSOLIDATED GROUP 08): DATABASE AND USER WORKSPACE
 ==================================================
 
 DB01 Compare free database providers.
@@ -590,7 +644,7 @@ DB24 Implement data isolation.
 DB25 Test concurrent operations.
 
 ==================================================
-PART 19 — GROUP 18: AUTHENTICATION AND WORKSPACE UX
+PART 19 — WORKSTREAM 18 (CONSOLIDATED GROUP 08): AUTHENTICATION AND WORKSPACE UX
 ==================================================
 
 UX01 Evaluate authentication providers.
@@ -615,7 +669,7 @@ UX19 Implement integration settings.
 UX20 Implement responsive dashboard.
 
 ==================================================
-PART 20 — GROUP 19: TELEGRAM AND CROSS-PLATFORM
+PART 20 — WORKSTREAM 19 (CONSOLIDATED GROUP 08): TELEGRAM AND CROSS-PLATFORM
 ==================================================
 
 TG01 Audit existing Telegram bot.
@@ -642,7 +696,7 @@ TG20 Test web-to-Telegram continuity.
 Never expose bot tokens in frontend code.
 
 ==================================================
-PART 21 — GROUP 20: SECURITY AND HUMAN CONTROL
+PART 21 — WORKSTREAM 20 (CONSOLIDATED GROUP 09): SECURITY AND HUMAN CONTROL
 ==================================================
 
 SEC01 Threat model.
@@ -690,7 +744,7 @@ Require approval before:
 Read-only research may run within granted permissions.
 
 ==================================================
-PART 22 — GROUP 21: PWA, MOBILE AND ACCESSIBILITY
+PART 22 — WORKSTREAM 21 (CONSOLIDATED GROUP 09): PWA, MOBILE AND ACCESSIBILITY
 ==================================================
 
 PWA01 Audit current manifest.
@@ -718,7 +772,7 @@ Offline functionality must be separately evaluated.
 No APK or IPA is claimed unless actually developed.
 
 ==================================================
-PART 23 — GROUP 22: PRODUCTION INFRASTRUCTURE
+PART 23 — WORKSTREAM 22 (CONSOLIDATED GROUP 09): PRODUCTION INFRASTRUCTURE
 ==================================================
 
 OPS01 Audit Cloudflare deployment.
@@ -743,7 +797,7 @@ OPS19 Review Cloudflare limits.
 OPS20 Document production operations.
 
 ==================================================
-PART 24 — GROUP 23: TESTING AND QUALITY
+PART 24 — WORKSTREAM 23 (CONSOLIDATED GROUP 09): TESTING AND QUALITY
 ==================================================
 
 QA01 Unit tests.
@@ -778,7 +832,7 @@ QA29 Documentation verification.
 QA30 Release acceptance.
 
 ==================================================
-PART 25 — GROUP 24: FINAL PRODUCT RELEASE
+PART 25 — WORKSTREAM 24 (CONSOLIDATED GROUP 10): FINAL PRODUCT RELEASE
 ==================================================
 
 REL01 Complete feature inventory.
@@ -822,46 +876,23 @@ Every group must consider:
 12. Existing source preservation.
 
 ==================================================
-PART 27 — IMPLEMENTATION ORDER AND DEPENDENCIES
+PART 27 — CONSOLIDATED 10-GROUP IMPLEMENTATION ORDER
 ==================================================
 
-Foundation:
-G01 -> G02 -> G03 -> G04 -> G05
+GROUP 01 -> GROUP 02 -> GROUP 03 -> GROUP 04 -> GROUP 05
+-> GROUP 06 -> GROUP 07 -> GROUP 08 -> GROUP 09 -> GROUP 10
 
-Agent platform:
-G06 -> G07 -> G08 -> G09
+Current execution position: Groups 01–05 are complete for their recorded
+implementation scope; Group 06 is IN PROGRESS. Group 05's isolated production
+activation gate remains separately tracked and must be resolved safely; it does
+not create an extra Group or erase the verified 20/20 implementation result.
 
-Business workforce:
-G10 -> G11 -> G12 -> G13 -> G14
-
-Technical workforce:
-G15
-
-Integrations:
-G16
-
-Persistence and identity:
-G17 -> G18
-
-Cross-platform:
-G19
-
-Security:
-G20
-
-Client experience:
-G21
-
-Operations:
-G22
-
-Verification:
-G23 -> G24
-
-Some work may proceed in parallel only when dependencies
-and security boundaries are understood.
-
-Security is a continuous requirement, not a final-only task.
+Within GROUP 06, preserve dependency order: Manager/Planner -> real specialist
+workforce -> multi-agent coordination -> research and coding/DevPilot execution.
+Groups 07–10 may be planned and audited, but implementation must respect actual
+cross-group dependencies, security gates and user approval requirements.
+Security, privacy, testing, documentation, accessibility, free-first constraints
+and preservation of existing work apply continuously across all 10 Groups.
 
 ==================================================
 PART 28 — DEVELOPMENT EXECUTION RULES
@@ -983,22 +1014,24 @@ Baseline commit:
 PART 31 — CURRENT EXECUTION POSITION
 ==================================================
 
-Previously agreed workflow:
-Step 2/7 — Project Audit.
+Active roadmap: exactly 10 Groups.
 
-Substeps 2.1–2.5 were reported complete in the handover.
+Completed: GROUP 01, GROUP 02, GROUP 03, GROUP 04 and GROUP 05.
+Current: GROUP 06 — Autonomous Agent Workforce and DevPilot — IN PROGRESS.
+Next: continue Group 06 in dependency order; do not skip unfinished requirements.
 
-Remaining:
+GROUP 05 implementation is verified 20/20. Its production activation remains
+behind the isolated D1/session release gate documented in
+planning/PART05_GROUP05_IMPLEMENTATION.md. This is a release gate, not a reason
+to renumber or reopen the 10-Group structure.
 
-- Finish local read-only audit.
-- Verify full source inventory.
-- Reconcile local and GitHub main.
-- Verify Cloudflare configuration.
-- Inspect actual tests.
-- Complete architecture report.
-- Prepare Step 3 implementation plan.
+GROUP 06 includes the Manager/Planner, Specialist Workforce, Multi-Agent
+Coordination, Research/Web Intelligence, Coding/Technical Workforce and every
+DevPilot A–Z requirement. Exact current implementation boundaries and blockers
+are recorded in planning/PART06_GROUP06_STATUS.md.
 
-No source implementation is authorized merely by this plan.
+Progress must be based on source, test and runtime evidence. Never claim a task
+complete solely because it appears in a plan or a class/tool exists.
 
 ==================================================
 PART 32 — DOCUMENTATION AND PROGRESS CONTROL
@@ -1064,124 +1097,5 @@ END OF COMPLETE MASTER ROADMAP
 Group 04 source integration and consolidated CI are complete. Latest CI run `44078832670` on commit `d66c62f748a8cba1dbefcb3d70a09db50214061d`: production dependency audit found 0 vulnerabilities; TypeScript PASS; 55 test files / 420 tests PASS; local workerd streaming smoke test PASS; production build PASS; generated Wrangler config validation PASS. The Cloudflare automatic Workers Builds check for this feature-branch commit reported failure; no production deployment was attempted from this branch. The separately verified `main` production Worker remains deployed and live from Group 03.
 
 
-==================================================
-PART 33 — BINDING PLATFORM PRIORITY (2026-11-19)
-==================================================
 
-The user's explicit product priority is:
-
-1. WEB SYSTEM — PRIMARY / PRIORITY 1.
-   - Full feature set, complete UI/UX and design capabilities.
-   - First delivery target for new features and upgrades.
-   - Continuously served; normal feature updates should not require
-     a user-installed app update.
-2. ANDROID APP — SECONDARY / PRIORITY 2.
-   - Reuse the same backend, task state, identity, permissions,
-     and business logic as Web.
-   - Adapt the core experience to mobile.
-   - Plan app releases carefully because installed app updates
-     may be required for client-side changes.
-3. TELEGRAM — COMPANION / PRIORITY 3.
-   - Task intake, concise progress, notifications, approvals,
-     and essential controls only.
-   - Do not attempt to reproduce the full Web UI in Telegram.
-
-All clients must share one backend and one source of truth.
-Do not build three independent agent systems.
-
-==================================================
-PART 34 — AUTONOMOUS DEVELOPMENT SYSTEM (DEVPILOT)
-==================================================
-
-The complete A–Z specification is maintained in:
-planning/AUTONOMOUS_DEVPILOT_MASTER_SPEC.md
-
-This is a cross-group capability inside the existing 24 Groups;
-it does not create a new Group 25.
-
-Mandatory mapping:
-- G06 Manager Agent and Planner: intake, planning, risk,
-  permissions, delegation, state, replanning, final report.
-- G07 Specialist Agent Workforce: coding, debugging, QA,
-  security, research, documentation and release agents.
-- G08 Multi-Agent Coordination: dependencies, handoffs,
-  bounded retries, cancellation, aggregation.
-- G09 Research and Web Intelligence: trusted official-source
-  research, verification and prompt-injection resistance.
-- G15 Coding and Technical Workforce: repository inspection,
-  code edits, controlled command execution, tests, diff review,
-  Git workflows and engineering reports.
-- G16 External App Connection Hub: authenticated GitHub and
-  approved external integrations with least privilege.
-- G17 Database and User Workspace: durable tasks, checkpoints,
-  artifacts, approvals and execution history.
-- G20 Security and Human Control: sandbox, command restrictions,
-  secrets protection, approvals, audit and recovery.
-- G21 PWA, Mobile and Accessibility: Web-first control plane,
-  followed by Android app adaptation.
-- G22 Production Infrastructure: cloud execution, CI/CD,
-  monitoring, quotas, backup and rollback.
-- G23 Testing and Quality: unit, integration, E2E, security,
-  runtime and failure-injection tests.
-- G24 Final Product Release: acceptance evidence, documentation,
-  release and known limitations.
-
-DevPilot's required lifecycle:
-1. Understand the user's goal and acceptance criteria.
-2. Inspect repository identity, branch, git status, instructions,
-   source, tests, dependencies and environment.
-3. Preserve all pre-existing modifications.
-4. Build a dependency-aware plan and risk classification.
-5. Request approval where policy requires it.
-6. Execute in an authorized isolated workspace with controlled
-   shell, filesystem, network, time and resource limits.
-7. Edit code, run tests/builds, diagnose and repair failures
-   within bounded retry/time/cost budgets.
-8. Distinguish application failures from environment failures.
-9. Review security, secrets, dependencies and complete Git diff.
-10. Create branch/commit/PR as authorized.
-11. Persist checkpoints and resume safely after interruption.
-12. Report evidence-based progress (10/25/50/75/90/100%),
-    exact test status, blockers, next action and artifacts.
-13. Require explicit approval for production deployment,
-    database migration, destructive actions, publishing,
-    external messaging and sensitive account changes.
-
-Required autonomy capabilities:
-- Task intake and acceptance criteria.
-- Repository/project inspection.
-- Planning and task decomposition.
-- Specialist selection and delegation.
-- Authorized terminal/command execution.
-- Controlled file editing.
-- Debugging and bounded repair loops.
-- Test, typecheck, lint and build execution.
-- Git branch, diff, commit and PR workflows.
-- Trusted documentation research.
-- Durable state, checkpoints, resume and recovery.
-- Progress reporting and audit history.
-- Human approval and rollback.
-
-Completion rule:
-DevPilot is NOT complete merely because a tool or agent class exists.
-It is complete only after the full Web workflow is demonstrated
-end-to-end in a real authorized environment, Android core workflows
-are verified, Telegram companion controls are verified, and all
-security, regression, integration and release acceptance criteria pass.
-
-Implementation priority:
-1. Audit existing DevPilot, Coding Agent, Command Runner,
-   Git Safety, File Change, Recovery and Approval components.
-2. Build the secure execution bridge and isolated workspace.
-3. Complete plan -> approval -> execute -> test -> repair ->
-   review -> PR lifecycle.
-4. Add persistent checkpoints, resume, progress and audit events.
-5. Complete Web control plane.
-6. Adapt to Android app.
-7. Add Telegram companion workflows.
-8. Complete cross-client end-to-end acceptance.
-
-Status discipline:
-Every capability remains PLANNED until source code, tests and
-runtime evidence prove it. IMPLEMENTED is not VERIFIED.
-Do not claim full autonomy from code presence alone.
+END OF 10-GROUP MASTER ROADMAP
