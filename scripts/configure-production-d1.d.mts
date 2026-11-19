@@ -3,6 +3,7 @@ export interface WranglerD1Binding {
   database_name: string;
   database_id: string;
   migrations_dir?: string;
+  migrations_pattern?: string;
   [key: string]: unknown;
 }
 
@@ -23,6 +24,7 @@ export function addProductionD1Binding(
     databaseName?: string;
     databaseId?: string;
     migrationsDir?: string;
+    migrationsPattern?: string;
     projectRoot?: string;
   },
 ): WranglerConfig & {
