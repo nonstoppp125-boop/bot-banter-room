@@ -97,7 +97,7 @@ export async function runValidationSuite(input:{
   for(const command of commands){
     if(input.signal?.aborted)return{status:"cancelled",passed:false,results,totalDurationMs,reason:"Validation suite was cancelled."};
     try{
-      const result=await input.runner.run({command,timeoutMs,signal:input.signal});
+      const result=await input.runner.run(input.signal?{command,timeoutMs,signal:input.signal}:{command,timeoutMs});
       if(!Number.isInteger(result.exitCode)||!Number.isFinite(result.durationMs)||result.durationMs<0||typeof result.stdout!=="string"||typeof result.stderr!=="string"){
         return{status:"failed",passed:false,results,totalDurationMs,reason:"Validation runner returned malformed execution evidence."};
       }
