@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {authorizeValidationCommand,buildCodingPlan,buildRepositoryInventory,createEngineeringEvent,reviewCodeDiff,validateCodeChangeProposal} from "@/lib/agents/coding-workforce";
+import {authorizeValidationCommand,buildCodingPlan,buildRepositoryInventory,createEngineeringEvent,reviewCodeDiff,runValidationSuite,validateCodeChangeProposal} from "@/lib/agents/coding-workforce";
 const inventory=()=>buildRepositoryInventory({repository:"owner/repo",branch:"work/feature",headSha:"abcdef1234567890",now:"2026-11-16T10:00:00.000Z",files:[{path:"src/app.ts",sha:"sha12345",size:100,status:"tracked"},{path:"src/app.test.ts",sha:"sha23456",size:80,status:"modified"},{path:".env",size:30,status:"tracked"},{path:"node_modules/pkg/index.js",size:20,status:"tracked"},{path:"../outside",size:1,status:"tracked"}]});
 describe("coding workforce safety",()=>{
 it("builds bounded inventory and skips secrets/traversal/vendor paths",()=>{const v=inventory();expect(v.files.map(f=>f.path)).toEqual(["src/app.ts","src/app.test.ts"]);expect(v.skippedPaths).toHaveLength(3);});
