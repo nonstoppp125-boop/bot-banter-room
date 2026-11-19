@@ -1,48 +1,60 @@
 # Production Deployment Setup
 
-The production workflow is intentionally manual and fail-closed. It runs only on main when confirm_deploy=true. It does not run from work/group06-manager-planner.
+Production deployment is manual and fail-closed. The workflow runs only on `main` when `confirm_deploy=true`; it never deploys directly from a work branch.
 
-## 1. Create the D1 database
+## 1. Cloudflare D1 database
 
-Create the production D1 database in the same Cloudflare account as the Worker, using the Cloudflare dashboard or Wrangler. Record the exact database name and UUID returned by Cloudflare. Do not invent or reuse an ID from another project.
+Use the existing production D1 database for this Worker, or create one in the same Cloudflare account. Record its exact database name and UUID from Cloudflare.
 
-The repository contains 15 SQL migrations under migrations/. The deploy workflow injects the real D1 binding into the Nitro-generated Wrangler config, points migrations_dir at the tracked migration folder, applies pending migrations to the remote database, then deploys. Wrangler captures a D1 backup when migrations are applied.
+The deployment workflow configures the generated Wrangler file with the `ACTION_DB` binding and the reviewed nested migration pattern. It applies these migrations in order:
 
-## 2. Configure GitHub Environment secrets
+1. `migrations/group05/0005_memory_foundation.sql` — users, workspaces, memberships, sessions, memories and login-throttling records.
+2. `migrations/group06/0001_manager_core.sql` — durable Manager tasks, approvals and idempotency claims.
+3. `migrations/group06/0002_task_retry_budget.sql` — bounded manual retry counter.
+4. `migrations/group06/0003_task_queue_leases.sql` — worker lease, heartbeat and bounded background-attempt fields.
 
-The workflow uses GitHub Environment production. Add these environment secrets under repository Settings → Environments → production:
+The workflow fails closed unless this exact four-file set is present. Legacy root-level SQL files under `migrations/*.sql` are not part of this production migration sequence; do not apply them manually. Wrangler creates a D1 backup when applying remote migrations.
 
-- CLOUDFLARE_API_TOKEN — token with the required Workers deployment and D1 permissions.
-- CLOUDFLARE_ACCOUNT_ID — Cloudflare account ID.
-- CLOUDFLARE_D1_DATABASE_NAME — exact created D1 database name.
-- CLOUDFLARE_D1_DATABASE_ID — exact D1 UUID.
+## 2. GitHub Environment secrets
 
-The workflow does not create a D1 database automatically. It fails before migration/deployment if these values are absent or invalid.
+Under repository Settings → Environments → `production`, configure:
 
-## 3. Configure Worker runtime values
+- `CLOUDFLARE_API_TOKEN` — token with Workers deployment and D1 migration permissions.
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID.
+- `CLOUDFLARE_D1_DATABASE_NAME` — exact production D1 database name.
+- `CLOUDFLARE_D1_DATABASE_ID` — exact production D1 UUID.
 
-In the Cloudflare Worker settings, configure:
+The workflow does not create a database or invent an ID. It stops before migration/deployment if any value is absent or invalid.
 
-- Required Worker secret: GROQ_API_KEY. The generated Wrangler config declares this secret as required, and Wrangler validates it before deployment.
-- Required Access variables: CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD.
-- Recommended Access allowlist variable: CF_ACCESS_ALLOWED_EMAIL_DOMAINS.
-- Optional research secret: TAVILY_API_KEY.
-- Optional Telegram values: TELEGRAM_BOT_ID, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, TELEGRAM_APPROVAL_CALLBACK_SECRET.
-- OAuth provider credentials are needed only when a provider integration is configured.
+## 3. Cloudflare Worker secrets
 
-Never commit secret values or paste them into chat. The app reads them from the Worker environment at runtime.
+Configure these Worker secrets before deployment:
+
+- `GROQ_API_KEY` — required model-provider key.
+- `LIZA_AUTH_EMAIL` — the private workspace owner login email.
+- `LIZA_AUTH_PASSWORD_HASH` — PBKDF2-SHA256 password hash, 100,000 iterations.
+
+Generate the password hash locally in an interactive terminal with:
+
+```sh
+node scripts/generate-password-hash.mjs
+```
+
+The script does not echo the password and refuses piped input. Store the generated hash directly as the Cloudflare Worker secret; never commit it or paste the password/hash into chat.
+
+Optional Worker secrets include `TAVILY_API_KEY` for research and Telegram bot/webhook credentials when that integration is configured. First-party password authentication does not require Cloudflare Access team-domain or audience variables.
 
 ## 4. Deployment gate
 
 Before production deployment:
 
-1. Confirm the production GitHub Environment has the four Cloudflare/D1 secrets.
-2. Confirm the Cloudflare Worker has GROQ_API_KEY and the Access variables.
-3. Confirm the D1 database exists in the same account and the ID matches its name.
-4. Review the pending migrations and the generated config.
-5. Merge the reviewed branch to main only with explicit approval.
-6. Manually run Doot Manual Cloudflare Deploy on main with confirm_deploy=true.
+1. Confirm all four GitHub production-environment secrets are configured.
+2. Confirm all three required Worker secrets are configured.
+3. Confirm the D1 database name and UUID match the intended production database.
+4. Review the exact four Group 05/06 migration files and the generated Wrangler config.
+5. Merge only the reviewed, reconciled branch after its exact-head CI passes.
+6. Manually run **Doot Manual Cloudflare Deploy** on `main` with `confirm_deploy=true`.
 
-The workflow performs locked install, audit, typecheck, all tests, build, D1 config injection/validation, remote D1 migrations and deployment in that order. A failed migration stops deployment.
+The workflow runs locked install, production dependency audit, typecheck, all tests, build, D1 config injection/validation, remote migrations and Worker deployment. Any failed check or migration stops the release.
 
-No production database was created, no secret was configured and no deployment was triggered as part of this source audit.
+No production migration or deployment is triggered merely by updating this document or a work branch.
