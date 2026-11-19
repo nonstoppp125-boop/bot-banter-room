@@ -10,6 +10,7 @@ export function addProductionD1Binding(config, {
   databaseName,
   databaseId,
   migrationsDir = "migrations",
+  migrationsPattern,
   projectRoot = process.cwd(),
 }) {
   const name = databaseName?.trim();
@@ -35,15 +36,29 @@ export function addProductionD1Binding(config, {
   if (!fs.existsSync(migrationsPath) || !fs.statSync(migrationsPath).isDirectory()) {
     throw new Error("The configured D1 migrations directory is missing.");
   }
-  const migrations = fs.readdirSync(migrationsPath).filter((file) => file.endsWith(".sql"));
-  if (migrations.length === 0) {
-    throw new Error("No SQL migrations were found in the configured D1 migrations directory.");
-  }
-
   const migrationsPathFromConfig = path.relative(
     path.dirname(path.resolve(configPath)),
     migrationsPath,
   ).split(path.sep).join("/");
+  let migrationsPatternFromConfig;
+  if (migrationsPattern !== undefined) {
+    if (migrationsPattern !== "migrations/*/*.sql" || migrationsDir !== "migrations") {
+      throw new Error("Only the reviewed nested Group 05/06 migration pattern is supported.");
+    }
+    const nestedSqlFiles = fs.readdirSync(migrationsPath, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .flatMap((entry) => fs.readdirSync(path.join(migrationsPath, entry.name))
+        .filter((file) => file.endsWith(".sql")));
+    if (nestedSqlFiles.length === 0) {
+      throw new Error("No nested SQL migrations were found in the configured D1 migrations directory.");
+    }
+    migrationsPatternFromConfig = `${migrationsPathFromConfig}/*/*.sql`;
+  } else {
+    const migrations = fs.readdirSync(migrationsPath).filter((file) => file.endsWith(".sql"));
+    if (migrations.length === 0) {
+      throw new Error("No SQL migrations were found in the configured D1 migrations directory.");
+    }
+  }
 
   const existing = Array.isArray(config.d1_databases) ? config.d1_databases : [];
   const d1_databases = existing.filter((binding) => binding?.binding !== "ACTION_DB");
@@ -52,6 +67,7 @@ export function addProductionD1Binding(config, {
     database_name: name,
     database_id: id,
     migrations_dir: migrationsPathFromConfig,
+    ...(migrationsPatternFromConfig ? { migrations_pattern: migrationsPatternFromConfig } : {}),
   });
 
   const requiredSecrets = new Set(Array.isArray(config.secrets?.required) ? config.secrets.required : []);
@@ -74,6 +90,7 @@ async function main() {
     databaseName: process.env.CLOUDFLARE_D1_DATABASE_NAME,
     databaseId: process.env.CLOUDFLARE_D1_DATABASE_ID,
     migrationsDir: process.env.CLOUDFLARE_D1_MIGRATIONS_DIR || "migrations",
+    migrationsPattern: process.env.CLOUDFLARE_D1_MIGRATIONS_PATTERN,
   });
   fs.writeFileSync(configPath, JSON.stringify(configured, null, 2) + "\n");
   console.log("Injected ACTION_DB binding and scoped migrations path; database ID redacted.");
