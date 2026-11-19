@@ -633,4 +633,16 @@ Audit conclusion: no Group 06 application source, task route, tests, or migratio
 - Coding-workforce repository inventory now excludes additional credential/config paths (.npmrc, .pypirc, .netrc, cloud/SSH/Kubernetes/Docker credential paths, service-account JSON and common credential manifests). Diff review rejects unsafe/protected paths and recognizes common GitHub/AWS/Slack/API token formats. Coding-plan risk assessment now covers explicit Bengali/Banglish destructive, deployment, credential and permission intent.
 - This remains a planning/proposal-validation module; it does not yet inspect or modify a live repository, execute shell commands, or create commits/PRs itself. The controlled workspace/command runner and authenticated repository adapter remain unimplemented dependencies; do not claim DevPilot autonomy is complete.
 - PR #28 remains open/unmerged. Cloudflare Workers Builds check is still opaque/failed without diagnostics; no deployment or D1 migration.
+## 2026-11-19 — Group 06 bounded validation runner
+
+- PR #29 latest head `3d457e808d3ccd91a77ff6b1afb09bfddeacbc7b`; exact-head GitHub Actions run `44567459662` PASS: TypeScript, 60 test files / 469 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Added an injected validation-runner contract that preflights the full exact allowlist, runs checks sequentially, stops on first failure, handles cancellation, validates result evidence and bounds stdout/stderr. It never spawns a shell; the actual isolated command adapter remains unimplemented.
+- PR #29 open/unmerged; no production deployment.
+
+## 2026-11-19 — Group 06 DevPilot workflow engine
+
+- PR #30 latest head `4b936ec636dcce7e1acb0ceaf3c9fddf7027d63a`; exact-head GitHub Actions run `44569405137` PASS: TypeScript, 61 test files / 473 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Added a bounded orchestration engine for repository identity/clean-tree inspection, coding plan, scoped file reads, proposal validation, pre-apply security review, exact proposal approval hashing, non-main branch creation, atomic base-SHA-conditional change application, allowlisted validation, post-change review, commit and PR creation. It never merges or deploys.
+- High-risk task intent and sensitive proposed paths (deployment workflows, migrations, Wrangler config, dependencies, authentication and authorization controls) require a verified approval hash bound to the exact proposal. Mismatched approvals are blocked before writes.
+- **Not production-autonomous yet:** no authenticated repository adapter is connected; no isolated shell/workspace implementation is connected; no persisted D1 checkpoint/resume API or Web UI is wired to this engine. These are explicit blockers, not completed capabilities. PR #30 remains open/unmerged.
 
