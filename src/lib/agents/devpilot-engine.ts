@@ -125,23 +125,25 @@ export async function runDevPilotTask(input:{
     const initialReview=reviewCodeDiff({files:changes,testsChanged});
     if(!initialReview.passed)return blocked("Proposed diff contains critical or high-severity security findings.",25);
     if(sourceChanged&&!testsChanged)return blocked("Source changes require corresponding test changes before execution.",25);
-    const approvalPayloadHash=await hashApprovalPayload({kind:"devpilot-code-change",taskId:input.taskId,repository:input.repository,baseBranch:input.baseBranch,baseSha:snapshot.headSha,targetBranch,plan,proposal,review:initialReview});
+    const approvalRequired=plan.approvalRequired||changes.some(change=>/^(?:\.github\/workflows\/|migrations\/|wrangler(?:\.[^/]*)?$|package(?:-lock)?\.json$|bun\.lock$|src\/lib\/agents\/(?:session-auth|password-auth|approval-store|task-approval|action-policy|security-boundaries)\.ts$)/i.test(change.path));
+    const effectivePlan=approvalRequired&&!plan.approvalRequired?{...plan,risk:"high" as const,approvalRequired:true,limitations:[...plan.limitations,"Sensitive deployment, migration, dependency, authentication and authorization paths require explicit approval."]}:plan;
+    const approvalPayloadHash=await hashApprovalPayload({kind:"devpilot-code-change",taskId:input.taskId,repository:input.repository,baseBranch:input.baseBranch,baseSha:snapshot.headSha,targetBranch,plan:effectivePlan,proposal,review:initialReview});
     addEvent(events,input.taskId,"proposal-created","Validated code proposal and pre-apply security review completed.",[...changes.map(change=>change.path),approvalPayloadHash],now);
-    if(plan.approvalRequired&&(!input.approval?.verified||input.approval.payloadHash!==approvalPayloadHash)){
-      return{status:"awaiting_approval",progress:25,plan,proposal,approvalPayloadHash,events,reason:"Exact proposal approval is required before any repository write."};
-    }
     if(input.approval?.verified&&input.approval.payloadHash!==approvalPayloadHash){
       return blocked("Approval payload does not match the current task, repository baseline and exact code proposal.",25);
     }
-    if(input.signal?.aborted)return{status:"cancelled",progress:25,plan,proposal,approvalPayloadHash,events,reason:"DevPilot task was cancelled before repository writes."};
+    if(effectivePlan.approvalRequired&&!input.approval?.verified){
+      return{status:"awaiting_approval",progress:25,plan:effectivePlan,proposal,approvalPayloadHash,events,reason:"Exact proposal approval is required before any repository write."};
+    }
+    if(input.signal?.aborted)return{status:"cancelled",progress:25,plan:effectivePlan,proposal,approvalPayloadHash,events,reason:"DevPilot task was cancelled before repository writes."};
     await input.adapter.createBranch({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,...(input.signal?{signal:input.signal}:{})});
     addEvent(events,input.taskId,"planned","Isolated non-main work branch created.",[targetBranch,snapshot.headSha],now);
     const applied=await input.adapter.applyChanges({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,changes,...(input.signal?{signal:input.signal}:{})});
-    if(!SHA.test(applied.headSha))return failed("Repository adapter returned an invalid post-apply HEAD.",50,{plan,proposal,approvalPayloadHash});
+    if(!SHA.test(applied.headSha))return failed("Repository adapter returned an invalid post-apply HEAD.",50,{plan:effectivePlan,proposal,approvalPayloadHash});
     currentProgress=50;
     addEvent(events,input.taskId,"verified","Proposed files applied with a conditional base-commit check.",[applied.headSha,...changes.map(change=>change.path)],now);
     const validation=await runValidationSuite({commands:plan.validationCommands,runner:input.adapter,...(input.signal?{signal:input.signal}:{})});
-    if(validation.status!=="passed")return failed(validation.reason??"Validation did not pass.",50,{plan,proposal,approvalPayloadHash,validation});
+    if(validation.status!=="passed")return failed(validation.reason??"Validation did not pass.",50,{plan:effectivePlan,proposal,approvalPayloadHash,validation});
     currentProgress=75;
     addEvent(events,input.taskId,"verified","All allowlisted validation commands passed.",validation.results.map(result=>result.command+" (exit "+result.exitCode+")"),now);
     const diff=await input.adapter.inspectDiff({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,...(input.signal?{signal:input.signal}:{})});
@@ -150,13 +152,13 @@ export async function runDevPilotTask(input:{
     currentProgress=90;
     addEvent(events,input.taskId,"reviewed","Post-validation diff passed the bounded security review.",diff.files.map(file=>file.path),now);
     const committed=await input.adapter.commit({repository:input.repository,branch:targetBranch,expectedHeadSha:applied.headSha,message:"devpilot: "+plan.task.slice(0,72),...(input.signal?{signal:input.signal}:{})});
-    if(!SHA.test(committed.commitSha))return failed("Repository adapter returned an invalid commit SHA.",90,{plan,proposal,approvalPayloadHash,validation});
+    if(!SHA.test(committed.commitSha))return failed("Repository adapter returned an invalid commit SHA.",90,{plan:effectivePlan,proposal,approvalPayloadHash,validation});
     addEvent(events,input.taskId,"verified","Reviewed changes committed on the isolated branch.",[committed.commitSha],now);
     const pullRequest=await input.adapter.createPullRequest({repository:input.repository,headBranch:targetBranch,baseBranch:input.baseBranch,title:"DevPilot: "+plan.task.slice(0,100),body:"Automated coding task.\n\n- Base: "+snapshot.headSha+"\n- Commit: "+committed.commitSha+"\n- Validation: all allowlisted checks passed.\n- Security: bounded diff review passed.\n\nNo production deployment or merge was performed.",commitSha:committed.commitSha,...(input.signal?{signal:input.signal}:{})});
-    if(!Number.isInteger(pullRequest.number)||pullRequest.number<1||!/^https:\/\//.test(pullRequest.url))return failed("Repository adapter returned invalid pull-request metadata.",90,{plan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha});
+    if(!Number.isInteger(pullRequest.number)||pullRequest.number<1||!/^https:\/\//.test(pullRequest.url))return failed("Repository adapter returned invalid pull-request metadata.",90,{plan:effectivePlan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha});
     currentProgress=100;
     addEvent(events,input.taskId,"verified","Pull request created; no merge or deployment performed.",[pullRequest.url],now);
-    return{status:"completed",progress:100,plan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha,pullRequest,events};
+    return{status:"completed",progress:100,plan:effectivePlan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha,pullRequest,events};
   }catch(error){
     return failed(error instanceof Error?error.message.slice(0,500):"DevPilot workflow failed.");
   }
