@@ -122,10 +122,18 @@ jobs:
             ? fs.readdirSync(migrationsPath, { withFileTypes: true })
                 .filter((entry) => entry.isDirectory())
                 .flatMap((entry) => fs.readdirSync(path.join(migrationsPath, entry.name))
-                  .filter((file) => file.endsWith(".sql")))
+                  .filter((file) => file.endsWith(".sql"))
+                  .map((file) => `${entry.name}/${file}`))
+                .sort()
             : [];
-          if (nestedMigrations.length < 4) {
-            console.error("Production deployment blocked: expected all Group 05 and Group 06 nested SQL migrations.");
+          const expectedMigrations = [
+            "group05/0005_memory_foundation.sql",
+            "group06/0001_manager_core.sql",
+            "group06/0002_task_retry_budget.sql",
+            "group06/0003_task_queue_leases.sql",
+          ];
+          if (JSON.stringify(nestedMigrations) !== JSON.stringify(expectedMigrations)) {
+            console.error("Production deployment blocked: the Group 05/06 D1 migration set differs from the reviewed sequence.");
             process.exit(1);
           }
           console.log("Validated generated Worker config and ACTION_DB migrations directory.");
