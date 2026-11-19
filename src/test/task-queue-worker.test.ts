@@ -55,7 +55,7 @@ describe("D1 background task queue", () => {
 
   it("rejects completion after the lease has expired, even if the old worker still owns the row", async () => {
     const calls: Array<{ sql: string; values: unknown[] }> = [];
-    const db = { prepare(sql: string) { return { bind(...values: unknown[]) { return { async run() { calls.push({ sql, values }); return { success: true, meta: { changes: 0 } }; } }; } }; } };
+    const db = { prepare(sql: string) { return { bind(...values: unknown[]) { return { async run() { calls.push({ sql, values }); return { success: true, meta: { changes: 0 } }; }, async first<T>() { return null as T | null; }, async all<T>() { return { success: true, results: [] as T[] }; } }; } }; } };
     const store = createD1QueueStore(db);
     const now = "2026-11-17T10:02:00.000Z";
     const finished = await store.finish({ id: "task-1", owner: "worker-old", status: "completed", result: { output: "late" }, now });
