@@ -611,3 +611,15 @@ Audit conclusion: no Group 06 application source, task route, tests, or migratio
 - Added regression tests for Bengali and Banglish high-risk task plans and action-type classification. Also added explicit “ফেসবুকে পোস্ট করো” and “post to LinkedIn” publishing coverage.
 - Exact-head GitHub Actions run 44563957057 PASS: TypeScript, 60 test files / 489 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit. PR #26 remains open/unmerged. No production action is executed by the patch.
 - Group 06 remains IN PROGRESS; do not start Group 07 before its complete acceptance gates pass.
+## 2026-11-19 — Group 06 scheduled-handler test coverage
+
+- Opened PR #27 (`test/group06-scheduled-handler`) with focused tests proving the Worker scheduled handler invokes the D1 queue processor only when ACTION_DB exists, fails closed when it is missing, and contains queue invocation errors.
+- Initial test run exposed only a mock setup defect (mock returned undefined); corrected the test mock to resolve the queue processor result. No production source change was needed.
+- Exact-head GitHub Actions run `44564906320` PASS: TypeScript, 61 test files / 466 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Cloudflare Workers Builds check failed opaquely with no diagnostic detail; same pipeline issue remains unresolved. PR #27 open/unmerged.
+
+## 2026-11-19 — Updated multilingual approval test coverage
+
+- PR #26 now includes additional financial-action cases for Bengali and Banglish requests. Latest exact-head run `44564819427` PASS: TypeScript, 60 test files / 495 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- PR #26 remains open/unmerged. High-risk external actions remain approval-gated; no production action or migration performed.
+
