@@ -473,4 +473,17 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Consolidated CI run `44080900423`, commit `e36b1b8b407d01101b3745210ca71310ec4f3255`: 56/56 test files and 431/431 tests passed; TypeScript passed; production dependency audit found 0 vulnerabilities; Worker streaming smoke, production build, and generated Wrangler config validation passed.
 - Cloudflare automatic Workers Builds check failed for the feature-branch snapshot. No feature-branch deployment was attempted.
 - **Production activation is still pending:** Group 03 deployed `ACTION_DB`, but did not apply D1 migrations because the migration set contains later-group schemas. The memories table is in `0005_workspace_core.sql`; apply it only through a safe migration sequence that does not prematurely deploy later groups, then run live authenticated memory CRUD and chat smoke tests.
-- Per the required group order, **the active roadmap checkpoint remains Group 05**. The existing feature branch contains later-group baseline code, but no further Group 06 work is being advanced. Remain on Group 05 until the production D1 migration/release gate is resolved.
+- Historical checkpoint superseded on 2026-11-19: the active roadmap has advanced to consolidated GROUP 06. Group 05 implementation remains complete; its production activation gate is separately tracked.
+
+
+## 2026-11-19 — Consolidated 10-Group roadmap and active Group 06 checkpoint
+
+- The master roadmap is now exactly 10 active Groups. The former 24 Groups are retained only as detailed workstreams/task identifiers; no requirement is deleted and they are not 24 separate active Groups.
+- GROUPS 01–05: complete for their recorded implementation scope. GROUP 05 is verified 20/20; production D1/session activation remains a separate release gate.
+- GROUP 06 — Autonomous Agent Workforce and DevPilot: IN PROGRESS.
+- Group 06 source was reconciled onto current main through PR #13, merged at commit 42b561d6906e14fd38c6fe8b811c2a5bdefac22c on 2026-11-19. Exact-head GitHub Actions run 44450200549 passed TypeScript, tests, production build, generated Wrangler config and dependency audit (0 vulnerabilities).
+- The Group 06 queue worker, heartbeat/lease handling, bounded worker attempts, retry controls, approval-bound execution and nested Group 05/06 migration files are present in source and CI-tested. This is not proof of live production D1/cron execution.
+- Remaining Group 06 gates: inspect production D1 migration history/schema through the dedicated read-only workflow; only after that, request explicit approval for any migration/deployment; verify ACTION_DB and cron runtime; run authenticated task/approval/queue smoke tests. External side-effect executors remain disabled.
+- The product interface priority is Web first, Android app second, Telegram companion third; all share one backend and source of truth.
+- Current 10-Group mapping: G06 owns the agent/DevPilot workforce; G07 owns LinkedIn/social/growth/analytics; G08 owns integrations/database/identity/workspace/Telegram; G09 owns security/Web-App/infrastructure/quality; G10 owns final acceptance/release.
+- No production D1 migration or deployment was performed by this checkpoint.
