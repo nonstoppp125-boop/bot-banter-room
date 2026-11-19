@@ -72,14 +72,14 @@ describe("production D1 config preparation", () => {
     });
   });
 
-  it("keeps the Group 05 migration limited to identity, session and memory tables", () => {
+  it("keeps the Group 05 migration limited to identity, session, memory and login-throttling tables", () => {
     const sql = fs.readFileSync(
       path.resolve(process.cwd(), "migrations/group05/0005_memory_foundation.sql"),
       "utf8",
     );
     const tables = [...sql.matchAll(/CREATE TABLE IF NOT EXISTS ([a-z_]+)/g)].map((match) => match[1]);
 
-    expect(tables).toEqual(["users", "workspaces", "workspace_members", "sessions", "memories"]);
+    expect(tables).toEqual(["users", "workspaces", "workspace_members", "sessions", "memories", "auth_login_attempts"]);
     expect(sql).not.toMatch(/agent_tasks|approvals|app_connections|social_accounts|content_drafts|publications|audit_events/);
   });
 
