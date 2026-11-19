@@ -113,8 +113,10 @@ jobs:
             console.error("Production deployment blocked: ACTION_DB binding is missing or incomplete.");
             process.exit(1);
           }
-          if (!Array.isArray(config.secrets?.required) || !config.secrets.required.includes("GROQ_API_KEY")) {
-            console.error("Production deployment blocked: GROQ_API_KEY must be declared as a required Worker secret.");
+          const requiredWorkerSecrets = ["GROQ_API_KEY", "LIZA_AUTH_EMAIL", "LIZA_AUTH_PASSWORD_HASH"];
+          if (!Array.isArray(config.secrets?.required) ||
+              requiredWorkerSecrets.some((secret) => !config.secrets.required.includes(secret))) {
+            console.error("Production deployment blocked: Groq and first-party password-auth Worker secrets must be declared as required.");
             process.exit(1);
           }
           const migrationsPath = path.resolve(path.dirname(configPath), d1[0].migrations_dir);
