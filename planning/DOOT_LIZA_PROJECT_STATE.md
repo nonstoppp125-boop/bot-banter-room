@@ -474,3 +474,10 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Cloudflare automatic Workers Builds check failed for the feature-branch snapshot. No feature-branch deployment was attempted.
 - **Production activation is still pending:** Group 03 deployed `ACTION_DB`, but did not apply D1 migrations because the migration set contains later-group schemas. The memories table is in `0005_workspace_core.sql`; apply it only through a safe migration sequence that does not prematurely deploy later groups, then run live authenticated memory CRUD and chat smoke tests.
 - Per the required group order, **the active roadmap checkpoint remains Group 05**. The existing feature branch contains later-group baseline code, but no further Group 06 work is being advanced. Remain on Group 05 until the production D1 migration/release gate is resolved.
+
+
+## 2026-11-19 — Group 06 background queue source/CI reconciliation
+
+Current Group 06 branch: `work/group06-manager-planner`; audited HEAD `a7c6e478a6078fdf4b603c7ab6d750ec9432207a`. The previously recorded statement that a background queue consumer remained unimplemented is outdated. The branch contains a scheduled Cloudflare Worker handler, D1 queue consumer, atomic claims, owner-bound leases, heartbeats, expired-lease recovery, bounded worker attempts, approval verification, and focused worker tests. The generated Wrangler config adds a one-minute cron trigger and validates the exact nested Group 05/06 migration set.
+
+CI run `44449242096` for that exact HEAD passed TypeScript, unit/integration tests, Cloudflare Worker streaming smoke, production build, generated Wrangler config validation and production dependency audit. This is code/CI evidence, not production activation. Live ACTION_DB binding, remote migrations, scheduled invocation and authenticated end-to-end runtime remain unverified and require explicit authorization. Cloudflare Workers Builds failed immediately with no available annotations/error text; root cause remains unknown. Group 06 remains IN PROGRESS; no merge, migration or production deployment is claimed.
