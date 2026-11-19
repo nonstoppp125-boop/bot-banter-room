@@ -52,6 +52,29 @@ describe("approval-bound Manager task execution", () => {
     expect(state.values()).toContain(approval.payloadHash);
   });
 
+  it.each([
+    ["লিংকডইনে এই পোস্টটি প্রকাশ করো", "social.publish"],
+    ["এই পোস্টটা পাবলিশ করে দাও", "social.publish"],
+    ["এই ইমেইলটি পাঠিয়ে দাও", "external.message"],
+    ["পুরোনো ড্রাফটটি মুছে ফেল", "destructive.delete"],
+    ["এটা প্রোডাকশনে ডিপ্লয় করো", "deployment"],
+    ["আমার অ্যাকাউন্টের সেটিংস পরিবর্তন করো", "account.change"],
+    ["LinkedIn e post ta publish koro", "social.publish"],
+    ["ei message ta pathiye dao", "external.message"],
+    ["purono draft ta delete koro", "destructive.delete"],
+    ["production e deploy koro", "deployment"],
+    ["amar account settings change koro", "account.change"],
+  ])("stores the correct approval action for Bengali/Banglish intent: %s", async (summary, actionType) => {
+    const state = makeDatabase();
+    const plan = buildManagerPlan(summary, listAgents());
+    expect(plan.approvalRequired).toBe(true);
+    const approval = await createManagerTaskApproval(state.database, {
+      taskId: "task-1", workspaceId: "workspace-1", userId: "user-1",
+      inputSummary: summary, plan, now,
+    });
+    expect(approval.actionType).toBe(actionType);
+  });
+
   it("keeps pending approvals blocked and unlocks only after an admin decision", async () => {
     const state = makeDatabase();
     const summary = "Publish this LinkedIn post";
