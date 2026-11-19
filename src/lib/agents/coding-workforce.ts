@@ -60,7 +60,7 @@ export interface DiffReviewInput { files:readonly {path:string;content:string}[]
 export function reviewCodeDiff(input:DiffReviewInput){
  const findings:{severity:"critical"|"high"|"medium";code:string;message:string}[]=[];
  for(const file of input.files){
-  if(SECRET_PATH.test(file.path))findings.push({severity:"critical",code:"secret-path",message:"Sensitive credential path must not be included: "+file.path});
+  if(!safePath(file.path))findings.push({severity:"critical",code:"secret-path",message:"Unsafe, protected, or sensitive path must not be included: "+file.path});
   if(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:api[_-]?key|access[_-]?token|client[_-]?secret|password|passwd|token|secret)\s*[:=]\s*["'][^"']{12,}|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{24,})\b/i.test(file.content))findings.push({severity:"critical",code:"possible-secret",message:"Possible hard-coded credential detected in "+file.path});
   if(/\beval\s*\(|new Function\s*\(|child_process|execSync\s*\(|dangerouslySetInnerHTML/.test(file.content))findings.push({severity:"high",code:"unsafe-primitive",message:"Review dynamic execution or unsafe rendering primitive in "+file.path});
  }
