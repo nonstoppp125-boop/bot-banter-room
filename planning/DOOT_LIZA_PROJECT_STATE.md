@@ -596,3 +596,18 @@ Audit conclusion: no Group 06 application source, task route, tests, or migratio
 - Recompared PR #2 `liza/full-app-foundation` with current main after PR #24. Its remaining diffs are not safe to merge wholesale: the old root route would replace the current task-aware chat UI; its root shell omits current service-worker registration and authenticated session gating; its old orchestrator predates current Groq, memory, rate-limit, research, task and approval controls; and its workflow is materially weaker than current CI.
 - The manifest changes in PR #2 remove current `display_override`, orientation, categories and related-applications metadata, so current main's manifest is retained.
 - Useful user-facing chat controls have been selectively ported in PR #24 without replacing task interactions or security/runtime foundations. No additional PR #2 code was imported in this audit.
+## 2026-11-19 — Group 06 expired-lease completion hardening
+
+- Re-review of the D1 queue worker identified a stale-worker edge case: heartbeat() rejected expired leases, but finish() previously checked only task state and lease owner. An expired worker could therefore complete during the interval before another worker reclaimed the row.
+- Opened PR #25 (fix/group06-expired-lease-ownership) with a conditional completion write requiring lease_expires_at > now, plus validation of task ID, owner and timestamp before D1 write.
+- Regression tests cover expired-lease completion rejection and malformed completion metadata.
+- Exact-head GitHub Actions run 44563755080 PASS: TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Cloudflare Workers Builds check remains failed with no diagnostic annotations/error detail; root cause unknown. PR #25 remains open/unmerged. No production deployment or D1 migration.
+
+## 2026-11-19 — Group 06 Bengali/Banglish approval-gate gap
+
+- Security review found the Manager high-risk detector was English-only. Some Bengali/Banglish commands for publishing, messaging, destructive changes, production deployment, financial actions and account changes could otherwise be misclassified as low risk.
+- Opened PR #26 (fix/group06-multilingual-approval-risk) to extend high-risk intent detection and persisted approval action classification for explicit Bengali-script and Banglish imperatives, while preserving draft-only requests as non-publishing.
+- Added regression tests for Bengali and Banglish high-risk task plans and action-type classification. Also added explicit “ফেসবুকে পোস্ট করো” and “post to LinkedIn” publishing coverage.
+- Exact-head CI run 44563957057 was in progress at checkpoint; no pass is claimed yet. PR #26 remains open/unmerged. No production action is executed by the patch.
+- Group 06 remains IN PROGRESS; do not start Group 07 before its complete acceptance gates pass.
