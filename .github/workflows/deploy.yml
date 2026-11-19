@@ -76,7 +76,8 @@ jobs:
         env:
           CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
           CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
-          CLOUDFLARE_D1_MIGRATIONS_DIR: migrations/group05
+          CLOUDFLARE_D1_MIGRATIONS_DIR: migrations
+          CLOUDFLARE_D1_MIGRATIONS_PATTERN: migrations/*/*.sql
         run: node scripts/configure-production-d1.mjs "${{ steps.config.outputs.path }}"
       - name: Validate generated Wrangler configuration
         env:
@@ -92,6 +93,12 @@ jobs:
           );
           if (missing.length) {
             console.error("Generated Wrangler config is incomplete:", missing.join(", "));
+            process.exit(1);
+          }
+          const migrationsDir = config.d1_databases?.find((binding) => binding.binding === "ACTION_DB")?.migrations_dir;
+          const migrationsPattern = config.d1_databases?.find((binding) => binding.binding === "ACTION_DB")?.migrations_pattern;
+          if (migrationsDir !== "../../migrations" || migrationsPattern !== "../../migrations/*/*.sql") {
+            console.error("Production deployment blocked: nested Group 05/06 migration set is not configured.");
             process.exit(1);
           }
           if (!Array.isArray(config.ratelimits) ||
@@ -111,9 +118,14 @@ jobs:
             process.exit(1);
           }
           const migrationsPath = path.resolve(path.dirname(configPath), d1[0].migrations_dir);
-          if (!fs.existsSync(migrationsPath) ||
-              !fs.readdirSync(migrationsPath).some((file) => file.endsWith(".sql"))) {
-            console.error("Production deployment blocked: configured D1 migrations directory is missing or empty.");
+          const nestedMigrations = fs.existsSync(migrationsPath)
+            ? fs.readdirSync(migrationsPath, { withFileTypes: true })
+                .filter((entry) => entry.isDirectory())
+                .flatMap((entry) => fs.readdirSync(path.join(migrationsPath, entry.name))
+                  .filter((file) => file.endsWith(".sql")))
+            : [];
+          if (nestedMigrations.length < 4) {
+            console.error("Production deployment blocked: expected Group 05 and Group 06 nested SQL migrations.");
             process.exit(1);
           }
           console.log("Validated generated Worker config and ACTION_DB migrations directory.");
