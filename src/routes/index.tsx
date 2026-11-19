@@ -3,7 +3,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useState } from "react";
 import type { UIMessage } from "ai";
-import { History, Moon, Pencil, Search, SquarePen, Sun, Trash2 } from "lucide-react";
+import { Check, Copy, History, Moon, Pencil, Search, SquarePen, Sun, Trash2 } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -44,6 +44,7 @@ function Index() {
   const [historyReady, setHistoryReady] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyQuery, setHistoryQuery] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [dark, setDark] = useState(false);
   const [taskSaving, setTaskSaving] = useState<string | null>(null);
   const [taskNotice, setTaskNotice] = useState<string | null>(null);
@@ -97,6 +98,13 @@ function Index() {
   };
   const startNewChat = () => { setMessages([]); setActiveChatId(null); setError(null); setTaskNotice(null); setTaskNoticeFor(null); setHistoryOpen(false); };
   const openSavedChat = (chat: SavedChat) => { setMessages(chat.messages); setActiveChatId(chat.id); setError(null); setHistoryOpen(false); };
+  const copyMessage = async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId((current) => current === id ? null : current), 1500);
+    } catch { setError("বার্তা কপি করা যায়নি। ব্রাউজারের clipboard permission পরীক্ষা করুন।"); }
+  };
   const renameSavedChat = (id: string) => {
     const current = savedChats.find((chat) => chat.id === id);
     if (!current) return;
@@ -201,6 +209,13 @@ function Index() {
                           <span key={i} className="whitespace-pre-wrap">{p.text}</span>
                         )
                       ) : null,
+                    )}
+                    {m.role === "assistant" && m.parts.some((part) => part.type === "text" && part.text.trim()) && (
+                      <div className="mt-2">
+                        <button type="button" onClick={() => void copyMessage(m.id, m.parts.filter((part) => part.type === "text").map((part) => part.text).join(String.fromCharCode(10)))} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent" aria-label="উত্তর কপি করুন">
+                          {copiedId === m.id ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copiedId === m.id ? "কপি হয়েছে" : "কপি"}
+                        </button>
+                      </div>
                     )}
                     {m.role === "user" && m.parts.some((part) => part.type === "text" && part.text.trim()) && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
