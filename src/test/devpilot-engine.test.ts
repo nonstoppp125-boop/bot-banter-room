@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { runDevPilotTask, type DevPilotRepositoryAdapter } from "@/lib/agents/devpilot-engine";
 import type { CodeChangeProposal } from "@/lib/agents/coding-workforce";
 
