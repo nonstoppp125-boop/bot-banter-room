@@ -3,7 +3,7 @@
 Status: REQUIRED PRODUCT SPECIFICATION — PLANNED; implementation and verification must be tracked separately.
 Product: Liza / XterLiza
 Repository: nonstoppp125-boop/bot-banter-room
-Roadmap model: Existing 24 Groups only. This document does not create a Group 25.
+Roadmap model: Exactly 10 consolidated Groups. Former workstream task IDs are retained for traceability; no additional Group exists.
 Last updated: 2026-11-19
 
 ## 1. User intent and product contract
@@ -152,23 +152,47 @@ Web is the full-featured control plane:
 - Support cancellation and safe rollback.
 - Free-first and privacy-conscious; disclose paid APIs/services and usage limits before enabling them.
 
-## 10. Mapping into the existing 24 Groups
+## 10. Mapping into the exactly 10 consolidated Groups
 
-No new Group is created. DevPilot is a cross-group capability:
-- **G06 Manager Agent and Planner:** task intake, decomposition, risk/cost, permissions, delegation, state tracking, replanning, final report.
-- **G07 Specialist Agent Workforce:** real coding, debugging, QA, security, research, documentation, and release agents.
-- **G08 Multi-Agent Coordination:** dependencies, parallel/sequential execution, handoffs, shared/isolated context, retries, cancellation, aggregation.
-- **G09 Research and Web Intelligence:** official documentation research, source verification, citations, untrusted-content protection.
-- **G15 Coding and Technical Workforce:** repository inspection, code edits, controlled command execution, tests, diffs, Git workflow, technical reports.
-- **G16 External App Connection Hub:** authenticated GitHub and other approved integrations; least privilege and audit.
-- **G17 Database and User Workspace:** durable task state, checkpoints, artifacts, approvals, and execution history.
-- **G20 Security and Human Control:** sandboxing, command restrictions, approval policy, audit integrity, secret protection, recovery.
-- **G21 PWA, Mobile and Accessibility:** implement Web-first control plane, then Android app adaptation; accessibility and multilingual UI.
-- **G22 Production Infrastructure:** cloud execution workers, CI/CD, monitoring, health, cost/quota, backup and rollback.
-- **G23 Testing and Quality:** unit/integration/E2E/security/runtime tests for every agent, tool, interface, and failure path.
-- **G24 Final Product Release:** acceptance evidence, user docs, release, known limitations, post-release improvement.
+The roadmap has exactly 10 active Groups. The former 24 Group sections are
+retained only as detailed workstreams and stable task identifiers; they are not
+separate active Groups. No requirements or task IDs are discarded.
 
-Groups 01–05 provide the source audit, architecture, provider, conversational intelligence, and memory foundation. DevPilot must not bypass their contracts.
+- **GROUP 01 — Source Audit and Repository Integrity:** former workstream 01.
+- **GROUP 02 — Architecture and System Design:** former workstream 02.
+- **GROUP 03 — Backend, AI Provider and Runtime Foundation:** former workstream 03.
+- **GROUP 04 — Conversational Intelligence and Multilingual Experience:** former workstream 04.
+- **GROUP 05 — Memory, Personalization and User Data:** former workstream 05.
+- **GROUP 06 — Autonomous Agent Workforce and DevPilot:** former workstreams 06–09 and 15. Includes Manager/Planner, specialist workforce, coordination, research, coding/debugging/QA, and the complete DevPilot lifecycle specified here.
+- **GROUP 07 — LinkedIn, Social Media, Growth and Business Intelligence:** former workstreams 10–14.
+- **GROUP 08 — Integrations, Database, Identity, Workspace and Telegram:** former workstreams 16–19.
+- **GROUP 09 — Security, Web/App Experience, Infrastructure and Quality:** former workstreams 20–23.
+- **GROUP 10 — Final Acceptance and Product Release:** former workstream 24.
+
+The user's active position is Groups 01–05 complete and GROUP 06 in progress.
+Group 05 implementation is verified 20/20; its separate production activation gate
+is documented and must be handled safely without changing the 10-Group count.
+
+### Binding platform priority
+1. **Web first:** complete primary product and full control plane.
+2. **Android app second:** shared backend/core, mobile-adapted client.
+3. **Telegram third:** companion for task intake, progress, notifications,
+   approvals and essential controls; rich workflows link to Web.
+
+All clients use one backend, one identity/permission model, and one source of truth.
+Do not build independent agent systems for each interface.
+
+### Stable task identifiers
+Original identifiers such as G01.*, G06.*, LI*, S*, BI*, C*, APP*, DB*, UX*, TG*,
+SEC*, PWA*, OPS*, QA* and REL* remain intact as workstream/task references. They
+are traceability labels, not additional active Groups. All progress reporting and
+handover documents must use GROUP 01 through GROUP 10.
+
+DevPilot is cross-cutting: Group 06 owns its agent/planning/execution lifecycle;
+Group 08 owns authenticated integrations and durable state; Group 09 owns sandbox,
+security, Web/App delivery, infrastructure and quality controls; Group 10 owns
+final end-to-end acceptance and release. No capability may be marked complete
+without source, test and runtime evidence.
 
 ## 11. Definition of Done
 
