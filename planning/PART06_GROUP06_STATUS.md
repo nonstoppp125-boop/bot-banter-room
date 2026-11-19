@@ -248,3 +248,20 @@ No merge to main; no production deployment.
 - Branch remains substantially diverged from current main (601 ahead / 99 behind at the last compare). No PR or merge was opened. No production D1 migration, ACTION_DB binding, scheduled runtime execution or authenticated live-D1 smoke test has been performed.
 
 **GROUP 06: IN PROGRESS.** Source-level nested migration integration and exact-head CI are now green. Remaining gates: selective port/reconciliation onto current main with first-party password auth preserved; review migration-history behavior against the existing production D1 database; provision/verify ACTION_DB and scheduled cron against Cloudflare; run authenticated live task/approval/queue smoke tests. External-action executors remain separate and disabled. Do not start Group 07 before these gates pass.
+
+
+## 2026-11-19 — Background queue implementation reconciliation
+
+Source audit at branch HEAD `a7c6e478a6078fdf4b603c7ab6d750ec9432207a` found that the earlier “Remaining / blocked” summary above is stale regarding the background worker. The following are implemented in this branch:
+
+- `src/lib/agents/task-queue-worker.ts`: D1 atomic queued-task claim, 90-second owner-bound leases, 20-second heartbeats, expired-lease recovery, maximum two worker attempts, bounded output, 75-second execution timeout, persisted terminal outcomes, saved-plan restoration and approval verification.
+- `src/server.ts`: Cloudflare scheduled handler calls `processD1TaskQueue` when `ACTION_DB` is configured; missing binding fails closed and is logged.
+- `scripts/configure-production-d1.mjs`: generated Wrangler configuration adds the `* * * * *` cron trigger and ACTION_DB binding, while validating the exact reviewed nested Group 05/06 migration set.
+- `migrations/group06/0003_task_queue_leases.sql`: lease owner/expiry, heartbeat and bounded worker-attempt schema.
+- `src/test/task-queue-worker.test.ts`: tests cover atomic claim, lease recovery, owner-bound heartbeat/finish, low-risk execution, high-risk approval denial, timeout and missing D1 binding.
+
+Verification evidence: GitHub Actions run `44449242096` for this exact branch HEAD completed successfully on 2026-11-19. TypeScript, unit/integration tests, Cloudflare Worker streaming runtime smoke, production build, generated Wrangler configuration validation and production dependency audit all passed. This verifies repository/CI behavior only.
+
+Still NOT verified / NOT authorized: live Cloudflare ACTION_DB binding and migration application, scheduled invocation in the production Worker, authenticated end-to-end queue execution, Access/D1 account configuration, and any external side-effect executor. The Cloudflare Workers Builds check for this branch HEAD failed immediately at `2026-11-19T03:08:19Z` with no annotations or error text available through GitHub; root cause is unknown. Do not infer a source-code failure or retry production deployment based on this empty check output.
+
+Correct status: background queue consumer, lease/heartbeat recovery and bounded crash-retry logic are IMPLEMENTED and CI-VERIFIED on this branch; production activation and live runtime verification remain BLOCKED pending explicit deployment/migration authorization and account-side evidence. Group 06 remains IN PROGRESS.
