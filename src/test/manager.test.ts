@@ -112,6 +112,9 @@ describe("deterministic Manager planning", () => {
     ["purono draft ta delete koro", "Destructive or irreversible change"],
     ["production e deploy koro", "Production deployment or release"],
     ["amar account settings change koro", "Account or permission modification"],
+    ["টাকা পাঠাও", "Financial or purchase action"],
+    ["কিনে দাও", "Financial or purchase action"],
+    ["payment koro", "Financial or purchase action"],
   ])("requires approval for Bengali/Banglish high-risk intent: %s", (request, reason) => {
     const plan = buildManagerPlan(request, agents);
     expect(plan.risk).toBe("high");
