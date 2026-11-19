@@ -112,6 +112,19 @@ describe("production D1 config preparation", () => {
     });
   });
 
+  it("keeps the production D1 preflight read-only", () => {
+    const workflow = fs.readFileSync(
+      path.resolve(process.cwd(), ".github/workflows/verify-production-d1.yml"),
+      "utf8",
+    );
+    expect(workflow).toContain("d1 migrations list");
+    expect(workflow).toContain("d1 execute");
+    expect(workflow).toContain("SELECT name FROM d1_migrations");
+    expect(workflow).toContain("PRAGMA table_info");
+    expect(workflow).not.toContain("d1 migrations apply");
+    expect(workflow).not.toContain("wrangler@4.162.0 deploy");
+  });
+
   it("replaces an existing ACTION_DB binding instead of creating duplicates", () => {
     const { root, configPath } = fixture();
     const result = addProductionD1Binding({
