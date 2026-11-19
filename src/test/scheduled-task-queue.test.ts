@@ -18,6 +18,7 @@ afterEach(() => {
 
 describe("Cloudflare scheduled Group 06 task queue handler", () => {
   it("invokes the D1 queue processor when ACTION_DB is configured", async () => {
+    vi.mocked(processD1TaskQueue).mockResolvedValueOnce({ recovered: 0, claimed: false });
     const env = { ACTION_DB: {} as never, GROQ_API_KEY: "test-key" } as AgentEnv;
     await worker.scheduled(event, env, context);
     expect(processD1TaskQueue).toHaveBeenCalledOnce();
