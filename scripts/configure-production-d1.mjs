@@ -80,6 +80,8 @@ export function addProductionD1Binding(config, {
 
   const requiredSecrets = new Set(Array.isArray(config.secrets?.required) ? config.secrets.required : []);
   requiredSecrets.add("GROQ_API_KEY");
+  requiredSecrets.add("LIZA_AUTH_EMAIL");
+  requiredSecrets.add("LIZA_AUTH_PASSWORD_HASH");
 
   return {
     ...config,
