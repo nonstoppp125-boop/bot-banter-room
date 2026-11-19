@@ -83,6 +83,33 @@ describe("production D1 config preparation", () => {
     expect(sql).not.toMatch(/agent_tasks|approvals|app_connections|social_accounts|content_drafts|publications|audit_events/);
   });
 
+  it("supports ordered nested Group 05 and Group 06 migration directories", () => {
+    const { root, configPath } = fixture();
+    const group05 = path.join(root, "migrations", "group05");
+    const group06 = path.join(root, "migrations", "group06");
+    fs.mkdirSync(group05, { recursive: true });
+    fs.mkdirSync(group06, { recursive: true });
+    fs.writeFileSync(path.join(group05, "0005_memory_foundation.sql"), "SELECT 1;");
+    fs.writeFileSync(path.join(group06, "0001_manager_core.sql"), "SELECT 1;");
+    fs.writeFileSync(path.join(group06, "0002_task_retry_budget.sql"), "SELECT 1;");
+    fs.writeFileSync(path.join(group06, "0003_task_queue_leases.sql"), "SELECT 1;");
+
+    const result = addProductionD1Binding({}, {
+      configPath,
+      databaseName: "doot-production",
+      databaseId: "123e4567-e89b-12d3-a456-426614174000",
+      migrationsDir: "migrations",
+      migrationsPattern: "migrations/*/*.sql",
+      projectRoot: root,
+    });
+
+    expect(result.d1_databases[0]).toMatchObject({
+      binding: "ACTION_DB",
+      migrations_dir: "../../migrations",
+      migrations_pattern: "../../migrations/*/*.sql",
+    });
+  });
+
   it("replaces an existing ACTION_DB binding instead of creating duplicates", () => {
     const { root, configPath } = fixture();
     const result = addProductionD1Binding({
