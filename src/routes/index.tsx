@@ -3,7 +3,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useState } from "react";
 import type { UIMessage } from "ai";
-import { History, Moon, SquarePen, Sun, Trash2 } from "lucide-react";
+import { History, Moon, Pencil, Search, SquarePen, Sun, Trash2 } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -43,6 +43,7 @@ function Index() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyQuery, setHistoryQuery] = useState("");
   const [dark, setDark] = useState(false);
   const [taskSaving, setTaskSaving] = useState<string | null>(null);
   const [taskNotice, setTaskNotice] = useState<string | null>(null);
@@ -80,8 +81,7 @@ function Index() {
     if (!historyReady || !activeChatId || messages.length === 0) return;
     const first = messages.find((message) => message.role === "user");
     const title = first?.parts.filter((part) => part.type === "text").map((part) => part.text).join(" ").trim() || "নতুন চ্যাট";
-    const next: SavedChat = { id: activeChatId, title: title.slice(0, 64), messages, updatedAt: Date.now() };
-    setSavedChats((current) => [next, ...current.filter((chat) => chat.id !== activeChatId)].slice(0, 50));
+    setSavedChats((current) => { const previous = current.find((chat) => chat.id === activeChatId); const next: SavedChat = { id: activeChatId, title: previous?.title || title.slice(0, 64), messages, updatedAt: Date.now() }; return [next, ...current.filter((chat) => chat.id !== activeChatId)].slice(0, 50); });
   }, [activeChatId, historyReady, messages]);
 
   useEffect(() => {
@@ -97,6 +97,13 @@ function Index() {
   };
   const startNewChat = () => { setMessages([]); setActiveChatId(null); setError(null); setTaskNotice(null); setTaskNoticeFor(null); setHistoryOpen(false); };
   const openSavedChat = (chat: SavedChat) => { setMessages(chat.messages); setActiveChatId(chat.id); setError(null); setHistoryOpen(false); };
+  const renameSavedChat = (id: string) => {
+    const current = savedChats.find((chat) => chat.id === id);
+    if (!current) return;
+    const nextTitle = window.prompt("চ্যাটের নতুন নাম লিখুন", current.title)?.trim();
+    if (!nextTitle) return;
+    setSavedChats((items) => items.map((chat) => chat.id === id ? { ...chat, title: nextTitle.slice(0, 80) } : chat));
+  };
   const deleteSavedChat = (id: string) => { setSavedChats((current) => current.filter((chat) => chat.id !== id)); if (activeChatId === id) startNewChat(); };
 
 
@@ -157,7 +164,8 @@ function Index() {
       </header>
       {historyOpen && <aside aria-label="চ্যাট ইতিহাস" className="mx-3 mb-2 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-2">
         <div className="mb-2 flex items-center justify-between px-2"><span className="text-sm font-medium">সাম্প্রতিক চ্যাট</span><button onClick={startNewChat} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent">নতুন চ্যাট</button></div>
-        {savedChats.length === 0 ? <p className="px-2 py-3 text-sm text-muted-foreground">এখনো কোনো সংরক্ষিত চ্যাট নেই।</p> : savedChats.map((chat) => <div key={chat.id} className="flex items-center gap-2 rounded-lg hover:bg-accent"><button onClick={() => openSavedChat(chat)} className="min-w-0 flex-1 truncate px-2 py-2 text-left text-sm text-foreground">{chat.title}</button><button onClick={() => deleteSavedChat(chat.id)} aria-label="চ্যাট মুছুন" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button></div>)}
+        <label className="mb-2 flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-muted-foreground"><Search className="size-4" /><input value={historyQuery} onChange={(event) => setHistoryQuery(event.target.value)} placeholder="চ্যাট খুঁজুন" aria-label="চ্যাট খুঁজুন" className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none" /></label>
+        {savedChats.filter((chat) => chat.title.toLocaleLowerCase().includes(historyQuery.trim().toLocaleLowerCase())).length === 0 ? <p className="px-2 py-3 text-sm text-muted-foreground">কোনো চ্যাট পাওয়া যায়নি।</p> : savedChats.filter((chat) => chat.title.toLocaleLowerCase().includes(historyQuery.trim().toLocaleLowerCase())).map((chat) => <div key={chat.id} className="flex items-center gap-1 rounded-lg hover:bg-accent"><button onClick={() => openSavedChat(chat)} className="min-w-0 flex-1 truncate px-2 py-2 text-left text-sm text-foreground">{chat.title}</button><button onClick={() => renameSavedChat(chat.id)} aria-label="চ্যাটের নাম বদলান" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:text-foreground"><Pencil className="size-4" /></button><button onClick={() => deleteSavedChat(chat.id)} aria-label="চ্যাট মুছুন" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button></div>)}
       </aside>}
 
       {empty ? (
