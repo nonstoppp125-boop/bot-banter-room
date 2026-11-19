@@ -1,0 +1,326 @@
+# Doot / Liza — Verification Log
+
+Record each verification with date/time, branch, HEAD, command, exit code and concise result.
+
+## 2026-11-10 — Planning baseline
+- Master roadmap: 1043 lines, 3754 words.
+- Sections: 32 PART headings; LinkedIn task identifiers: 94.
+- SHA256: 91178660c5b88db8a9e19d0b1ba87abc786201432b62ad79aca88c07ab9acc34
+- Reported Git status included untracked planning/ and two pre-existing chat API backups.
+- No source files modified during roadmap creation.
+- Source tests/build: NOT VERIFIED by this entry.
+- Production deployment health: NOT VERIFIED by this entry.
+
+Append new evidence below; never rewrite historical results.\n\n
+## Group 1.3 implementation update — 2026-11-10
+- Hardened chat request validation: non-empty bounded message batches, bounded parts, valid IDs/roles/parts, and rejection of client-supplied system/developer roles.
+- Removed unsafe non-null handler/generator assertions from orchestration dispatch.
+- Added defensive specialist dispatch, abort checks, safe default-agent fallback, and generic server error responses that do not expose provider internals.
+- Added regression tests for malformed messages, unsafe roles, empty batches, oversized batches, and malformed JSON.
+- Verification status is recorded below only after the commands complete; no test/build result is assumed.
+
+
+## 2026-11-16 — Group 06 Manager planning batch
+- Branch: `work/group06-manager-planner`
+- Verified commit: `04ef9f1617f97f2a5262b53a1b75afb716917d6e`
+- GitHub Actions run: `43793367110` — SUCCESS
+- TypeScript: PASS
+- Vitest: 14 test files; 156 tests passed
+- Production build: PASS
+- Nitro-generated Wrangler config validation: PASS (`.output/server/wrangler.json`)
+- Termux runtime: not run; previous environment-specific exit 132 remains a separate limitation.
+- Scope: deterministic Manager planning, capability-based specialist selection, permission filtering, risk/approval flags, bounded specialist fan-out.
+- Group 06 remains PARTIAL; no production deployment or merge to main.
+
+
+## 2026-11-16 — Group 06 dependency-aware execution verification
+- Branch: `work/group06-manager-planner`
+- Commit: `d2907df00fa772296538068a785564a567b1f249`
+- GitHub Actions run: `43796215581` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS (14 test files; latest total count not separately captured)
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Changes verified: dependency-aware Manager subtasks, downstream evidence handoff, per-task timeout correction and explicit external-message risk detection.
+- Group 06 remains partial; no merge to main and no production deployment.
+
+
+## 2026-11-16 — Group 06 Manager planner verification
+- Branch: `work/group06-manager-planner`
+- Commit: `1e9a26599a9d80e2ca6389ba6f93e33903b73988`
+- GitHub Actions run: `43797011346` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 14 test files, 163 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Verified: LLM-assisted bounded decomposition, deterministic fallback, dependency preservation, specialist timeout cancellation propagation, two-attempt execution budget, execution report context.
+- Group 06 remains IN PROGRESS; no merge to main and no production deployment.
+
+
+## 2026-11-16 — Group 06 bounded replanning implementation
+- Branch: `work/group06-manager-planner`
+- Added capability-compatible replacement selection, strict single-pass recovery, prerequisite gating, and execution/report integration.
+- Automated verification: pending GitHub Actions.
+
+
+## 2026-11-16 — Group 06 bounded replanning verification
+- Branch: `work/group06-manager-planner`
+- Commit: `96c59671077502ba449334cedfc814f269c7dc09`
+- GitHub Actions run: `43797912343` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 14 test files, 167 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Verified one bounded recovery pass, permission/capability-constrained replacement selection, skipped-prerequisite protection and inclusion of replacement outcomes in final review/report.
+
+
+## 2026-11-16 — Group 06 deliverable acceptance verification
+- Branch: `work/group06-manager-planner`
+- Commit: `e43c2885e6a2251583bac5c7030071c045fe8407`
+- GitHub Actions run: `43798378327` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 15 test files, 172 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Verified schema-checked acceptance review, fail-closed handling of incomplete evidence, and final synthesis restrictions for non-accepted deliverables.
+
+
+## 2026-11-16 — Group 06 execution cost estimation verification
+- Branch: `work/group06-manager-planner`
+- Commit: `fd7dafb684783ed9a46c6a1da2fa36516636485c`
+- GitHub Actions run: `43798972433` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 175 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Verified provider-reported specialist/planner usage aggregation, character-based fallback, published Groq model pricing, unknown-model fail-safe and cost calculations.
+- Final synthesis allowance remains estimated; the displayed figure is not a provider invoice.
+
+
+## 2026-11-16 — Group 06 usage-based cost estimate verification
+- Code commit: `fd7dafb684783ed9a46c6a1da2fa36516636485c`
+- GitHub Actions run: `43798972433` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 175 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Cost estimate tests: published model rates, input/output arithmetic, unknown model and invalid token fail-safe.
+- Documentation CI run `43799105011`: SUCCESS.
+
+
+## 2026-11-16 — Group 07–09 CI verification refresh
+- Branch: `work/group06-manager-planner`
+- GitHub Actions run: `43798972433` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 175 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Group 07 registry and specialist runtime tests verified; G07.22 tools remain blocked.
+- Group 08 coordination primitives verified in CI; external-action execution remains fail-closed pending provisioned durable storage and approval.
+- Group 09 research primitives verified; semantic claim verification is not claimed.
+
+
+## 2026-11-16 — Group 09 Tavily extraction verification
+- Branch: `work/group06-manager-planner`
+- Commit: `9764b45d16f921f67e144a6c4efb27243701ed23`
+- GitHub Actions run: `43799513815` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 178 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Verified bounded selected-page extraction, same-origin result validation, extraction failure fallback to search content, HTTPS validation and cancellation.
+
+
+## 2026-11-16 — Group 10 LinkedIn intelligence verification
+- GitHub Actions run: `43799513815` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 178 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- LinkedIn intelligence functions and offline evidence-traceability tests verified; no OAuth/account access is claimed.
+
+
+## 2026-11-16 — Group 11 LinkedIn Content Studio verification
+- GitHub Actions run: `43799513815` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 178 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Content studio strategy, calendar, draft, review and in-memory version-history tests verified.
+
+
+## 2026-11-16 — Group 12 LinkedIn Growth verification
+- GitHub Actions run: `43799513815` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 16 test files, 178 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- LinkedIn growth tests verified approval state transitions, scheduling guards, fail-closed publishing, durable idempotency claim ordering, analytics normalization/reports, replies, lead evidence and dashboard limitations.
+- No real LinkedIn account connection, publisher, analytics client or live scheduled worker is claimed.
+
+
+## 2026-11-16 — Group 13 initial implementation
+- Added platform-specific social specialists and routing plus a cross-platform social workforce planning/draft/approval module.
+- Added unit coverage for platform routing, format constraints, calendar generation, content adaptation, storyboards, campaign briefs, approval-gated scheduling and reply drafts.
+- Verification pending GitHub Actions.
+
+
+## 2026-11-16 — Group 13 platform-specific social workforce verification
+- Code commit: `30daba72b671e11b8d05a364bdefce4b1492dc0b`
+- GitHub Actions run: `43800654390` — SUCCESS
+- TypeScript: PASS
+- Unit/integration tests: PASS — 17 test files, 189 tests
+- Production build: PASS
+- Nitro-generated Wrangler configuration validation: PASS
+- Verified five platform-specific specialists in the registry, platform routing, unified calendar, format validation, campaign briefs, video storyboards, approval state and reply-draft safety.
+
+
+## 2026-11-16 — Group 13 official API feasibility registry
+- Added typed readiness metadata for Instagram, Facebook Pages, YouTube, X and TikTok, plus tests ensuring all integrations remain disconnected and publishing disabled.
+- Added official-source API feasibility audit. CI verification pending.
+
+
+## 2026-11-16 — Group 13 caption and repurposing tests
+- Added tests for platform caption structure, hashtag bounds, empty-body rejection, minimum evidence observations and human-review-only repurposing.
+- CI verification pending.
+
+
+## 2026-11-16 — Group 13 offline analytics tests
+- Added tests for weighted aggregation, correct denominator handling, missing-value null preservation, freshness state and invalid/future snapshot rejection.
+- CI verification pending.
+
+
+## 2026-11-16 — Group 14 report model tests
+- Added tests for performance dashboard totals/freshness, campaign and content grouping, audience dimensions and trend changes.
+- CI verification pending.
+
+
+## 2026-11-16 — Group 13 publication gate verification tests
+- Added tests for blocked publishing despite other checks passing, idempotency-gated retry safety, authentication/permission classification and bounded Retry-After handling.
+- CI verification pending.
+
+
+## 2026-11-16 — Analytics CSV validation and export
+- Added negative tests for invalid metric unit, blank metric values and trailing characters after a quoted CSV field.
+- Browser export/import actions are local-only. CI verification pending.
+
+
+## 2026-11-16 — Group 14 CSV negative tests
+- Added negative tests for wrong units, blank metric values and characters after quoted fields.
+- Verification pending.
+
+
+## 2026-11-16 — Group 14 migration/export correction
+- Analytics D1 migration sequence is now 0003, following existing 0002 LinkedIn Growth migration.
+- Dashboard CSV export is browser-local; import size is checked before reading.
+- Verification pending.
+
+
+## 2026-11-16 — OAuth transaction store tests
+- Added hash and one-time D1 transaction-consumption tests; no live OAuth callback or token exchange is enabled.
+- Verification pending.
+
+
+## 2026-11-16 — Group 18 session auth tests
+- Added tests for 256-bit opaque tokens, SHA-256 hashes, secure cookie attributes, invalid cookie rejection, D1 session creation, active lookup, revocation and expiry behavior.
+- CI verification pending.
+
+
+## 2026-11-16 — Group 18 conversation store tests
+- Added tests for user/workspace query scoping, guarded message insertion and owner-scoped soft deletion. CI verification pending.
+
+
+## 2026-11-16 — Group 19 Telegram bridge tests
+- Added tests for secret verification, private-chat/human-user checks, message-size bounds, Unicode chunking, identity lookup and duplicate update claims. CI verification pending.
+
+
+## 2026-11-16 — Telegram shared conversation mapping tests
+- Added tests for identity/member/conversation ownership predicates and scoped mapping reads. CI verification pending.
+
+
+## 2026-11-16 — Telegram approval callback tests
+- Added tests for callback length, valid signature, user/workspace binding and tamper rejection. CI verification pending.
+
+
+## 2026-11-16 — Approval store tests
+- Added tests for payload hashing, workspace-member request creation, owner/admin decision predicate and pending/expiry enforcement. CI verification pending.
+
+
+## 2026-11-16 — Telegram, accessibility and migration regression
+- Added tests for shared Telegram message mapping, identity mismatch rejection and real migration sequence integrity.
+- Added skip-link/main landmark and error alert semantics to the mobile chat view.
+- CI verification pending.
+
+
+## 2026-11-16 — Integrations and approval UI verification
+- Commit: `719c7247c1a90a27bba486df4ab840bf3fb045bf`.
+- Run: `43814055257` — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: 43 files, 311 tests passed.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Earlier UI/route integration commit `29260724b6ca3dbd91146e44b289f75ee5c103f7` also passed in run `43813716174`.
+- Verification is CI-only; D1 provisioning, authenticated runtime smoke, physical mobile tests and production deployment are not claimed.
+
+
+## 2026-11-16 — Cloudflare Access session authentication verification
+- Commit: 14e1489ec84a994ed1214a4efd094f80aa639b64.
+- Run: 43814615408 — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: passed, including signed RS256 JWT validation, issuer/audience/expiry rejection and D1 user/workspace/session provisioning.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Runtime Access application, D1 migration apply/binding and authenticated browser smoke are not claimed.
+
+
+## 2026-11-16 — Telegram webhook and link flow verification
+- Commit: 03077b5dd3049c530090950ac9a54c3e5c8c3eba.
+- Run: 43815548281 — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: 45 files, 322 tests passed.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Test coverage includes link-code hashing/expiry, same-origin enforcement, webhook secret validation, private Telegram identity linking and unlinked-user response.
+- Live D1/Telegram configuration and external webhook smoke are not claimed.
+
+
+## 2026-11-16 — Privacy settings and deletion-status verification
+- Commit: 2683177e9e13bc17b56cf0959fa1483f1a65eca6.
+- Run: 43815989375 — SUCCESS.
+- TypeScript: passed.
+- Unit/integration tests: 45 files, 324 tests passed.
+- Production build: passed.
+- Nitro-generated Wrangler configuration validation: passed.
+- Covered active-user pending deletion lookup, 30-day schedule response ID and cancellation path. No scheduled deletion worker or destructive execution is claimed.
+
+
+## 2026-11-16 — Group 06 task state machine verification
+- Commit: `64b60d18532c52f0194d0da29c6e471c930766b7`.
+- GitHub Actions run: `43822011292` — SUCCESS.
+- TypeScript: PASS.
+- Unit/integration tests: PASS.
+- Production build: PASS.
+- Nitro-generated Wrangler configuration validation: PASS.
+- Added forward-only durable task transitions; approval-gated and terminal tasks cannot be reopened through the generic update adapter.
+
+
+## 2026-11-16 — Group 06 bounded task API verification
+- Commit: `db87e47ca6e2ceac84635f5185a5d58d4aba3ccb`.
+- GitHub Actions run: `43822202298` — SUCCESS.
+- TypeScript: PASS.
+- Unit/integration tests: PASS — 46 test files, 336 tests.
+- Production build: PASS.
+- Nitro-generated Wrangler configuration validation: PASS.
+- Task request bodies are streamed and bounded to 24 KB; oversized requests are cancelled and return 413.
+- Cloudflare Workers build check remained in progress; this CI result is not a production deployment.
+
+
+## 2026-11-16 — Group 20 approval/task API request hardening
+- Commit: `6ba2a36dc6e7c7888868dcbb6a9a8b7c7d996ddb`.
+- GitHub Actions run: `43822649828` — SUCCESS.
+- TypeScript: PASS.
+- Unit/integration tests: PASS — 46 test files, 339 tests.
+- Production build: PASS.
+- Nitro-generated Wrangler configuration validation: PASS.
+- Approval and task APIs enforce exact JSON media types and bounded streamed request bodies (8 KB and 24 KB respectively).
+- Cloudflare Workers build check was still in progress; this verification does not imply deployment readiness.

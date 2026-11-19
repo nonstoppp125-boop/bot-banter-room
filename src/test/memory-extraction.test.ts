@@ -23,6 +23,12 @@ describe("explicit memory extraction", () => {
     });
   });
 
+  it("detects explicit remember intent even when sensitive content is rejected", () => {
+    expect(hasExplicitMemoryTrigger("Remember my api_key=super-secret")).toBe(true);
+    expect(hasExplicitMemoryTrigger("মনে রেখো, আমার পছন্দ বাংলা")).toBe(true);
+    expect(hasExplicitMemoryTrigger("I prefer Bengali replies.")).toBe(false);
+  });
+
   it("does not infer durable memories from ordinary conversation", () => {
     expect(extractExplicitMemory("I prefer concise replies.")).toBeNull();
     expect(extractExplicitMemory("Can you remember what I said yesterday?")).toBeNull();
@@ -33,12 +39,6 @@ describe("explicit memory extraction", () => {
     expect(extractExplicitMemory("Remember this: Bearer abcdefghijklmnop")).toBeNull();
     expect(extractExplicitMemory("Remember this: ghp_abcdefghijklmnopqrstuvwxyz1234567890")).toBeNull();
     expect(extractExplicitMemory("Remember this: " + "x".repeat(4_500))).toBeNull();
-  });
-
-  it("recognizes explicit save intent even when the content is rejected as secret", () => {
-    expect(hasExplicitMemoryTrigger("Remember my api_key=super-secret")).toBe(true);
-    expect(hasExplicitMemoryTrigger("মনে রেখো: Bearer abcdefghijklmnop")).toBe(true);
-    expect(hasExplicitMemoryTrigger("I prefer concise replies.")).toBe(false);
   });
 
   it("classifies workflow and project memories", () => {

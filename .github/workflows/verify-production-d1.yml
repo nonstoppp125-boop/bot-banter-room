@@ -1,0 +1,104 @@
+name: Doot Read-only Production D1 Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_read_only:
+        description: "Authorize read-only inspection of the production D1 migration history and schema"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doot-production-d1-readonly
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: ${{ inputs.confirm_read_only == true && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require Cloudflare and D1 configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+        run: |
+          node --input-type=module <<'NODE'
+          const required = [
+            "CLOUDFLARE_API_TOKEN",
+            "CLOUDFLARE_ACCOUNT_ID",
+            "CLOUDFLARE_D1_DATABASE_NAME",
+            "CLOUDFLARE_D1_DATABASE_ID",
+          ];
+          const missing = required.filter((key) => !process.env[key]);
+          if (missing.length) {
+            console.error("Read-only D1 verification blocked; missing secrets:", missing.join(", "));
+            process.exit(1);
+          }
+          NODE
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build production Worker config
+        run: npm run build
+      - name: Locate generated Wrangler config
+        id: config
+        run: |
+          set -euo pipefail
+          mapfile -t configs < <(find .output -type f \( -name wrangler.json -o -name wrangler.jsonc \) -print)
+          if [ "${#configs[@]}" -ne 1 ]; then
+            echo "Expected exactly one generated Wrangler config; found ${#configs[@]}."
+            exit 1
+          fi
+          echo "path=${configs[0]}" >> "$GITHUB_OUTPUT"
+      - name: Inject read-only ACTION_DB target and reviewed migration pattern
+        env:
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+          CLOUDFLARE_D1_MIGRATIONS_DIR: migrations
+          CLOUDFLARE_D1_MIGRATIONS_PATTERN: migrations/*/*.sql
+        run: node scripts/configure-production-d1.mjs "${{ steps.config.outputs.path }}"
+      - name: List unapplied migrations (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.162.0 d1 migrations list "$CLOUDFLARE_D1_DATABASE_NAME" --remote --config "${{ steps.config.outputs.path }}" | tee "$RUNNER_TEMP/d1-migration-list.txt"
+      - name: Read applied migration history (SELECT only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "SELECT name FROM d1_migrations ORDER BY name;" | tee "$RUNNER_TEMP/d1-applied-migrations.json"
+          npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;" | tee "$RUNNER_TEMP/d1-tables.json"
+          npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "PRAGMA table_info(auth_login_attempts);" | tee "$RUNNER_TEMP/d1-auth-login-attempts-columns.json"
+          npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "PRAGMA table_info(agent_tasks);" | tee "$RUNNER_TEMP/d1-agent-tasks-columns.json"
+          npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "PRAGMA table_info(approvals);" | tee "$RUNNER_TEMP/d1-approvals-columns.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-d1-read-only-verification
+          path: |
+            ${{ runner.temp }}/d1-migration-list.txt
+            ${{ runner.temp }}/d1-applied-migrations.json
+            ${{ runner.temp }}/d1-tables.json
+            ${{ runner.temp }}/d1-auth-login-attempts-columns.json
+            ${{ runner.temp }}/d1-agent-tasks-columns.json
+            ${{ runner.temp }}/d1-approvals-columns.json
+          if-no-files-found: error

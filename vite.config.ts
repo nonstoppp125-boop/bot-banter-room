@@ -7,16 +7,7 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  // Pin deployment to the existing production Worker; never use Nitro's auto-generated name.
-  nitro: {
-    cloudflare: {
-      wrangler: {
-        name: "bot-banter-room",
-        // Cloudflare's Preview deploy command (wrangler preview) requires this block.
-        previews: {},
-      },
-    },
-  },
+  nitro: { cloudflare: { deployConfig: true } },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

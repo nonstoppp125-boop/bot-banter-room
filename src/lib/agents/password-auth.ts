@@ -68,8 +68,8 @@ async function sha256(value: string): Promise<string> {
 async function verifyPassword(password: string, encoded: string): Promise<boolean> {
   const match = encoded.match(HASH);
   if (!match || password.length < 1 || password.length > 256) return false;
-  const salt = fromB64url(match[1]!);
-  const expected = fromB64url(match[2]!);
+  const salt = Uint8Array.from(fromB64url(match[1]!));
+  const expected = Uint8Array.from(fromB64url(match[2]!));
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const actual = new Uint8Array(await crypto.subtle.deriveBits(
     { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 }, key, 256,

@@ -154,3 +154,9 @@
     background: var(--background);
   }
 }
+
+
+/* Respect mobile browser and device safe areas around the chat composer. */
+.safe-area-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}

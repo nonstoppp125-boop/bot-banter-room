@@ -2,7 +2,7 @@ name: Doot Cloud Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, "automation/**", "work/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -10,19 +10,67 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: doot-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
+    name: Typecheck, test and production build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm install --no-audit --no-fund
-      - name: Run baseline and Group 05 tests
-        # The task-approval test requires a later Manager group absent from this release branch.
-        run: npm test -- --exclude src/test/task-approval.test.ts
-      - run: npm run build
-      - name: Validate Group 05 release configuration script syntax
-        run: node --check scripts/configure-group05-production.mjs
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Static dependency usage inventory
+        run: npm run audit:dependencies -- "${RUNNER_TEMP}/dependency-usage-report.md"
+      - name: Upload dependency usage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-usage-report
+          path: ${{ runner.temp }}/dependency-usage-report.md
+          if-no-files-found: error
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Unit and integration tests
+        run: npm test
+      - name: Cloudflare Worker streaming runtime smoke test
+        run: bash scripts/test-worker-streaming.sh
+      - name: Production build
+        run: npm run build
+      - name: Validate Nitro-generated Wrangler configuration
+        run: |
+          set -euo pipefail
+          mapfile -t configs < <(find .output -type f \( -name wrangler.json -o -name wrangler.jsonc \) -print)
+          if [ "${#configs[@]}" -ne 1 ]; then
+            echo "Expected exactly one Nitro-generated Wrangler config under .output; found ${#configs[@]}."
+            find .output -maxdepth 4 -type f | head -80
+            exit 1
+          fi
+          node --input-type=module - "${configs[0]}" <<'NODE'
+          import fs from "node:fs";
+          const path = process.argv[2];
+          const config = JSON.parse(fs.readFileSync(path, "utf8"));
+          const missing = ["name", "main", "compatibility_date"].filter(
+            (key) => typeof config[key] !== "string" || !config[key].trim(),
+          );
+          if (missing.length) {
+            console.error("Generated Wrangler config is incomplete:", missing.join(", "));
+            process.exit(1);
+          }
+          if (!Array.isArray(config.ratelimits) ||
+              !config.ratelimits.some((binding) => binding.name === "CHAT_RATE_LIMITER")) {
+            console.error("Generated config is missing the CHAT_RATE_LIMITER binding.");
+            process.exit(1);
+          }
+          console.log("Validated generated Worker config:", path);
+          NODE
+      # Keep the security gate blocking, but run functional verification first so
+      # an upstream advisory without a patched release does not hide test results.
+      - name: Audit production dependencies
+        run: npm run security:audit

@@ -21,10 +21,13 @@ function inferCategory(content: string): MemoryCategory {
   return "other";
 }
 
-/** Detects an explicit memory command even when security checks reject its content. */
+/**
+ * Detects a direct remember command even when its content is rejected by
+ * the extractor (for example, because it contains credentials).
+ */
 export function hasExplicitMemoryTrigger(text: string): boolean {
   const normalized = text.replace(/[\u0000-\u001f\u007f]/g, " ").trim();
-  return Boolean(normalized && normalized.length <= 4_500 && EXPLICIT_TRIGGERS.some((trigger) => trigger.test(normalized)));
+  return EXPLICIT_TRIGGERS.some((trigger) => trigger.test(normalized));
 }
 
 /**
