@@ -548,3 +548,11 @@ Audit conclusion: no Group 06 application source, task route, tests, or migratio
 - The current Group 06 chat route was retained: Manager task creation, approval/status notices, Tasks navigation, and existing API transport remain in place. No wholesale replacement of the root route, orchestrator, auth, agent registry, or task runtime was made.
 - PR #24 head: `700bc480d757caef44af04b80e3ad12d2fe8ff0b`. GitHub Actions workflow run `44558098807` is in progress; an earlier run for the preceding commit was cancelled by the newer push. Final validation is pending; do not mark UI integration complete until typecheck, tests, Worker smoke, and production build pass.
 - PR #24 is draft/open and not merged. No production deployment, D1 migration, or Worker configuration change was made.
+
+## 2026-11-19 — PR #24 Web UI integration validation complete
+
+- PR #24 `feat: add persistent web chat history and theme toggle` is now Ready for Review (not merged), head `96138fac7a4978d1990852db7d5335acfb922dc4`.
+- CI run `44558313329` passed all required jobs: TypeScript, unit/integration tests, Cloudflare Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Selective UI features from PR #2 are now implemented on a current-main-based branch: local browser chat history (maximum 50 conversations), guarded restore of stored messages, history open/select/delete controls, and persisted light/dark theme toggle. Existing Group 06 Manager task creation, approval/status messaging, and Tasks navigation remain in the route.
+- PR #2 remains unmerged; its older orchestrator, auth, agent types, and root-route replacement were not imported. PR #24 contains one route file only.
+- PR #24 is mergeable per GitHub but intentionally not merged. No production deployment, D1 migration, or Worker configuration change was made.
