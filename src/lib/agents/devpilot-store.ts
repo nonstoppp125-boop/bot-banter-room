@@ -16,6 +16,7 @@ const STATUSES=new Set<DevPilotCheckpointStatus>(["planned","awaiting_approval",
 const STAGES=new Set<DevPilotCheckpointStage>(["inspection","planning","approval","execution","validation","review","delivery","complete"]);
 const EVENTS=new Set<DevPilotEventType>(["planned","proposal-created","approval-requested","approval-granted","execution-started","command-started","command-completed","reviewed","verified","paused","resumed","blocked","failed","cancelled","completed"]);
 const PROGRESS=new Set([0,10,25,50,75,90,100]);
+const STAGE_ORDER:Readonly<Record<DevPilotCheckpointStage,number>>={inspection:0,planning:1,approval:2,execution:3,validation:4,review:5,delivery:6,complete:7};
 const TRANSITIONS:Readonly<Record<DevPilotCheckpointStatus,readonly DevPilotCheckpointStatus[]>>={
  planned:["awaiting_approval","running","blocked","failed","cancelled"],
  awaiting_approval:["running","blocked","cancelled"],
@@ -53,9 +54,7 @@ export function createD1DevPilotStore(database:D1TaskDatabase){
       const stateJson=json(input.state,100_000);
       const result=await database.prepare("INSERT INTO devpilot_checkpoints (task_id, workspace_id, user_id, version, status, stage, progress, retry_count, repository, base_branch, base_sha, target_branch, state_json, created_at, updated_at) SELECT ?, ?, ?, 1, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM agent_tasks WHERE id = ? AND workspace_id = ? AND user_id = ?)").bind(input.taskId,input.workspaceId,input.userId,input.status,input.stage,input.progress,input.repository,input.baseBranch,input.baseSha,input.targetBranch??null,stateJson,input.createdAt,input.updatedAt,input.taskId,input.workspaceId,input.userId).run();
       if(result.success===false||result.meta?.changes!==1)throw new Error("DevPilot checkpoint rejected or task ownership mismatch.");
-      const checkpoint=await this.get({taskId:input.taskId,workspaceId:input.workspaceId,userId:input.userId});
-      if(!checkpoint)throw new Error("Created DevPilot checkpoint could not be read.");
-      return checkpoint;
+      return{taskId:input.taskId,workspaceId:input.workspaceId,userId:input.userId,version:1,status:input.status,stage:input.stage,progress:input.progress,retryCount:0,repository:input.repository,baseBranch:input.baseBranch,baseSha:input.baseSha,targetBranch:input.targetBranch??null,state:input.state,createdAt:input.createdAt,updatedAt:input.updatedAt};
     },
     get:async(input:{taskId:string;workspaceId:string;userId:string}):Promise<DevPilotCheckpoint|null>=>{
       if(!ID.test(input.taskId)||!ID.test(input.workspaceId)||!ID.test(input.userId))return null;
@@ -65,7 +64,7 @@ export function createD1DevPilotStore(database:D1TaskDatabase){
     update:async(input:{taskId:string;workspaceId:string;userId:string;expectedVersion:number;expectedStatus:DevPilotCheckpointStatus;status:DevPilotCheckpointStatus;stage:DevPilotCheckpointStage;progress:DevPilotCheckpoint["progress"];baseSha:string;targetBranch?:string|null;state:unknown;updatedAt:string}):Promise<boolean>=>{
       if(!ID.test(input.taskId)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!Number.isInteger(input.expectedVersion)||input.expectedVersion<1||!STATUSES.has(input.expectedStatus)||!STATUSES.has(input.status)||!canTransitionDevPilotStatus(input.expectedStatus,input.status)||!STAGES.has(input.stage)||!PROGRESS.has(input.progress)||!SHA.test(input.baseSha)||!iso(input.updatedAt)||(input.targetBranch!==undefined&&input.targetBranch!==null&&(!input.targetBranch.trim()||input.targetBranch.length>120)))throw new Error("Invalid DevPilot checkpoint update.");
       const stateJson=json(input.state,100_000);
-      const result=await database.prepare("UPDATE devpilot_checkpoints SET version = version + 1, status = ?, stage = ?, progress = ?, base_sha = ?, target_branch = ?, state_json = ?, updated_at = ? WHERE task_id = ? AND workspace_id = ? AND user_id = ? AND version = ? AND status = ? AND progress <= ?").bind(input.status,input.stage,input.progress,input.baseSha,input.targetBranch??null,stateJson,input.updatedAt,input.taskId,input.workspaceId,input.userId,input.expectedVersion,input.expectedStatus,input.progress).run();
+      const result=await database.prepare("UPDATE devpilot_checkpoints SET version = version + 1, status = ?, stage = ?, progress = ?, base_sha = ?, target_branch = ?, state_json = ?, updated_at = ? WHERE task_id = ? AND workspace_id = ? AND user_id = ? AND version = ? AND status = ? AND progress <= ? AND CASE stage WHEN 'inspection' THEN 0 WHEN 'planning' THEN 1 WHEN 'approval' THEN 2 WHEN 'execution' THEN 3 WHEN 'validation' THEN 4 WHEN 'review' THEN 5 WHEN 'delivery' THEN 6 WHEN 'complete' THEN 7 ELSE 99 END <= ?").bind(input.status,input.stage,input.progress,input.baseSha,input.targetBranch??null,stateJson,input.updatedAt,input.taskId,input.workspaceId,input.userId,input.expectedVersion,input.expectedStatus,input.progress,STAGE_ORDER[input.stage]).run();
       return result.success!==false&&result.meta?.changes===1;
     },
     appendEvent:async(input:DevPilotTaskEvent):Promise<boolean>=>{
@@ -82,7 +81,7 @@ export function createD1DevPilotStore(database:D1TaskDatabase){
     },
     resume:async(input:{taskId:string;workspaceId:string;userId:string;expectedVersion:number;expectedBaseSha:string;updatedAt:string}):Promise<boolean>=>{
       if(!ID.test(input.taskId)||!ID.test(input.workspaceId)||!ID.test(input.userId)||!Number.isInteger(input.expectedVersion)||input.expectedVersion<1||!SHA.test(input.expectedBaseSha)||!iso(input.updatedAt))throw new Error("Invalid DevPilot resume request.");
-      const result=await database.prepare("UPDATE devpilot_checkpoints SET version = version + 1, status = 'running', stage = 'execution', progress = CASE WHEN progress < 50 THEN 50 ELSE progress END, retry_count = retry_count + 1, updated_at = ? WHERE task_id = ? AND workspace_id = ? AND user_id = ? AND version = ? AND status IN ('paused', 'blocked', 'failed') AND retry_count < 2 AND base_sha = ?").bind(input.updatedAt,input.taskId,input.workspaceId,input.userId,input.expectedVersion,input.expectedBaseSha).run();
+      const result=await database.prepare("UPDATE devpilot_checkpoints SET version = version + 1, status = 'running', progress = CASE WHEN progress < 50 THEN 50 ELSE progress END, retry_count = retry_count + 1, updated_at = ? WHERE task_id = ? AND workspace_id = ? AND user_id = ? AND version = ? AND status IN ('paused', 'blocked', 'failed') AND retry_count < 2 AND base_sha = ?").bind(input.updatedAt,input.taskId,input.workspaceId,input.userId,input.expectedVersion,input.expectedBaseSha).run();
       return result.success!==false&&result.meta?.changes===1;
     },
   };
