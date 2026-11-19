@@ -55,6 +55,64 @@ export function authorizeValidationCommand(command:string):{allowed:boolean;reas
  if(VALIDATION_COMMANDS.has(normalized))return{allowed:true,reason:"Exact allowlisted validation command."};
  return{allowed:false,reason:"Command is not allowlisted; shell composition, arbitrary execution and destructive commands are denied."};
 }
+
+export interface ValidationCommandResult {
+  command:string;
+  exitCode:number;
+  stdout:string;
+  stderr:string;
+  durationMs:number;
+}
+export interface ValidationCommandRunner {
+  run(input:{command:string;timeoutMs:number;signal?:AbortSignal}):Promise<{exitCode:number;stdout:string;stderr:string;durationMs:number}>;
+}
+export interface ValidationSuiteResult {
+  status:"passed"|"failed"|"blocked"|"cancelled";
+  passed:boolean;
+  results:ValidationCommandResult[];
+  totalDurationMs:number;
+  reason?:string;
+}
+/** Runs only exact allowlisted checks through an injected isolated runner; this module never spawns a shell. */
+export async function runValidationSuite(input:{
+  commands:readonly string[];
+  runner:ValidationCommandRunner;
+  signal?:AbortSignal;
+  timeoutMs?:number;
+  maxOutputChars?:number;
+}):Promise<ValidationSuiteResult>{
+  const commands=[...input.commands];
+  const timeoutMs=input.timeoutMs??120_000;
+  const maxOutputChars=input.maxOutputChars??12_000;
+  if(commands.length===0||commands.length>8||new Set(commands).size!==commands.length){
+    return{status:"blocked",passed:false,results:[],totalDurationMs:0,reason:"Validation suite must contain 1–8 unique commands."};
+  }
+  const denied=commands.find(command=>!authorizeValidationCommand(command).allowed);
+  if(denied)return{status:"blocked",passed:false,results:[],totalDurationMs:0,reason:"Validation command is not allowlisted: "+cleanText(denied,120)};
+  if(!Number.isInteger(timeoutMs)||timeoutMs<1_000||timeoutMs>300_000||!Number.isInteger(maxOutputChars)||maxOutputChars<1_000||maxOutputChars>30_000){
+    return{status:"blocked",passed:false,results:[],totalDurationMs:0,reason:"Validation execution limits are outside the permitted range."};
+  }
+  const results:ValidationCommandResult[]=[];
+  let totalDurationMs=0;
+  for(const command of commands){
+    if(input.signal?.aborted)return{status:"cancelled",passed:false,results,totalDurationMs,reason:"Validation suite was cancelled."};
+    try{
+      const result=await input.runner.run(input.signal?{command,timeoutMs,signal:input.signal}:{command,timeoutMs});
+      if(!Number.isInteger(result.exitCode)||!Number.isFinite(result.durationMs)||result.durationMs<0||typeof result.stdout!=="string"||typeof result.stderr!=="string"){
+        return{status:"failed",passed:false,results,totalDurationMs,reason:"Validation runner returned malformed execution evidence."};
+      }
+      const bounded={command,exitCode:result.exitCode,stdout:result.stdout.replace(/\u0000/g,"").slice(0,maxOutputChars),stderr:result.stderr.replace(/\u0000/g,"").slice(0,maxOutputChars),durationMs:result.durationMs};
+      results.push(bounded);totalDurationMs+=result.durationMs;
+      if(input.signal?.aborted)return{status:"cancelled",passed:false,results,totalDurationMs,reason:"Validation suite was cancelled."};
+      if(result.exitCode!==0)return{status:"failed",passed:false,results,totalDurationMs,reason:"Validation command failed: "+command};
+    }catch(error){
+      if(input.signal?.aborted)return{status:"cancelled",passed:false,results,totalDurationMs,reason:"Validation suite was cancelled."};
+      return{status:"failed",passed:false,results,totalDurationMs,reason:error instanceof Error?cleanText(error.message,300):"Validation runner failed."};
+    }
+  }
+  return{status:"passed",passed:true,results,totalDurationMs};
+}
+
 export interface DiffReviewInput { files:readonly {path:string;content:string}[]; testsChanged:boolean; }
 export function reviewCodeDiff(input:DiffReviewInput){
  const findings:{severity:"critical"|"high"|"medium";code:string;message:string}[]=[];
