@@ -62,7 +62,7 @@ function Index() {
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          const valid = parsed.filter((item): item is SavedChat => item && typeof item.id === "string" && typeof item.title === "string" && Array.isArray(item.messages) && typeof item.updatedAt === "number").slice(0, 50);
+          const valid = parsed.filter((item): item is SavedChat => item && typeof item.id === "string" && typeof item.title === "string" && Array.isArray(item.messages) && item.messages.every((message) => message && typeof message.id === "string" && ["user", "assistant", "system"].includes(message.role) && Array.isArray(message.parts)) && typeof item.updatedAt === "number").slice(0, 50);
           setSavedChats(valid);
           const latest = [...valid].sort((a, b) => b.updatedAt - a.updatedAt)[0];
           if (latest) { setMessages(latest.messages); setActiveChatId(latest.id); }
