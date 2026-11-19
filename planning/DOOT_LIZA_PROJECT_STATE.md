@@ -577,3 +577,16 @@ Audit conclusion: no Group 06 application source, task route, tests, or migratio
 - Confirmed consolidated mapping: workstreams 06, 07, 08, 09 and 15 → Group 06; 10–14 → Group 07; 16–19 → Group 08; 20–23 → Group 09; 24 → Group 10.
 - Found root `roadmap.md` still contained an obsolete six-item summary that could be mistaken for the complete plan. Replaced it with a pointer to the authoritative 10-Group master roadmap, current project state and DevPilot specification.
 - This is a documentation consistency audit, not proof that all roadmap features are implemented. Group 06 remains in progress; runtime activation and production release gates remain open.
+
+## 2026-11-19 — PR #24 responsive navigation checkpoint
+
+- PR #24 head `33c84dd6de8c659a24ef948907795463eef62bc9` adds responsive mobile navigation for existing app destinations and active-chat highlighting in addition to local history, search, rename/delete, persisted theme, and assistant-copy controls.
+- GitHub Actions run `44560992943` completed successfully: TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit all PASS.
+- Cloudflare Workers Builds check failed for build `9b89a9cb-8bd9-4795-8532-edda156d7708`, still with no error annotations or diagnostic text. This opaque failure repeats across PR #22/#23/#24; root cause remains unknown.
+- PR #24 remains open, Ready for Review, mergeable, and unmerged. Diff is confined to `src/routes/index.tsx`; no production deployment, D1 migration, or Worker config change.
+
+## 2026-11-19 — PR #22 exact Worker-target hardening review
+
+- Compared `fix/group06-production-worker-name` against current main: exactly three changed files. The only application/deploy code changes are the explicit Worker name `bot-banter-room` in `scripts/configure-production-d1.mjs` and a fail-closed generated-config name assertion in `.github/workflows/deploy.yml`. Third file is `bun.lock`; `package.json` is unchanged and matches main.
+- Main's current required-secret checks remain intact. The PR does not weaken first-party auth validation and does not touch the other two Workers.
+- GitHub Actions run `44551064228` passed all six CI stages. Cloudflare Workers Builds still fails opaquely with no error detail; PR #22 remains open/unmerged pending external build-pipeline diagnosis and release approval.
