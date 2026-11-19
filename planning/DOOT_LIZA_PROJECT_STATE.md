@@ -487,3 +487,14 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - The product interface priority is Web first, Android app second, Telegram companion third; all share one backend and source of truth.
 - Current 10-Group mapping: G06 owns the agent/DevPilot workforce; G07 owns LinkedIn/social/growth/analytics; G08 owns integrations/database/identity/workspace/Telegram; G09 owns security/Web-App/infrastructure/quality; G10 owns final acceptance/release.
 - No production D1 migration or deployment was performed by this checkpoint.
+
+
+## 2026-11-19 — Group 06 source integration checkpoint
+
+The Group 06 implementation/evidence branch is `work/group06-manager-planner` at `f4a66ca5b7ce31b7701994b72cf94032136e109e`. It contains the manager/task system, scheduled D1 queue worker, lease/heartbeat recovery, bounded retry logic, migrations and focused tests. CI run `44449242096` for the pre-documentation implementation HEAD `a7c6e478a6078fdf4b603c7ab6d750ec9432207a` passed TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler validation and dependency audit.
+
+**Integration finding:** this Group 06 branch is not a safe direct merge candidate for `main` or this 10-Group roadmap branch. GitHub compare reports it is diverged from `main` by 615 commits ahead / 100 behind, and from `docs/autonomous-devpilot-master-spec` by 615 ahead / 108 behind, with merge base `3f0b138105ab3781e920b8853c41ae0d188735ec`. The feature branch contains the full accumulated application/source tree for earlier groups as well as Group 06, not an isolated Group 06 patch. A direct PR/merge would therefore bundle a large unrelated history and must not be attempted.
+
+**Safe integration plan:** keep the 10-Group roadmap branch as the documentation track; treat `work/group06-manager-planner` as the implementation evidence/source track; establish a clean integration base after the existing foundation PRs are reconciled, then port the complete dependency-closed Group 06 source set (manager/task APIs, queue worker, route/UI, migrations, generated Worker config and tests) with explicit file-level review and CI. Preserve the original branch and all older group work as traceability until this port is verified. No merge, rebase, migration, production deployment or destructive branch operation was performed.
+
+Production activation remains unverified and requires separate explicit authorization. Group 06 remains IN PROGRESS.
