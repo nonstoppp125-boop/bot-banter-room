@@ -10,11 +10,77 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as LinkedInStudioRouteImport } from './routes/linkedin-studio'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
+import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
+import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
+import { Route as SettingsMemoryRouteImport } from './routes/settings.memory'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiTelegramLinkTokenRouteImport } from './routes/api/telegram/link-token'
+import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/webhook'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
+import { Route as ApiTasksRouteImport } from './routes/api/tasks'
+import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks/execute'
+import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
+import { Route as ApiMemoriesRouteImport } from './routes/api/memories'
+import { Route as ApiAccountExportRouteImport } from './routes/api/account/export'
+import { Route as ApiAccountDeletionRouteImport } from './routes/api/account/deletion'
+import { Route as ApiOAuthStartRouteImport } from './routes/api/integrations/oauth/start'
+import { Route as ApiOAuthCallbackRouteImport } from './routes/api/integrations/oauth/callback'
+import { Route as ApiIntegrationDisconnectRouteImport } from './routes/api/integrations/disconnect'
+import { Route as ApiIntegrationRefreshRouteImport } from './routes/api/integrations/refresh'
+import { Route as ApiIntegrationsRouteImport } from './routes/api/integrations'
 
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
+  id: '/login' | '/api/auth/login' | '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LinkedInStudioRoute = LinkedInStudioRouteImport.update({
+  id: '/linkedin-studio',
+  path: '/linkedin-studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/settings/integrations',
+  path: '/settings/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsApprovalsRoute = SettingsApprovalsRouteImport.update({
+  id: '/settings/approvals',
+  path: '/settings/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsPrivacyRoute = SettingsPrivacyRouteImport.update({
+  id: '/settings/privacy',
+  path: '/settings/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsMemoryRoute = SettingsMemoryRouteImport.update({
+  id: '/settings/memory',
+  path: '/settings/memory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -22,31 +88,207 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthSessionRoute = ApiAuthSessionRouteImport.update({
+  id: '/api/auth/session',
+  path: '/api/auth/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTelegramLinkTokenRoute = ApiTelegramLinkTokenRouteImport.update({
+  id: '/api/telegram/link-token',
+  path: '/api/telegram/link-token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
+  id: '/api/telegram/webhook',
+  path: '/api/telegram/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiApprovalsRoute = ApiApprovalsRouteImport.update({
+  id: '/api/approvals',
+  path: '/api/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTasksRoute = ApiTasksRouteImport.update({
+  id: '/api/tasks',
+  path: '/api/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTasksExecuteRoute = ApiTasksExecuteRouteImport.update({
+  id: '/api/tasks/execute',
+  path: '/api/tasks/execute',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
+  id: '/api/analytics',
+  path: '/api/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMemoriesRoute = ApiMemoriesRouteImport.update({
+  id: '/api/memories',
+  path: '/api/memories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccountExportRoute = ApiAccountExportRouteImport.update({
+  id: '/api/account/export',
+  path: '/api/account/export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccountDeletionRoute = ApiAccountDeletionRouteImport.update({
+  id: '/api/account/deletion',
+  path: '/api/account/deletion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOAuthStartRoute = ApiOAuthStartRouteImport.update({
+  id: '/api/integrations/oauth/start',
+  path: '/api/integrations/oauth/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOAuthCallbackRoute = ApiOAuthCallbackRouteImport.update({
+  id: '/api/integrations/oauth/callback',
+  path: '/api/integrations/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIntegrationDisconnectRoute = ApiIntegrationDisconnectRouteImport.update({
+  id: '/api/integrations/disconnect',
+  path: '/api/integrations/disconnect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIntegrationRefreshRoute = ApiIntegrationRefreshRouteImport.update({
+  id: '/api/integrations/refresh',
+  path: '/api/integrations/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIntegrationsRoute = ApiIntegrationsRouteImport.update({
+  id: '/api/integrations',
+  path: '/api/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/telegram/link-token': typeof ApiTelegramLinkTokenRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/approvals': typeof ApiApprovalsRoute
+  '/api/tasks': typeof ApiTasksRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/tasks/execute': typeof ApiTasksExecuteRoute
+  '/api/analytics': typeof ApiAnalyticsRoute
+  '/api/memories': typeof ApiMemoriesRoute
+  '/api/account/export': typeof ApiAccountExportRoute
+  '/api/account/deletion': typeof ApiAccountDeletionRoute
+  '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
+  '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
+  '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
+  '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
+  '/api/integrations': typeof ApiIntegrationsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/approvals': typeof SettingsApprovalsRoute
+  '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/memory': typeof SettingsMemoryRoute
+  '/analytics': typeof AnalyticsRoute
+  '/linkedin-studio': typeof LinkedInStudioRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/telegram/link-token': typeof ApiTelegramLinkTokenRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
+  '/api/approvals': typeof ApiApprovalsRoute
+  '/api/tasks': typeof ApiTasksRoute
+  '/api/account/export': typeof ApiAccountExportRoute
+  '/api/account/deletion': typeof ApiAccountDeletionRoute
+  '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
+  '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
+  '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
+  '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
+  '/api/integrations': typeof ApiIntegrationsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/approvals': typeof SettingsApprovalsRoute
+  '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/memory': typeof SettingsMemoryRoute
+  '/analytics': typeof AnalyticsRoute
+  '/linkedin-studio': typeof LinkedInStudioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/telegram/link-token': typeof ApiTelegramLinkTokenRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
+  '/api/approvals': typeof ApiApprovalsRoute
+  '/api/tasks': typeof ApiTasksRoute
+  '/api/account/export': typeof ApiAccountExportRoute
+  '/api/account/deletion': typeof ApiAccountDeletionRoute
+  '/api/integrations/oauth/start': typeof ApiOAuthStartRoute
+  '/api/integrations/oauth/callback': typeof ApiOAuthCallbackRoute
+  '/api/integrations/disconnect': typeof ApiIntegrationDisconnectRoute
+  '/api/integrations/refresh': typeof ApiIntegrationRefreshRoute
+  '/api/integrations': typeof ApiIntegrationsRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/approvals': typeof SettingsApprovalsRoute
+  '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/memory': typeof SettingsMemoryRoute
+  '/analytics': typeof AnalyticsRoute
+  '/linkedin-studio': typeof LinkedInStudioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat'
+  fullPaths: '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat'
-  id: '__root__' | '/' | '/api/chat'
+  to: '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  id: '__root__' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiAuthSessionRoute: typeof ApiAuthSessionRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiTelegramLinkTokenRoute: typeof ApiTelegramLinkTokenRoute
+  ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
+  ApiHealthRoute: typeof ApiHealthRoute
+  AnalyticsRoute: typeof AnalyticsRoute
+  TasksRoute: typeof TasksRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+  SettingsApprovalsRoute: typeof SettingsApprovalsRoute
+  SettingsPrivacyRoute: typeof SettingsPrivacyRoute
+  SettingsMemoryRoute: typeof SettingsMemoryRoute
+  LinkedInStudioRoute: typeof LinkedInStudioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -65,12 +314,220 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/session': {
+      id: '/api/auth/session'
+      path: '/api/auth/session'
+      fullPath: '/api/auth/session'
+      preLoaderRoute: typeof ApiAuthSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/telegram/link-token': {
+      id: '/api/telegram/link-token'
+      path: '/api/telegram/link-token'
+      fullPath: '/api/telegram/link-token'
+      preLoaderRoute: typeof ApiTelegramLinkTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/telegram/webhook': {
+      id: '/api/telegram/webhook'
+      path: '/api/telegram/webhook'
+      fullPath: '/api/telegram/webhook'
+      preLoaderRoute: typeof ApiTelegramWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/approvals': {
+      id: '/api/approvals'
+      path: '/api/approvals'
+      fullPath: '/api/approvals'
+      preLoaderRoute: typeof ApiApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tasks': {
+      id: '/api/tasks'
+      path: '/api/tasks'
+      fullPath: '/api/tasks'
+      preLoaderRoute: typeof ApiTasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tasks/execute': {
+      id: '/api/tasks/execute'
+      path: '/api/tasks/execute'
+      fullPath: '/api/tasks/execute'
+      preLoaderRoute: typeof ApiTasksExecuteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics': {
+      id: '/api/analytics'
+      path: '/api/analytics'
+      fullPath: '/api/analytics'
+      preLoaderRoute: typeof ApiAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics': {
+      id: '/api/analytics'
+      path: '/api/analytics'
+      fullPath: '/api/analytics'
+      preLoaderRoute: typeof ApiAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/memories': {
+      id: '/api/memories'
+      path: '/api/memories'
+      fullPath: '/api/memories'
+      preLoaderRoute: typeof ApiMemoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/account/export': {
+      id: '/api/account/export'
+      path: '/api/account/export'
+      fullPath: '/api/account/export'
+      preLoaderRoute: typeof ApiAccountExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/account/deletion': {
+      id: '/api/account/deletion'
+      path: '/api/account/deletion'
+      fullPath: '/api/account/deletion'
+      preLoaderRoute: typeof ApiAccountDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/oauth/start': {
+      id: '/api/integrations/oauth/start'
+      path: '/api/integrations/oauth/start'
+      fullPath: '/api/integrations/oauth/start'
+      preLoaderRoute: typeof ApiOAuthStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/oauth/callback': {
+      id: '/api/integrations/oauth/callback'
+      path: '/api/integrations/oauth/callback'
+      fullPath: '/api/integrations/oauth/callback'
+      preLoaderRoute: typeof ApiOAuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/disconnect': {
+      id: '/api/integrations/disconnect'
+      path: '/api/integrations/disconnect'
+      fullPath: '/api/integrations/disconnect'
+      preLoaderRoute: typeof ApiIntegrationDisconnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations/refresh': {
+      id: '/api/integrations/refresh'
+      path: '/api/integrations/refresh'
+      fullPath: '/api/integrations/refresh'
+      preLoaderRoute: typeof ApiIntegrationRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/integrations': {
+      id: '/api/integrations'
+      path: '/api/integrations'
+      fullPath: '/api/integrations'
+      preLoaderRoute: typeof ApiIntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/settings/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/approvals': {
+      id: '/settings/approvals'
+      path: '/settings/approvals'
+      fullPath: '/settings/approvals'
+      preLoaderRoute: typeof SettingsApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/memory': {
+      id: '/settings/memory'
+      path: '/settings/memory'
+      fullPath: '/settings/memory'
+      preLoaderRoute: typeof SettingsMemoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/privacy': {
+      id: '/settings/privacy'
+      path: '/settings/privacy'
+      fullPath: '/settings/privacy'
+      preLoaderRoute: typeof SettingsPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/linkedin-studio': {
+      id: '/linkedin-studio'
+      path: '/linkedin-studio'
+      fullPath: '/linkedin-studio'
+      preLoaderRoute: typeof LinkedInStudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiAuthSessionRoute: ApiAuthSessionRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiTelegramLinkTokenRoute: ApiTelegramLinkTokenRoute,
+  ApiTelegramWebhookRoute: ApiTelegramWebhookRoute,
+  ApiHealthRoute: ApiHealthRoute,
+  ApiApprovalsRoute: ApiApprovalsRoute,
+  ApiTasksRoute: ApiTasksRoute,
+  ApiTasksExecuteRoute: ApiTasksExecuteRoute,
+  ApiAnalyticsRoute: ApiAnalyticsRoute,
+  ApiMemoriesRoute: ApiMemoriesRoute,
+  ApiAccountExportRoute: ApiAccountExportRoute,
+  ApiAccountDeletionRoute: ApiAccountDeletionRoute,
+  ApiOAuthStartRoute: ApiOAuthStartRoute,
+  ApiOAuthCallbackRoute: ApiOAuthCallbackRoute,
+  ApiIntegrationDisconnectRoute: ApiIntegrationDisconnectRoute,
+  ApiIntegrationRefreshRoute: ApiIntegrationRefreshRoute,
+  ApiIntegrationsRoute: ApiIntegrationsRoute,
+  AnalyticsRoute: AnalyticsRoute,
+  TasksRoute: TasksRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+  SettingsApprovalsRoute: SettingsApprovalsRoute,
+  SettingsPrivacyRoute: SettingsPrivacyRoute,
+  SettingsMemoryRoute: SettingsMemoryRoute,
+  LinkedInStudioRoute: LinkedInStudioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

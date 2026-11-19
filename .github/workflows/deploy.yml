@@ -1,0 +1,151 @@
+name: Doot Manual Cloudflare Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: "Explicitly authorize Group 05 and Group 06 D1 migrations and production deployment"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doot-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ inputs.confirm_deploy == true && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require Cloudflare and D1 configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+        run: |
+          node --input-type=module <<'NODE'
+          const required = [
+            "CLOUDFLARE_API_TOKEN",
+            "CLOUDFLARE_ACCOUNT_ID",
+            "CLOUDFLARE_D1_DATABASE_NAME",
+            "CLOUDFLARE_D1_DATABASE_ID",
+          ];
+          const missing = required.filter((key) => !process.env[key]);
+          if (missing.length) {
+            console.error("Deployment blocked; missing GitHub secrets:", missing.join(", "));
+            process.exit(1);
+          }
+          NODE
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Audit production dependencies
+        run: npm run security:audit
+      - name: Verify TypeScript
+        run: npm run typecheck
+      - name: Run all tests
+        run: npm test
+      - name: Build production Worker and Wrangler config
+        run: npm run build
+      - name: Locate generated Wrangler configuration
+        id: config
+        run: |
+          set -euo pipefail
+          mapfile -t configs < <(find .output -type f \( -name wrangler.json -o -name wrangler.jsonc \) -print)
+          if [ "${#configs[@]}" -ne 1 ]; then
+            echo "Expected exactly one Nitro-generated Wrangler config under .output; found ${#configs[@]}."
+            find .output -maxdepth 4 -type f | head -80
+            exit 1
+          fi
+          CONFIG="${configs[0]}"
+          echo "path=$CONFIG" >> "$GITHUB_OUTPUT"
+      - name: Inject Group 05 and Group 06 production ACTION_DB migrations
+        env:
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+          CLOUDFLARE_D1_MIGRATIONS_DIR: migrations
+          CLOUDFLARE_D1_MIGRATIONS_PATTERN: migrations/*/*.sql
+        run: node scripts/configure-production-d1.mjs "${{ steps.config.outputs.path }}"
+      - name: Validate generated Wrangler configuration
+        env:
+          CONFIG_PATH: ${{ steps.config.outputs.path }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import path from "node:path";
+          const configPath = process.env.CONFIG_PATH;
+          const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+          const missing = ["name", "main", "compatibility_date"].filter(
+            (key) => typeof config[key] !== "string" || !config[key].trim(),
+          );
+          if (missing.length) {
+            console.error("Generated Wrangler config is incomplete:", missing.join(", "));
+            process.exit(1);
+          }
+          const migrationsDir = config.d1_databases?.find((binding) => binding.binding === "ACTION_DB")?.migrations_dir;
+          const migrationsPattern = config.d1_databases?.find((binding) => binding.binding === "ACTION_DB")?.migrations_pattern;
+          if (migrationsDir !== "../../migrations" || migrationsPattern !== "../../migrations/*/*.sql") {
+            console.error("Production deployment blocked: nested Group 05/06 migration set is not configured.");
+            process.exit(1);
+          }
+          if (!Array.isArray(config.ratelimits) ||
+              !config.ratelimits.some((binding) => binding.name === "CHAT_RATE_LIMITER")) {
+            console.error("Generated config is missing the CHAT_RATE_LIMITER binding.");
+            process.exit(1);
+          }
+          const d1 = Array.isArray(config.d1_databases)
+            ? config.d1_databases.filter((binding) => binding.binding === "ACTION_DB")
+            : [];
+          if (d1.length !== 1 || !d1[0].database_id || !d1[0].database_name || !d1[0].migrations_dir) {
+            console.error("Production deployment blocked: ACTION_DB binding is missing or incomplete.");
+            process.exit(1);
+          }
+          if (!Array.isArray(config.secrets?.required) || !config.secrets.required.includes("GROQ_API_KEY")) {
+            console.error("Production deployment blocked: GROQ_API_KEY must be declared as a required Worker secret.");
+            process.exit(1);
+          }
+          const migrationsPath = path.resolve(path.dirname(configPath), d1[0].migrations_dir);
+          const nestedMigrations = fs.existsSync(migrationsPath)
+            ? fs.readdirSync(migrationsPath, { withFileTypes: true })
+                .filter((entry) => entry.isDirectory())
+                .flatMap((entry) => fs.readdirSync(path.join(migrationsPath, entry.name))
+                  .filter((file) => file.endsWith(".sql"))
+                  .map((file) => `${entry.name}/${file}`))
+                .sort()
+            : [];
+          const expectedMigrations = [
+            "group05/0005_memory_foundation.sql",
+            "group06/0001_manager_core.sql",
+            "group06/0002_task_retry_budget.sql",
+            "group06/0003_task_queue_leases.sql",
+          ];
+          if (JSON.stringify(nestedMigrations) !== JSON.stringify(expectedMigrations)) {
+            console.error("Production deployment blocked: the Group 05/06 D1 migration set differs from the reviewed sequence.");
+            process.exit(1);
+          }
+          console.log("Validated generated Worker config and ACTION_DB migrations directory.");
+          NODE
+      - name: Apply production D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
+        run: npx --yes wrangler@4.162.0 d1 migrations apply "$CLOUDFLARE_D1_DATABASE_NAME" --remote --config "${{ steps.config.outputs.path }}"
+      - name: Deploy to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.162.0 deploy --config "${{ steps.config.outputs.path }}"

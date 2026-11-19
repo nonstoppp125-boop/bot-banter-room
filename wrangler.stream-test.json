@@ -1,0 +1,5 @@
+{
+  "name": "doot-worker-streaming-runtime-test",
+  "main": "src/test/fixtures/worker-streaming.ts",
+  "compatibility_date": "2026-11-16"
+}

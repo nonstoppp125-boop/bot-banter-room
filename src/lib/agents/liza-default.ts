@@ -1,7 +1,10 @@
 import { convertToModelMessages, streamText } from "ai";
 
 import { groqModel } from "./groq";
+import { PROVIDER_REQUEST_OPTIONS } from "./request-policy";
 import { buildLizaSystem } from "./liza-prompt";
+import { evaluateLizaResponse } from "./response-quality";
+export { LIZA_SYSTEM } from "./liza-prompt";
 import type { AgentDefinition } from "./types";
 
 export const lizaDefaultAgent: AgentDefinition = {
@@ -9,7 +12,9 @@ export const lizaDefaultAgent: AgentDefinition = {
   name: "Liza",
   description: "Current Liza chat assistant (Groq, openai/gpt-oss-20b).",
   role: "chat",
-  run: async ({ messages, env, signal, systemInstruction }) => {
+  capabilities: ["chat"],
+  permissions: ["llm:inference"],
+  run: async ({ messages, env, signal, memoryContext }) => {
     const apiKey = env.GROQ_API_KEY;
     if (!apiKey) {
       return Response.json(
@@ -19,12 +24,27 @@ export const lizaDefaultAgent: AgentDefinition = {
     }
 
     const result = streamText({
-      model: groqModel(apiKey),
-      instructions: systemInstruction ?? buildLizaSystem(messages),
+      ...PROVIDER_REQUEST_OPTIONS,
+      model: groqModel(apiKey, env.GROQ_MODEL?.trim() || undefined),
+      instructions: memoryContext
+        ? `${buildLizaSystem(messages)}\n\n${memoryContext}`
+        : buildLizaSystem(messages),
       messages: await convertToModelMessages(messages),
       abortSignal: signal,
+      onFinish: ({ text }) => {
+        const quality = evaluateLizaResponse(text);
+        if (!quality.passed) {
+          console.warn("Liza response quality check failed", {
+            score: quality.score,
+            issues: quality.issues,
+          });
+        }
+      },
     });
 
-    return result.toUIMessageStreamResponse({ originalMessages: messages });
+    return result.toUIMessageStreamResponse({
+      originalMessages: messages,
+      onError: () => "Unable to process chat request",
+    });
   },
 };

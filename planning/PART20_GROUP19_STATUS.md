@@ -1,0 +1,107 @@
+# PART 20 — GROUP 19 Telegram and Cross-Platform Status
+
+Date: 2026-11-16
+Branch: `work/group06-manager-planner`
+
+## Audit findings
+- TG01–TG05 — This repository contains no Telegram bot runtime, command handlers, webhook route, bot hosting configuration or bot token. Bot ownership and external configuration cannot be verified from repository source.
+- TG06 — Shared backend candidates are the existing chat API, Manager/orchestrator, specialist registry, D1 conversation store and approval schema.
+
+## Implemented foundations
+- TG07–TG09 — Webhook secret verification, strict private-chat update normalization, human-user check, Telegram-to-workspace identity lookup and D1 update replay claims.
+- TG11–TG13 — Shared chat/agent capabilities and Bangla/English-ready update metadata can be reused; no Telegram message is executed through the agent runtime yet.
+- TG17–TG18 — Existing social draft and analytics models can supply preview/report payloads once a bot runtime is connected.
+- Telegram output chunking respects the 4096-code-point message limit without splitting Unicode surrogate pairs.
+
+## Remaining / blocked
+- No bot token, webhook secret or verified Telegram owner mapping is configured.
+- A secret-authenticated webhook route and bounded Telegram sendMessage client are now implemented. `/start`, `/help`, `/link CODE` and private-chat Liza messaging are handled; no live bot hosting or webhook registration is configured.
+- A five-minute, one-time link-code API now binds the Telegram user to the signed-in user's workspace. The webhook stores private-chat messages in the shared D1 conversation store and generates default-Liza Groq replies with Unicode-safe 4096-code-point chunking.
+- Telegram runtime still requires D1 migration 0012, TELEGRAM_BOT_ID, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, GROQ_API_KEY and a manually registered Telegram webhook. Telegram supports Manager `/task` and `/tasks` commands, saved-memory continuity and `/approvals` signed decision callbacks. It still does not execute specialist workflows from Telegram; execution is an explicit web Tasks action.
+- `/approvals` now lists pending requests for linked workspace owners/admins with signed Approve/Reject inline buttons. Callback HMAC binds approval ID, exact Telegram user, workspace and decision; D1 rechecks admin role, pending state and expiry before recording a decision. Proactive notifications and external action execution remain disabled.
+
+GROUP 19: IN PROGRESS — webhook, one-time identity linking, shared conversation persistence and default-Liza reply path implemented; live Telegram credentials, webhook registration and runtime smoke remain blocked.
+No merge to `main`; no production deployment.
+
+
+## 2026-11-16 — Shared conversation continuity
+- Added D1 chat-to-conversation mapping with strict bot/chat/user/workspace ownership checks and active-link/member predicates.
+- Conversation links are created only for a non-deleted conversation owned by the mapped user in the linked workspace.
+- CI verification pending.
+
+
+## 2026-11-16 — Telegram approval callback signing
+- Added compact HMAC-SHA256 callback data (under Telegram's 64-byte limit) bound to approval ID, Telegram user ID and workspace ID.
+- Tampering, wrong user/workspace, malformed and oversized callback payloads fail closed. This is a signing primitive only; approval state is still checked against D1 by a future callback route.
+- CI verification pending.
+
+
+## 2026-11-16 — Telegram webhook, identity linking and chat runtime
+- Added migration 0012 for hashed, five-minute, one-time Telegram link tokens.
+- Added session-authenticated POST /api/telegram/link-token; raw link code is returned once to the signed-in user while only its SHA-256 hash is stored.
+- Added POST /api/telegram/webhook with Telegram secret-token header verification, strict private-human message normalization, bounded JSON body, update replay claims and private-chat-only processing.
+- /link CODE consumes the token once and binds the Telegram identity to the user's active workspace membership. Unlinked users receive linking instructions.
+- Linked messages are stored in the shared D1 conversation model and answered by the default Liza Groq model; replies are chunked safely at 4096 Unicode code points. No Telegram message can trigger publishing, deployment or destructive actions.
+- Settings → Integrations now includes a one-time Telegram link-code generator.
+- GitHub Actions run 43815548281: SUCCESS — TypeScript, 45 test files / 322 tests, production build and Nitro-generated Wrangler validation. Live bot token, webhook secret, bot ID, D1 binding/migration and Telegram setWebhook registration are not provisioned.
+
+- Telegram link-token and webhook regression tests cover hashed code persistence, same-origin enforcement, secret rejection, private identity linking and unlinked-user instructions.
+
+
+## 2026-11-16 — Telegram approval inbox and callbacks
+- Added `/approvals` command to list up to 10 pending requests for workspace owners/admins, with compact Telegram inline keyboards.
+- Approve/Reject callback data is HMAC-SHA256 signed, under Telegram's 64-byte limit, and bound to approval ID, Telegram user ID, workspace ID and decision. A different Telegram account or workspace cannot reuse the callback.
+- Webhook callback processing claims update IDs, verifies the signature, retrieves the persisted approval through the owner/admin-only store and uses the D1 pending/expiry-checked decision transition.
+- Decisions only record approval/rejection; they do not publish, message externally, deploy or delete. Proactive approval notifications remain disabled.
+- Requires TELEGRAM_APPROVAL_CALLBACK_SECRET in addition to the Telegram webhook and bot configuration. Verification pending.
+
+
+## 2026-11-16 — Telegram Manager task intake and memory continuity
+
+- Added private-chat `/task DESCRIPTION` to create a Manager plan in the same workspace-scoped `agent_tasks` store used by the web Tasks page, and `/tasks` to list recent tasks.
+- Low-risk plans are saved as queued; high-risk plans remain `needs_approval` and cannot execute through Telegram. Telegram does not claim background execution; users must open web Tasks and explicitly run low-risk work.
+- Linked Telegram replies now retrieve up to six relevant user-authored memories from the mapped workspace, labelled as untrusted reference data. Memory lookup is fail-soft.
+- Bot `/start` and `/help` text now advertises the task commands.
+- Approval callback flow is implemented; task approval verification and explicit on-demand specialist execution are available through the authenticated web Tasks API. Telegram remains an intake/approval surface only.
+- GitHub Actions run `43870462130`: SUCCESS — TypeScript, 51 test files / 395 tests, production build and generated Wrangler Worker config validation.
+- Live Telegram bot credentials, webhook registration, D1 provisioning and end-to-end Telegram runtime smoke tests remain unverified.
+
+
+## 2026-11-16 — Telegram approval-to-task handoff clarified
+
+- High-risk `/task` requests create payload-bound D1 approval records; workspace admins can decide them through the signed `/approvals` callback flow.
+- After approval, the task owner opens the web Tasks page and uses Verify approval & unlock. The web execution endpoint independently verifies the same persisted approval before running the Manager specialist workflow.
+- Telegram itself does not execute the task. No external publish/message/delete/deploy action is connected.
+- Verification: GitHub Actions run `43872309252` SUCCESS — TypeScript, 51 test files / 397 tests, production build and generated Wrangler Worker config validation.
+- Live Telegram credentials, webhook registration, D1 provisioning and end-to-end runtime smoke tests remain unverified.
+
+
+## 2026-11-16 — Telegram approval handoff and web execution
+
+- Telegram `/task` now persists high-risk approval requests bound to the task plan; workspace admins can decide through signed `/approvals` callbacks.
+- After approval, the task owner must use the web Tasks page to verify/unlock and explicitly run the specialist workflow. The web execution endpoint checks the persisted approval again.
+- Running tasks can be cancelled from the web Tasks page by aborting the request. Telegram still does not run tasks or execute external actions.
+- Verification: GitHub Actions run `43872990333` SUCCESS — TypeScript, 51 test files / 399 tests, production build and generated Wrangler Worker config validation.
+- Live Telegram credentials, webhook registration, D1 provisioning and end-to-end runtime smoke tests remain unverified.
+
+
+## 2026-11-16 — Pending approval cancellation
+
+- The web Tasks page now allows the task owner to cancel a pending approval-gated task; the D1 state transition remains owner/workspace-scoped and atomic.
+- Latest GitHub Actions run `43873475716`: SUCCESS — TypeScript, 51 test files / 400 tests, production build and generated Wrangler Worker config validation.
+
+
+## 2026-11-16 — Telegram task approval bridge clarification
+
+- Telegram `/task` creates workspace-scoped Manager tasks; high-risk tasks also create payload-bound persisted approval requests.
+- Telegram `/approvals` supports signed owner/admin decisions. After a decision, the user must use the authenticated web Tasks page to verify/unlock and explicitly run the task.
+- The approval-to-on-demand-execution bridge exists through the web API; Telegram itself does not execute specialist workflows or external side effects.
+- Live bot credentials, webhook registration, D1 provisioning and end-to-end runtime smoke remain unverified.
+
+
+## 2026-11-16 — Latest Telegram and accessibility CI checkpoint
+
+- GitHub Actions run `43877244027`, exact code commit `0ac038a9dac7556edd2afccd3f867d85338df328`: 52 test files / 407 tests PASS, TypeScript PASS, production build PASS, generated Wrangler config PASS, production dependency audit 0 vulnerabilities.
+- Telegram `/task` and `/tasks` persist and list shared workspace tasks. `/approvals` supports signed owner/admin decisions. Users must use the authenticated web Tasks page to verify/unlock and explicitly execute specialist work.
+- Live bot token, webhook secret/registration, D1 migration application, GROQ key and end-to-end Telegram smoke tests remain external prerequisites.
+- Telegram does not execute real external publishing, messaging, deletion or deployment actions.

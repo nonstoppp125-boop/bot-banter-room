@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractExplicitMemory, hasExplicitMemoryTrigger } from "@/lib/agents/memory-extraction";
+import { extractExplicitMemory } from "@/lib/agents/memory-extraction";
 
 describe("explicit memory extraction", () => {
   it("extracts only a direct English remember instruction", () => {
@@ -33,12 +33,6 @@ describe("explicit memory extraction", () => {
     expect(extractExplicitMemory("Remember this: Bearer abcdefghijklmnop")).toBeNull();
     expect(extractExplicitMemory("Remember this: ghp_abcdefghijklmnopqrstuvwxyz1234567890")).toBeNull();
     expect(extractExplicitMemory("Remember this: " + "x".repeat(4_500))).toBeNull();
-  });
-
-  it("recognizes explicit save intent even when the content is rejected as secret", () => {
-    expect(hasExplicitMemoryTrigger("Remember my api_key=super-secret")).toBe(true);
-    expect(hasExplicitMemoryTrigger("মনে রেখো: Bearer abcdefghijklmnop")).toBe(true);
-    expect(hasExplicitMemoryTrigger("I prefer concise replies.")).toBe(false);
   });
 
   it("classifies workflow and project memories", () => {

@@ -1,0 +1,38 @@
+# PART 22 — GROUP 21 PWA, Mobile and Accessibility Status
+
+Date: 2026-11-16
+Branch: work/group06-manager-planner
+
+## Implemented foundations
+- PWA01–PWA02 — Manifest metadata and 180/192/512/maskable icon references verified by repository inventory.
+- PWA03–PWA04 — Standalone display, Apple touch icon, install metadata and service-worker registration configured; real-device installation still requires device testing.
+- PWA05–PWA08 — Mobile viewport includes safe-area support; chat composer has an explicit accessible label; analytics dashboard is responsive.
+- PWA10–PWA11 — Existing loading, error and not-found states retained.
+- PWA12–PWA14 — Semantic headings, button labels, alert roles and Bengali document language improved.
+- PWA15 — Bengali language metadata and Noto Sans Bengali font import retained.
+- PWA16 — Light/dark theme-color metadata supplied.
+- PWA18 — Service worker caches only same-origin static assets; it does not cache HTML pages, API requests or query-bearing requests.
+- PWA20 — Offline limitations are explicit; no offline chat or APK/IPA is claimed.
+
+## Remaining / blocked
+- PWA03–PWA04 — Android/iOS installation and icon rendering require physical-device validation.
+- PWA09 — Attachment workflow and media handling need a separate secure implementation.
+- PWA17 — Dedicated dashboard layout/accessibility checks remain open.
+- PWA19 — Mobile browser compatibility and low-bandwidth runtime tests remain open.
+- Service worker cache strategy requires production smoke testing; no user data or API response is cached.
+
+GROUP 21: IN PROGRESS — install metadata, static-only service worker and mobile/accessibility foundations implemented; device/runtime verification remains open.
+No merge to main; no production deployment.
+
+
+## 2026-11-16 — Accessibility and shared Telegram conversation
+- Added a keyboard-visible skip-to-main-content link and an alert role for chat errors; both empty and active chat states now expose a main landmark.
+- Telegram messages can be normalized into the same workspace-scoped D1 conversation message shape after identity and conversation mapping checks.
+- GitHub Actions run `43877244027` passed 52 test files / 407 tests, TypeScript, production build, generated Wrangler config and production dependency audit. This verifies source contracts only, not physical-device or screen-reader behavior.
+
+
+## 2026-11-16 — Core route accessibility regression checks
+
+- Added automated source-contract tests for the chat keyboard skip link, named primary navigation, main landmark, live error/status announcements, analytics CSV label/import and approval inbox announcements.
+- GitHub Actions run `43877244027`, exact code commit `0ac038a9dac7556edd2afccd3f867d85338df328`: 52 test files / 407 tests PASS; TypeScript, production build, generated Wrangler config and production dependency audit also PASS.
+- Remaining PWA09 attachment/media handling, PWA17 complete dashboard audit, PWA19 physical-device/browser/low-bandwidth checks and PWA03–PWA04 real installation/icon rendering remain open.

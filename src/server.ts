@@ -2,6 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { processD1TaskQueue } from "./lib/agents/task-queue-worker";
+import type { AgentEnv } from "./lib/agents/types";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -45,6 +47,15 @@ function isH3SwallowedErrorBody(body: string): boolean {
 }
 
 export default {
+  async scheduled(_event: { scheduledTime: number; cron: string }, env: AgentEnv, _ctx: { waitUntil(promise: Promise<unknown>): void }) {
+    if (!env.ACTION_DB) {
+      console.error("D1 task queue skipped: ACTION_DB is not configured.");
+      return;
+    }
+    await processD1TaskQueue(env).catch((error) => {
+      console.error("D1 task queue invocation failed.", error);
+    });
+  },
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
