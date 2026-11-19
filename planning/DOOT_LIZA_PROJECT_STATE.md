@@ -498,3 +498,13 @@ The Group 06 implementation/evidence branch is `work/group06-manager-planner` at
 **Safe integration plan:** keep the 10-Group roadmap branch as the documentation track; treat `work/group06-manager-planner` as the implementation evidence/source track; establish a clean integration base after the existing foundation PRs are reconciled, then port the complete dependency-closed Group 06 source set (manager/task APIs, queue worker, route/UI, migrations, generated Worker config and tests) with explicit file-level review and CI. Preserve the original branch and all older group work as traceability until this port is verified. No merge, rebase, migration, production deployment or destructive branch operation was performed.
 
 Production activation remains unverified and requires separate explicit authorization. Group 06 remains IN PROGRESS.
+
+## 2026-11-19 — Foundation PR compatibility audit (read-only)
+
+- Compared current `main` against PR #1, PR #2, PR #22, PR #23, and the Group 06 implementation branch.
+- PR #1 (`feat/base-multi-agent-orchestration`) is 14 commits ahead / 118 behind main, based on `90cfd13`. It introduces Gemini/PWA-era architecture and is not a safe current foundation; do not merge wholesale into the current Groq/first-party-auth application.
+- PR #2 (`liza/full-app-foundation`) is 23 commits ahead / 100 behind main, based on `3f0b138`. It contains a polished responsive Liza UI and browser-local chat history, but its root chat route is a separate 336-line UI implementation. The Group 06 branch's current root route is a 172-line route with task-save/task-notice integration. Replacing it wholesale would risk removing Group 06 task controls; port the UI/history features selectively and preserve task interactions.
+- PR #22 (`fix/group06-production-worker-name`) is a clean 3-commit fast-forward from current main and changes only deploy Worker-name safeguards, `bun.lock`, and the generated Wrangler config script. CI was previously verified green, but PR remains unmerged; no merge or deploy performed.
+- PR #23 remains a documentation-only 10-Group roadmap/specification track.
+- Group 06 branch still carries 615 commits ahead / 100 behind current main. It is not a direct merge candidate. Continue dependency-closed file-level integration from a clean current-main base; retain the original branch as evidence.
+- No branch was merged, rebased, force-updated, migrated, or deployed during this audit. Production remains untouched.
