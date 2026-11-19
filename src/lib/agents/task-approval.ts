@@ -20,13 +20,13 @@ export type ManagerTaskApprovalMetadata = {
 };
 
 function classifyAction(taskText: string): ApprovalAction {
-  if (/\b(publish|post)\b/i.test(taskText)) return "social.publish";
-  if (/\b(reply|comment)\b/i.test(taskText)) return "social.reply";
-  if (/\b(send|message|email|dm)\b/i.test(taskText)) return "external.message";
-  if (/\b(delete|remove|destroy|overwrite)\b/i.test(taskText)) return "destructive.delete";
-  if (/\b(deploy|release|production)\b/i.test(taskText)) return "deployment";
-  if (/\b(purchase|buy|pay|transfer|withdraw)\b/i.test(taskText)) return "financial.action";
-  if (/\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b/i.test(taskText)) return "account.change";
+  if (/\b(publish|post)\b|\bpost\s+(?:to|on)\s+(?:linkedin|instagram|facebook|x|twitter|tiktok|youtube)\b|(?:পোস্ট\s*(?:করো?|করে\s*দাও)|পোস্ট(?:টি|টা)?\s*(?:প্রকাশ|পাবলিশ|শেয়ার|শেয়ার)\s*(?:কর|দাও)|প্রকাশ\s*কর|পাবলিশ\s*কর)|(?:post\s*(?:ta|ti)?\s*(?:publish|share)\s*koro|post\s*koro)/i.test(taskText)) return "social.publish";
+  if (/\b(reply|comment)\b|(?:কমেন্ট\s*কর|জবাব\s*দাও|উত্তর\s*দাও)|(?:comment\s*koro|reply\s*koro)/i.test(taskText)) return "social.reply";
+  if (/\b(send|message|email|dm)\b|(?:মেসেজ|ইমেইল|ডিএম)\s*(?:টি|টা)?\s*(?:পাঠাও|পাঠিয়ে\s*দাও|পাঠিয়ে\s*দাও)|(?:message|email|dm)\s*(?:ta|ti)?\s*(?:pathao|pathiye\s+dao)/i.test(taskText)) return "external.message";
+  if (/\b(delete|remove|destroy|overwrite)\b|(?:মুছে\s*(?:ফেল|দাও)|ডিলিট\s*(?:কর|করে\s*দাও)|ধ্বংস\s*কর)|(?:muche\s*(?:felo|dao)|delete\s*(?:koro|kore\s+dao))/i.test(taskText)) return "destructive.delete";
+  if (/\b(deploy|release|production)\b|(?:প্রোডাকশনে\s*(?:ডিপ্লয়|ডেপ্লয়|রিলিজ)|ডিপ্লয়\s*কর|ডেপ্লয়\s*কর|রিলিজ\s*কর)|(?:production\s*e\s*(?:deploy|release)\s*koro|deploy\s*koro|release\s*koro)/i.test(taskText)) return "deployment";
+  if (/\b(purchase|buy|pay|transfer|withdraw)\b|(?:কিনে\s*দাও|পেমেন্ট\s*কর|টাকা\s*পাঠাও|ট্রান্সফার\s*কর|উত্তোলন\s*কর)|(?:kine\s*dao|payment\s*koro|taka\s*pathao|transfer\s*koro|withdraw\s*koro)/i.test(taskText)) return "financial.action";
+  if (/\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b|\b(?:profile|account|settings|permissions)\s+(?:change|update|modify)\s+(?:koro|kore\s+dao)\b|(?:আমার\s*)?(?:অ্যাকাউন্ট|প্রোফাইল|সেটিংস|অনুমতি)\s*(?:টি|টা)?\s*(?:বদলাও|পরিবর্তন\s*কর|আপডেট\s*কর)|(?:account|profile|settings|permission)\s*(?:ta|gulo)?\s*(?:change|update)\s*koro/i.test(taskText)) return "account.change";
   return "external.message";
 }
 
