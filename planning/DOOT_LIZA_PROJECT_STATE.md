@@ -522,3 +522,16 @@ A direct blob-SHA comparison between `main` and `work/group06-manager-planner` c
 - `migrations/group06/0003_task_queue_leases.sql`
 
 Therefore, the earlier 615-commit history divergence does not mean these core Group 06 files need to be ported. The immediate integration task is narrowed: audit the remaining Group 06 file set and runtime/config evidence for parity, identify only genuinely missing or different files, and avoid copying already-identical source or migrations. Keep Group 06 production activation marked BLOCKED until binding, remote migration state, scheduled invocation, and authenticated end-to-end execution are independently verified. No migration, deploy, merge, rebase, or branch rewrite was performed.
+
+## 2026-11-19 — Group 06 remaining parity audit
+
+Further blob-SHA checks confirm that the remaining core Group 06 implementation is also already identical on current `main` and `work/group06-manager-planner`: `coordination.ts`, `registry.ts`, `specialists.ts`, `action-policy.ts`, `task-approval.ts`, `task-execution-api.ts`, `routes/api/tasks/execute.ts`, and manager/task API/execution tests. `src/server.ts`, `wrangler.json`, and Group 06 migrations 0001–0003 are also identical.
+
+Two meaningful differences remain:
+
+1. `scripts/configure-production-d1.mjs` differs. Current `main` additionally requires `LIZA_AUTH_EMAIL` and `LIZA_AUTH_PASSWORD_HASH` in generated Worker secrets, while the older Group 06 branch version only declares `GROQ_API_KEY`. Current `main` is the safer and more current auth-integrated version; do not overwrite it with the branch copy.
+2. `.github/workflows/deploy.yml` differs. Current `main` validates all three required Worker secrets (Groq plus first-party email/password hash), whereas the older branch validates only Groq. Preserve current `main` workflow.
+
+The root chat route is the same 172-line task-aware implementation on current `main` and Group 06 branch. PR #2's separate polished UI/history route remains a selective UI enhancement candidate, not a wholesale replacement.
+
+Audit conclusion: no Group 06 application source, task route, tests, or migration needs porting from the 615-commit-diverged branch; the relevant core files are already in current `main`. The remaining release blockers are operational verification (production D1 binding/migration state, cron invocation, authenticated end-to-end task execution) and separate review of PR #22's Worker-name hardening. No changes to production, remote D1, or deployment configuration were made by this audit.
