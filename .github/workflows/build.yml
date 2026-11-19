@@ -30,7 +30,7 @@ jobs:
       - name: Static dependency usage inventory
         run: npm run audit:dependencies -- "${RUNNER_TEMP}/dependency-usage-report.md"
       - name: Upload dependency usage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-usage-report
           path: ${{ runner.temp }}/dependency-usage-report.md

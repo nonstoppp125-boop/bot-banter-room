@@ -91,7 +91,7 @@ jobs:
           npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "PRAGMA table_info(auth_login_attempts);" | tee "$RUNNER_TEMP/d1-auth-login-attempts-columns.json"
           npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "PRAGMA table_info(agent_tasks);" | tee "$RUNNER_TEMP/d1-agent-tasks-columns.json"
           npx --yes wrangler@4.162.0 d1 execute "$CLOUDFLARE_D1_DATABASE_NAME" --remote --json --yes --config "${{ steps.config.outputs.path }}" --command "PRAGMA table_info(approvals);" | tee "$RUNNER_TEMP/d1-approvals-columns.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: production-d1-read-only-verification
           path: |
