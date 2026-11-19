@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractExplicitMemory } from "@/lib/agents/memory-extraction";
+import { extractExplicitMemory, hasExplicitMemoryTrigger } from "@/lib/agents/memory-extraction";
 
 describe("explicit memory extraction", () => {
   it("extracts only a direct English remember instruction", () => {
@@ -21,6 +21,12 @@ describe("explicit memory extraction", () => {
     expect(extractExplicitMemory("মনে রেখো আমার প্রকল্পের নাম Doot")).toMatchObject({
       category: "project",
     });
+  });
+
+  it("detects explicit remember intent even when sensitive content is rejected", () => {
+    expect(hasExplicitMemoryTrigger("Remember my api_key=super-secret")).toBe(true);
+    expect(hasExplicitMemoryTrigger("মনে রেখো, আমার পছন্দ বাংলা")).toBe(true);
+    expect(hasExplicitMemoryTrigger("I prefer Bengali replies.")).toBe(false);
   });
 
   it("does not infer durable memories from ordinary conversation", () => {
