@@ -187,7 +187,8 @@ G03.18 Evaluate alternative free providers. [EVALUATED]
 G03.19 Add provider failure fallback policy. [IMPLEMENTED]
 G03.20 Test production binding and deployment. [VERIFIED — correct Worker deployed; live homepage and chat smoke test passed]
 
-==================================================PART 05 — GROUP 04: LIZA CONVERSATIONAL INTELLIGENCE
+==================================================
+PART 05 — WORKSTREAM 04 (CONSOLIDATED GROUP 04): LIZA CONVERSATIONAL INTELLIGENCE
 ==================================================
 
 G04.01 Establish permanent Liza identity. [VERIFIED]
@@ -245,7 +246,7 @@ Group 05 acceptance — 2026-11-17:
 - G05.01–G05.20 implementation verified (20/20); see planning/PART05_GROUP05_IMPLEMENTATION.md.
 - CI run 44080900423: 56/56 test files, 431/431 tests, TypeScript, dependency audit (0 vulnerabilities), Worker streaming smoke, production build, and generated Wrangler config all passed.
 - Production activation remains blocked until the Group 05 D1 schema can be applied without prematurely applying later-group migrations, followed by live authenticated memory CRUD/chat smoke tests.
-- Group 06 must not start until this production release gate is resolved.
+- Group 06 is the current active group; its implementation may proceed under the documented dependency and release-safety rules. The Group 05 production activation gate remains separately blocked and must be resolved before activating Group 05 in production.
 
 G06.01 Define ManagerAgent contract.
 G06.02 Detect task intent.
@@ -920,7 +921,7 @@ PART 28 — DEVELOPMENT EXECUTION RULES
 20. Ask before expanding scope into unrelated projects.
 
 ==================================================
-PART 29 — GROUP COMPLETION CRITERIA
+PART 29 — 10-GROUP COMPLETION CRITERIA
 ==================================================
 
 A group is complete only when:
