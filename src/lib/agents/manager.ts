@@ -39,11 +39,26 @@ const MAX_TASK_CHARS = 20_000;
 const MAX_TASK_TIMEOUT_MS = 45_000;
 
 const HIGH_RISK_ACTIONS: readonly [RegExp, string][] = [
-  [/\b(publish|post\s+(?:this|it|the|my)|send\s+(?:this|it|the|my)|message\s+(?:this|it|the|my)|send\s+(?:a|an|the)\s+(?:message|email|dm))\b/i, "External publishing or messaging"],
-  [/\b(delete|remove|destroy|overwrite)\b/i, "Destructive or irreversible change"],
-  [/\b(deploy|release|ship\s+to\s+production)\b/i, "Production deployment or release"],
-  [/\b(purchase|buy|pay|transfer|withdraw)\b/i, "Financial or purchase action"],
-  [/\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b/i, "Account or permission modification"],
+  [
+    /\b(publish|post\s+(?:this|it|the|my)|send\s+(?:this|it|the|my)|message\s+(?:this|it|the|my)|send\s+(?:a|an|the)\s+(?:message|email|dm)|share\s+(?:this|it|the|my))\b|(?:পোস্ট(?:টি|টা)?\s*(?:প্রকাশ|পাবলিশ|শেয়ার|শেয়ার)\s*(?:কর|দাও)|প্রকাশ\s*কর|পাবলিশ\s*কর|শেয়ার\s*কর|শেয়ার\s*কর)|(?:post\s*(?:ta|ti)?\s*(?:publish|share)\s*koro|post\s*koro|share\s*(?:koro|kore\s+dao))|(?:মেসেজ|ইমেইল|ডিএম)\s*(?:টি|টা)?\s*(?:পাঠাও|পাঠিয়ে\s*দাও|পাঠিয়ে\s*দাও|করো?|দাও)|(?:message|email|dm)\s*(?:ta|ti)?\s*(?:pathao|pathiye\s+dao)/i,
+    "External publishing or messaging",
+  ],
+  [
+    /\b(delete|remove|destroy|overwrite)\b|(?:মুছে\s*(?:ফেল|দাও)|ডিলিট\s*(?:কর|করে\s*দাও)|ধ্বংস\s*কর)|(?:muche\s*(?:felo|dao)|delete\s*(?:koro|kore\s+dao)|shoriye\s+dao)/i,
+    "Destructive or irreversible change",
+  ],
+  [
+    /\b(deploy|release|ship\s+to\s+production)\b|(?:প্রোডাকশনে\s*(?:ডিপ্লয়|ডেপ্লয়|রিলিজ)\s*কর|ডিপ্লয়\s*কর|ডেপ্লয়\s*কর|রিলিজ\s*কর)|(?:production\s*e\s*(?:deploy|release)\s*koro|deploy\s*koro|release\s*koro)/i,
+    "Production deployment or release",
+  ],
+  [
+    /\b(purchase|buy|pay|transfer|withdraw)\b|(?:কিনে\s*দাও|পেমেন্ট\s*কর|টাকা\s*পাঠাও|ট্রান্সফার\s*কর|উত্তোলন\s*কর)|(?:kine\s*dao|payment\s*koro|taka\s*pathao|transfer\s*koro|withdraw\s*koro)/i,
+    "Financial or purchase action",
+  ],
+  [
+    /\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b|\b(?:profile|account|settings|permissions)\s+(?:change|update|modify)\s+(?:koro|kore\s+dao)\b|(?:আমার\s*)?(?:অ্যাকাউন্ট|প্রোফাইল|সেটিংস|অনুমতি)\s*(?:টি|টা)?\s*(?:বদলাও|পরিবর্তন\s*কর|আপডেট\s*কর)|(?:account|profile|settings|permission)\s*(?:ta|gulo)?\s*(?:change|update)\s*koro/i,
+    "Account or permission modification",
+  ],
 ];
 
 const MEDIUM_RISK_PATTERNS: readonly [RegExp, string][] = [
