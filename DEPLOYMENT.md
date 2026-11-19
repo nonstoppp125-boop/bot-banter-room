@@ -15,6 +15,8 @@ The deployment workflow configures the generated Wrangler file with the `ACTION_
 
 The workflow fails closed unless this exact four-file set is present. Legacy root-level SQL files under `migrations/*.sql` are not part of this production migration sequence; do not apply them manually. Wrangler creates a D1 backup when applying remote migrations.
 
+**Migration-history note:** the previous Group 05 deployment used `migrations/group05` as its `migrations_dir`; the new combined configuration uses the repository `migrations` root and records nested paths relative to that root. Cloudflare may therefore see `group05/0005_memory_foundation.sql` as a new migration name and run that Group 05 SQL once more. It contains only `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS` statements and is idempotent, but inspect the production `d1_migrations` table and pending migration list before applying anything.
+
 ## 2. GitHub Environment secrets
 
 Under repository Settings → Environments → `production`, configure:
