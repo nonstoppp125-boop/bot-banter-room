@@ -25,7 +25,7 @@ describe("Group 05/06 production D1 migration contract", () => {
       }
 
       expect(columns(database, "auth_login_attempts")).toEqual(
-        expect.arrayContaining(["email_hash", "attempt_count", "locked_until", "updated_at"]),
+        expect.arrayContaining(["email_hash", "window_started_at", "attempts"]),
       );
       expect(columns(database, "agent_tasks")).toEqual(expect.arrayContaining([
         "id", "workspace_id", "user_id", "status", "input_summary", "plan_json",
