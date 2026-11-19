@@ -58,7 +58,7 @@ jobs:
         id: config
         run: |
           set -euo pipefail
-          mapfile -t configs < <(find .output -type f \\( -name wrangler.json -o -name wrangler.jsonc \\) -print)
+          mapfile -t configs < <(find .output -type f \( -name wrangler.json -o -name wrangler.jsonc \) -print)
           if [ "${#configs[@]}" -ne 1 ]; then
             echo "Expected exactly one generated Wrangler config; found ${#configs[@]}."
             exit 1
