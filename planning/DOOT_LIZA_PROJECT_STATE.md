@@ -622,4 +622,15 @@ Audit conclusion: no Group 06 application source, task route, tests, or migratio
 
 - PR #26 now includes additional financial-action cases for Bengali and Banglish requests. Latest exact-head run `44564819427` PASS: TypeScript, 60 test files / 495 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
 - PR #26 remains open/unmerged. High-risk external actions remain approval-gated; no production action or migration performed.
+## 2026-11-19 — Group 06 scheduled queue handler verification
+
+- PR #27 latest head `5c659e2b042de7617097a16aa2605b3b01f631ca`; GitHub Actions run `44564906320` PASS: TypeScript, 61 test files / 466 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Scheduled handler tests cover configured ACTION_DB invocation, missing-binding fail-closed behavior, and contained queue invocation errors. PR #27 remains open/unmerged; no production runtime claim.
+
+## 2026-11-19 — Group 06 DevPilot coding-workforce safety
+
+- PR #28 latest head `ada684ebf895cdf2be393b949c608344e376b04b`; GitHub Actions run `44566294002` PASS: TypeScript, 60 test files / 470 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Coding-workforce repository inventory now excludes additional credential/config paths (.npmrc, .pypirc, .netrc, cloud/SSH/Kubernetes/Docker credential paths, service-account JSON and common credential manifests). Diff review rejects unsafe/protected paths and recognizes common GitHub/AWS/Slack/API token formats. Coding-plan risk assessment now covers explicit Bengali/Banglish destructive, deployment, credential and permission intent.
+- This remains a planning/proposal-validation module; it does not yet inspect or modify a live repository, execute shell commands, or create commits/PRs itself. The controlled workspace/command runner and authenticated repository adapter remain unimplemented dependencies; do not claim DevPilot autonomy is complete.
+- PR #28 remains open/unmerged. Cloudflare Workers Builds check is still opaque/failed without diagnostics; no deployment or D1 migration.
 
