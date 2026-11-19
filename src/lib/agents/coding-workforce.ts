@@ -3,10 +3,11 @@ export type RepositoryFileStatus = "tracked" | "modified" | "untracked";
 export interface RepositoryFileInput { path:string; sha?:string; size:number; status:RepositoryFileStatus; }
 export interface RepositoryInventory { repository:string; branch:string; headSha:string; files:RepositoryFileInput[]; skippedPaths:string[]; totalBytes:number; createdAt:string; }
 const MAX_FILES=5000,MAX_FILE_BYTES=1_000_000,MAX_INVENTORY_BYTES=20_000_000,MAX_PROPOSAL_FILES=8,MAX_PATCH_BYTES=500_000;
-const SECRET_PATH=/(^|\/)(\.env(?!\.example$)(?:\.[^/]*)?|id_rsa|id_ed25519|[^/]+\.(?:pem|key|p12|pfx))$/i;
-const PROTECTED_SEGMENTS=new Set([".git","node_modules",".wrangler",".output","dist","coverage"]);
+const SECRET_PATH=/(^|\/)(\.env(?!\.example$)(?:\.[^/]*)?|\.npmrc|\.pypirc|\.netrc|id_rsa|id_ed25519|credentials(?:\.(?:json|ya?ml))?|secrets?\.(?:json|ya?ml)|token\.(?:txt|json)|service-account(?:[-_][^/]*)?\.json|[^/]+\.(?:pem|key|p12|pfx))$/i;
+const PROTECTED_SEGMENTS=new Set([".git","node_modules",".wrangler",".output","dist","coverage",".ssh",".aws",".azure",".gnupg",".kube"]);
 function safePath(path:string):boolean{
  if(!path||path.length>500||path.startsWith("/")||path.includes("\\")||path.split("/").some(p=>!p||p==="."||p===".."||PROTECTED_SEGMENTS.has(p)))return false;
+ if(/^(?:\.docker\/config\.json|\.config\/gcloud\/application_default_credentials\.json)$/i.test(path))return false;
  return !SECRET_PATH.test(path);
 }
 function cleanText(v:string,max:number){return v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,max);}
@@ -24,7 +25,7 @@ export function buildRepositoryInventory(input:{repository:string;branch:string;
 export interface CodingPlan { task:string; baseSha:string; targetBranch:string; complexity:"simple"|"moderate"|"complex"; risk:CodingRisk; filesToInspect:string[]; acceptanceCriteria:string[]; validationCommands:string[]; approvalRequired:boolean; limitations:string[]; }
 export function buildCodingPlan(task:string,inventory:RepositoryInventory):CodingPlan{
  const objective=cleanText(task,4000);if(!objective)throw new Error("Coding task is required.");
- const risk:CodingRisk=/\b(delete|drop|overwrite|deploy|release|production|secret|credential|permission|authentication)\b/i.test(objective)?"high":/\b(api|database|migration|auth|security|refactor)\b/i.test(objective)?"medium":"low";
+ const risk:CodingRisk=/\b(delete|drop|overwrite|deploy|release|production|secret|credential|permission|authentication)\b|(?:মুছে\s*(?:ফেল|দাও)|ডিলিট\s*কর|ডিপ্লয়\s*কর|ডেপ্লয়\s*কর|প্রোডাকশনে|পাসওয়ার্ড|পাসওয়ার্ড|ক্রেডেনশিয়াল|ক্রেডেনশিয়াল|অনুমতি\s*(?:বদলাও|পরিবর্তন\s*কর))|(?:muche\s*(?:felo|dao)|delete\s*koro|deploy\s*koro|production\s*e|password|credential|permission\s*change)/i.test(objective)?"high":/\b(api|database|migration|auth|security|refactor)\b|(?:ডাটাবেস|ডেটাবেস|মাইগ্রেশন|অথেনটিকেশন|নিরাপত্তা|রিফ্যাক্টর)|(?:database|migration|authentication|security|refactor)/i.test(objective)?"medium":"low";
  const complexity=objective.length>1200||/\b(end[- ]to[- ]end|architecture|multiple modules|complete system)\b/i.test(objective)?"complex":objective.length>300?"moderate":"simple";
  return{task:objective,baseSha:inventory.headSha,targetBranch:inventory.branch,complexity,risk,filesToInspect:inventory.files.slice(0,20).map(f=>f.path),acceptanceCriteria:["Requirements are mapped to observable behavior.","Existing behavior and unrelated changes are preserved.","Relevant tests cover success, failure and boundary cases.","Typecheck, tests and production build pass where configured.","Diff and security review are recorded."],validationCommands:["npm run typecheck","npm test","npm run build","git diff --check"],approvalRequired:risk==="high"||inventory.branch==="main",limitations:["Planning only: no repository files are changed or commands executed by this module.","Repository inventory contains metadata only; skipped secret/configuration paths are not inspected."]};
 }
@@ -59,8 +60,8 @@ export interface DiffReviewInput { files:readonly {path:string;content:string}[]
 export function reviewCodeDiff(input:DiffReviewInput){
  const findings:{severity:"critical"|"high"|"medium";code:string;message:string}[]=[];
  for(const file of input.files){
-  if(SECRET_PATH.test(file.path))findings.push({severity:"critical",code:"secret-path",message:"Sensitive credential path must not be included: "+file.path});
-  if(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:api[_-]?key|access[_-]?token|client[_-]?secret)\s*[:=]\s*["'][^"']{12,}/i.test(file.content))findings.push({severity:"critical",code:"possible-secret",message:"Possible hard-coded credential detected in "+file.path});
+  if(!safePath(file.path))findings.push({severity:"critical",code:"secret-path",message:"Unsafe, protected, or sensitive path must not be included: "+file.path});
+  if(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:api[_-]?key|access[_-]?token|client[_-]?secret|password|passwd|token|secret)\s*[:=]\s*["'][^"']{12,}|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-[A-Za-z0-9]{24,})\b/i.test(file.content))findings.push({severity:"critical",code:"possible-secret",message:"Possible hard-coded credential detected in "+file.path});
   if(/\beval\s*\(|new Function\s*\(|child_process|execSync\s*\(|dangerouslySetInnerHTML/.test(file.content))findings.push({severity:"high",code:"unsafe-primitive",message:"Review dynamic execution or unsafe rendering primitive in "+file.path});
  }
  if(input.files.some(f=>/\.(?:ts|tsx|js|jsx)$/.test(f.path))&&!input.testsChanged)findings.push({severity:"medium",code:"tests-not-updated",message:"Source changes were proposed without a corresponding test change."});
