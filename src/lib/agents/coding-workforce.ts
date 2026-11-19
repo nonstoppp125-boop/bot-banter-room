@@ -103,6 +103,7 @@ export async function runValidationSuite(input:{
       }
       const bounded={command,exitCode:result.exitCode,stdout:result.stdout.replace(/\u0000/g,"").slice(0,maxOutputChars),stderr:result.stderr.replace(/\u0000/g,"").slice(0,maxOutputChars),durationMs:result.durationMs};
       results.push(bounded);totalDurationMs+=result.durationMs;
+      if(input.signal?.aborted)return{status:"cancelled",passed:false,results,totalDurationMs,reason:"Validation suite was cancelled."};
       if(result.exitCode!==0)return{status:"failed",passed:false,results,totalDurationMs,reason:"Validation command failed: "+command};
     }catch(error){
       if(input.signal?.aborted)return{status:"cancelled",passed:false,results,totalDurationMs,reason:"Validation suite was cancelled."};
