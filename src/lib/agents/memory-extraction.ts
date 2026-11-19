@@ -22,6 +22,15 @@ function inferCategory(content: string): MemoryCategory {
 }
 
 /**
+ * Detects a direct remember command even when its content is rejected by
+ * the extractor (for example, because it contains credentials).
+ */
+export function hasExplicitMemoryTrigger(text: string): boolean {
+  const normalized = text.replace(/[\\u0000-\\u001f\\u007f]/g, " ").trim();
+  return EXPLICIT_TRIGGERS.some((trigger) => trigger.test(normalized));
+}
+
+/**
  * Extracts only text explicitly introduced by a remember/save command.
  * Ordinary conversation is never promoted to durable memory automatically.
  */
