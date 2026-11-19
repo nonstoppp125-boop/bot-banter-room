@@ -85,7 +85,7 @@ export async function runDevPilotTask(input:{
   const events:EngineeringEvent[]=[];
   const now=input.now??(()=>new Date());
   const blocked=(reason:string,progress:DevPilotResult["progress"]=0):DevPilotResult=>{
-    addEvent(events,input.taskId,"blocked",reason,[],now);
+    if(TASK_ID.test(input.taskId))addEvent(events,input.taskId,"blocked",reason,[],now);
     return{status:"blocked",progress,events,reason};
   };
   const failed=(reason:string,progress:DevPilotResult["progress"],extra:Partial<DevPilotResult>={}):DevPilotResult=>{
@@ -108,7 +108,7 @@ export async function runDevPilotTask(input:{
     addEvent(events,input.taskId,"planned","Bounded coding plan created.",[...plan.acceptanceCriteria],now);
     const files=await input.adapter.readFiles({repository:input.repository,branch:input.baseBranch,paths:plan.filesToInspect,...(input.signal?{signal:input.signal}:{})});
     const allowedPaths=new Set(plan.filesToInspect);
-    if(files.length>20||files.some(file=>!allowedPaths.has(file.path)||file.content.length>1_000_000||!SHA.test(file.sha))){
+    if(files.length!==plan.filesToInspect.length||files.length>20||files.some(file=>!allowedPaths.has(file.path)||file.content.length>1_000_000||!SHA.test(file.sha))){
       return blocked("Repository adapter returned an out-of-scope or oversized file.");
     }
     for(const file of files){
@@ -143,10 +143,10 @@ export async function runDevPilotTask(input:{
     const finalReview=reviewCodeDiff(diff);
     if(!finalReview.passed||!diff.testsChanged)return blocked("Post-validation diff review failed or test changes are missing.",90);
     addEvent(events,input.taskId,"reviewed","Post-validation diff passed the bounded security review.",diff.files.map(file=>file.path),now);
-    const committed=await input.adapter.commit({repository:input.repository,branch:targetBranch,expectedHeadSha:applied.headSha,message:"devpilot: "+input.task.slice(0,72),...(input.signal?{signal:input.signal}:{})});
+    const committed=await input.adapter.commit({repository:input.repository,branch:targetBranch,expectedHeadSha:applied.headSha,message:"devpilot: "+plan.task.slice(0,72),...(input.signal?{signal:input.signal}:{})});
     if(!SHA.test(committed.commitSha))return failed("Repository adapter returned an invalid commit SHA.",90,{plan,proposal,approvalPayloadHash,validation});
     addEvent(events,input.taskId,"verified","Reviewed changes committed on the isolated branch.",[committed.commitSha],now);
-    const pullRequest=await input.adapter.createPullRequest({repository:input.repository,headBranch:targetBranch,baseBranch:input.baseBranch,title:"DevPilot: "+input.task.slice(0,100),body:"Automated coding task.\n\n- Base: "+snapshot.headSha+"\n- Commit: "+committed.commitSha+"\n- Validation: all allowlisted checks passed.\n- Security: bounded diff review passed.\n\nNo production deployment or merge was performed.",commitSha:committed.commitSha,...(input.signal?{signal:input.signal}:{})});
+    const pullRequest=await input.adapter.createPullRequest({repository:input.repository,headBranch:targetBranch,baseBranch:input.baseBranch,title:"DevPilot: "+plan.task.slice(0,100),body:"Automated coding task.\n\n- Base: "+snapshot.headSha+"\n- Commit: "+committed.commitSha+"\n- Validation: all allowlisted checks passed.\n- Security: bounded diff review passed.\n\nNo production deployment or merge was performed.",commitSha:committed.commitSha,...(input.signal?{signal:input.signal}:{})});
     if(!Number.isInteger(pullRequest.number)||pullRequest.number<1||!/^https:\/\//.test(pullRequest.url))return failed("Repository adapter returned invalid pull-request metadata.",90,{plan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha});
     addEvent(events,input.taskId,"verified","Pull request created; no merge or deployment performed.",[pullRequest.url],now);
     return{status:"completed",progress:100,plan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha,pullRequest,events};
