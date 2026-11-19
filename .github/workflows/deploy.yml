@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_deploy:
-        description: "Explicitly authorize Group 05 D1 migration and production deployment"
+        description: "Explicitly authorize Group 05 and Group 06 D1 migrations and production deployment"
         required: true
         type: boolean
         default: false
@@ -72,7 +72,7 @@ jobs:
           fi
           CONFIG="${configs[0]}"
           echo "path=$CONFIG" >> "$GITHUB_OUTPUT"
-      - name: Inject Group 05-scoped production ACTION_DB binding
+      - name: Inject Group 05 and Group 06 production ACTION_DB migrations
         env:
           CLOUDFLARE_D1_DATABASE_NAME: ${{ secrets.CLOUDFLARE_D1_DATABASE_NAME }}
           CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
@@ -125,7 +125,7 @@ jobs:
                   .filter((file) => file.endsWith(".sql")))
             : [];
           if (nestedMigrations.length < 4) {
-            console.error("Production deployment blocked: expected Group 05 and Group 06 nested SQL migrations.");
+            console.error("Production deployment blocked: expected all Group 05 and Group 06 nested SQL migrations.");
             process.exit(1);
           }
           console.log("Validated generated Worker config and ACTION_DB migrations directory.");
