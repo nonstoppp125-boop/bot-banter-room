@@ -49,6 +49,8 @@ describe("production D1 config preparation", () => {
     });
     expect(result.d1_databases.some((item) => item.binding === "OTHER_DB")).toBe(true);
     expect(result.secrets.required).toContain("GROQ_API_KEY");
+    expect(result.secrets.required).toContain("LIZA_AUTH_EMAIL");
+    expect(result.secrets.required).toContain("LIZA_AUTH_PASSWORD_HASH");
     expect(result.triggers.crons).toContain("* * * * *");
   });
 
