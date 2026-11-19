@@ -590,3 +590,9 @@ Audit conclusion: no Group 06 application source, task route, tests, or migratio
 - Compared `fix/group06-production-worker-name` against current main: exactly three changed files. The only application/deploy code changes are the explicit Worker name `bot-banter-room` in `scripts/configure-production-d1.mjs` and a fail-closed generated-config name assertion in `.github/workflows/deploy.yml`. Third file is `bun.lock`; `package.json` is unchanged and matches main.
 - Main's current required-secret checks remain intact. The PR does not weaken first-party auth validation and does not touch the other two Workers.
 - GitHub Actions run `44551064228` passed all six CI stages. Cloudflare Workers Builds still fails opaquely with no error detail; PR #22 remains open/unmerged pending external build-pipeline diagnosis and release approval.
+
+## 2026-11-19 — PR #2 remaining legacy UI audit
+
+- Recompared PR #2 `liza/full-app-foundation` with current main after PR #24. Its remaining diffs are not safe to merge wholesale: the old root route would replace the current task-aware chat UI; its root shell omits current service-worker registration and authenticated session gating; its old orchestrator predates current Groq, memory, rate-limit, research, task and approval controls; and its workflow is materially weaker than current CI.
+- The manifest changes in PR #2 remove current `display_override`, orientation, categories and related-applications metadata, so current main's manifest is retained.
+- Useful user-facing chat controls have been selectively ported in PR #24 without replacing task interactions or security/runtime foundations. No additional PR #2 code was imported in this audit.
