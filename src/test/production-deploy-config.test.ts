@@ -119,8 +119,11 @@ describe("production D1 config preparation", () => {
     );
     expect(workflow).toContain("d1 migrations list");
     expect(workflow).toContain("d1 execute");
-    expect(workflow).toContain("SELECT name FROM d1_migrations");
-    expect(workflow).toContain("PRAGMA table_info");
+    expect(workflow).toContain('--command "SELECT name FROM d1_migrations ORDER BY name;"');
+    expect(workflow).toContain('--command "SELECT name FROM sqlite_master WHERE type=\'table\' ORDER BY name;"');
+    expect(workflow).toContain('--command "PRAGMA table_info(auth_login_attempts);"');
+    expect(workflow).toContain('--command "PRAGMA table_info(agent_tasks);"');
+    expect(workflow).toContain('--command "PRAGMA table_info(approvals);"');
     expect(workflow).not.toContain("d1 migrations apply");
     expect(workflow).not.toContain("wrangler@4.162.0 deploy");
   });
