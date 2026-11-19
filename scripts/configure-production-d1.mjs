@@ -48,9 +48,17 @@ export function addProductionD1Binding(config, {
     const nestedSqlFiles = fs.readdirSync(migrationsPath, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .flatMap((entry) => fs.readdirSync(path.join(migrationsPath, entry.name))
-        .filter((file) => file.endsWith(".sql")));
-    if (nestedSqlFiles.length === 0) {
-      throw new Error("No nested SQL migrations were found in the configured D1 migrations directory.");
+        .filter((file) => file.endsWith(".sql"))
+        .map((file) => `${entry.name}/${file}`))
+      .sort();
+    const expectedMigrations = [
+      "group05/0005_memory_foundation.sql",
+      "group06/0001_manager_core.sql",
+      "group06/0002_task_retry_budget.sql",
+      "group06/0003_task_queue_leases.sql",
+    ];
+    if (JSON.stringify(nestedSqlFiles) !== JSON.stringify(expectedMigrations)) {
+      throw new Error("The Group 05/06 migration set is incomplete or contains unreviewed SQL files.");
     }
     migrationsPatternFromConfig = `${migrationsPathFromConfig}/*/*.sql`;
   } else {
