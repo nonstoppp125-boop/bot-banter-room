@@ -46,7 +46,17 @@ The script does not echo the password and refuses piped input. Store the generat
 
 Optional Worker secrets include `TAVILY_API_KEY` for research and Telegram bot/webhook credentials when that integration is configured. First-party password authentication does not require Cloudflare Access team-domain or audience variables.
 
-## 4. Deployment gate
+## 4. Read-only D1 preflight
+
+Before applying the Group 06 migrations, run **Doot Read-only Production D1 Verification** on `main` with `confirm_read_only=true`. Download the `production-d1-read-only-verification` artifact and inspect:
+
+- The applied rows in `d1_migrations`.
+- The unapplied migration list under the nested Group 05/06 pattern.
+- Existing table names and the columns in `auth_login_attempts`, `agent_tasks` and `approvals`.
+
+This workflow performs only `SELECT` and `PRAGMA table_info` queries. It does not apply migrations, modify data or deploy the Worker. Resolve any unexpected migration-history or schema result before running the deployment workflow.
+
+## 5. Deployment gate
 
 Before production deployment:
 
