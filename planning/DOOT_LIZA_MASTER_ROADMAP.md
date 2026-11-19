@@ -1062,3 +1062,126 @@ END OF COMPLETE MASTER ROADMAP
 ## Group 04 acceptance — 2026-11-17
 
 Group 04 source integration and consolidated CI are complete. Latest CI run `44078832670` on commit `d66c62f748a8cba1dbefcb3d70a09db50214061d`: production dependency audit found 0 vulnerabilities; TypeScript PASS; 55 test files / 420 tests PASS; local workerd streaming smoke test PASS; production build PASS; generated Wrangler config validation PASS. The Cloudflare automatic Workers Builds check for this feature-branch commit reported failure; no production deployment was attempted from this branch. The separately verified `main` production Worker remains deployed and live from Group 03.
+
+
+==================================================
+PART 33 — BINDING PLATFORM PRIORITY (2026-11-19)
+==================================================
+
+The user's explicit product priority is:
+
+1. WEB SYSTEM — PRIMARY / PRIORITY 1.
+   - Full feature set, complete UI/UX and design capabilities.
+   - First delivery target for new features and upgrades.
+   - Continuously served; normal feature updates should not require
+     a user-installed app update.
+2. ANDROID APP — SECONDARY / PRIORITY 2.
+   - Reuse the same backend, task state, identity, permissions,
+     and business logic as Web.
+   - Adapt the core experience to mobile.
+   - Plan app releases carefully because installed app updates
+     may be required for client-side changes.
+3. TELEGRAM — COMPANION / PRIORITY 3.
+   - Task intake, concise progress, notifications, approvals,
+     and essential controls only.
+   - Do not attempt to reproduce the full Web UI in Telegram.
+
+All clients must share one backend and one source of truth.
+Do not build three independent agent systems.
+
+==================================================
+PART 34 — AUTONOMOUS DEVELOPMENT SYSTEM (DEVPILOT)
+==================================================
+
+The complete A–Z specification is maintained in:
+planning/AUTONOMOUS_DEVPILOT_MASTER_SPEC.md
+
+This is a cross-group capability inside the existing 24 Groups;
+it does not create a new Group 25.
+
+Mandatory mapping:
+- G06 Manager Agent and Planner: intake, planning, risk,
+  permissions, delegation, state, replanning, final report.
+- G07 Specialist Agent Workforce: coding, debugging, QA,
+  security, research, documentation and release agents.
+- G08 Multi-Agent Coordination: dependencies, handoffs,
+  bounded retries, cancellation, aggregation.
+- G09 Research and Web Intelligence: trusted official-source
+  research, verification and prompt-injection resistance.
+- G15 Coding and Technical Workforce: repository inspection,
+  code edits, controlled command execution, tests, diff review,
+  Git workflows and engineering reports.
+- G16 External App Connection Hub: authenticated GitHub and
+  approved external integrations with least privilege.
+- G17 Database and User Workspace: durable tasks, checkpoints,
+  artifacts, approvals and execution history.
+- G20 Security and Human Control: sandbox, command restrictions,
+  secrets protection, approvals, audit and recovery.
+- G21 PWA, Mobile and Accessibility: Web-first control plane,
+  followed by Android app adaptation.
+- G22 Production Infrastructure: cloud execution, CI/CD,
+  monitoring, quotas, backup and rollback.
+- G23 Testing and Quality: unit, integration, E2E, security,
+  runtime and failure-injection tests.
+- G24 Final Product Release: acceptance evidence, documentation,
+  release and known limitations.
+
+DevPilot's required lifecycle:
+1. Understand the user's goal and acceptance criteria.
+2. Inspect repository identity, branch, git status, instructions,
+   source, tests, dependencies and environment.
+3. Preserve all pre-existing modifications.
+4. Build a dependency-aware plan and risk classification.
+5. Request approval where policy requires it.
+6. Execute in an authorized isolated workspace with controlled
+   shell, filesystem, network, time and resource limits.
+7. Edit code, run tests/builds, diagnose and repair failures
+   within bounded retry/time/cost budgets.
+8. Distinguish application failures from environment failures.
+9. Review security, secrets, dependencies and complete Git diff.
+10. Create branch/commit/PR as authorized.
+11. Persist checkpoints and resume safely after interruption.
+12. Report evidence-based progress (10/25/50/75/90/100%),
+    exact test status, blockers, next action and artifacts.
+13. Require explicit approval for production deployment,
+    database migration, destructive actions, publishing,
+    external messaging and sensitive account changes.
+
+Required autonomy capabilities:
+- Task intake and acceptance criteria.
+- Repository/project inspection.
+- Planning and task decomposition.
+- Specialist selection and delegation.
+- Authorized terminal/command execution.
+- Controlled file editing.
+- Debugging and bounded repair loops.
+- Test, typecheck, lint and build execution.
+- Git branch, diff, commit and PR workflows.
+- Trusted documentation research.
+- Durable state, checkpoints, resume and recovery.
+- Progress reporting and audit history.
+- Human approval and rollback.
+
+Completion rule:
+DevPilot is NOT complete merely because a tool or agent class exists.
+It is complete only after the full Web workflow is demonstrated
+end-to-end in a real authorized environment, Android core workflows
+are verified, Telegram companion controls are verified, and all
+security, regression, integration and release acceptance criteria pass.
+
+Implementation priority:
+1. Audit existing DevPilot, Coding Agent, Command Runner,
+   Git Safety, File Change, Recovery and Approval components.
+2. Build the secure execution bridge and isolated workspace.
+3. Complete plan -> approval -> execute -> test -> repair ->
+   review -> PR lifecycle.
+4. Add persistent checkpoints, resume, progress and audit events.
+5. Complete Web control plane.
+6. Adapt to Android app.
+7. Add Telegram companion workflows.
+8. Complete cross-client end-to-end acceptance.
+
+Status discipline:
+Every capability remains PLANNED until source code, tests and
+runtime evidence prove it. IMPLEMENTED is not VERIFIED.
+Do not claim full autonomy from code presence alone.
