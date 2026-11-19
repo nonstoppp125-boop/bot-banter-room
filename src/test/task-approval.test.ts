@@ -66,6 +66,9 @@ describe("approval-bound Manager task execution", () => {
     ["purono draft ta delete koro", "destructive.delete"],
     ["production e deploy koro", "deployment"],
     ["amar account settings change koro", "account.change"],
+    ["টাকা পাঠাও", "financial.action"],
+    ["কিনে দাও", "financial.action"],
+    ["payment koro", "financial.action"],
   ])("stores the correct approval action for Bengali/Banglish intent: %s", async (summary, actionType) => {
     const state = makeDatabase();
     const plan = buildManagerPlan(summary, listAgents());
