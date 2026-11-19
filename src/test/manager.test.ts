@@ -100,6 +100,8 @@ describe("deterministic Manager planning", () => {
 
   it.each([
     ["লিংকডইনে এই পোস্টটি প্রকাশ করো", "External publishing or messaging"],
+    ["ফেসবুকে পোস্ট করো", "External publishing or messaging"],
+    ["post to LinkedIn", "External publishing or messaging"],
     ["এই পোস্টটা পাবলিশ করে দাও", "External publishing or messaging"],
     ["এই ইমেইলটি পাঠিয়ে দাও", "External publishing or messaging"],
     ["পুরোনো ড্রাফটটি মুছে ফেল", "Destructive or irreversible change"],
