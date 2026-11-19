@@ -40,7 +40,7 @@ const MAX_TASK_TIMEOUT_MS = 45_000;
 
 const HIGH_RISK_ACTIONS: readonly [RegExp, string][] = [
   [
-    /\b(publish|post\s+(?:this|it|the|my)|send\s+(?:this|it|the|my)|message\s+(?:this|it|the|my)|send\s+(?:a|an|the)\s+(?:message|email|dm)|share\s+(?:this|it|the|my))\b|(?:পোস্ট(?:টি|টা)?\s*(?:প্রকাশ|পাবলিশ|শেয়ার|শেয়ার)\s*(?:কর|দাও)|প্রকাশ\s*কর|পাবলিশ\s*কর|শেয়ার\s*কর|শেয়ার\s*কর)|(?:post\s*(?:ta|ti)?\s*(?:publish|share)\s*koro|post\s*koro|share\s*(?:koro|kore\s+dao))|(?:মেসেজ|ইমেইল|ডিএম)\s*(?:টি|টা)?\s*(?:পাঠাও|পাঠিয়ে\s*দাও|পাঠিয়ে\s*দাও|করো?|দাও)|(?:message|email|dm)\s*(?:ta|ti)?\s*(?:pathao|pathiye\s+dao)/i,
+    /\b(publish|post\s+(?:this|it|the|my)|send\s+(?:this|it|the|my)|message\s+(?:this|it|the|my)|send\s+(?:a|an|the)\s+(?:message|email|dm)|share\s+(?:this|it|the|my)|post\s+(?:to|on)\s+(?:linkedin|instagram|facebook|x|twitter|tiktok|youtube))\b|(?:পোস্ট\s*(?:করো?|করে\s*দাও)|পোস্ট(?:টি|টা)?\s*(?:প্রকাশ|পাবলিশ|শেয়ার|শেয়ার)\s*(?:কর|দাও)|প্রকাশ\s*কর|পাবলিশ\s*কর|শেয়ার\s*কর|শেয়ার\s*কর)|(?:post\s*(?:ta|ti)?\s*(?:publish|share)\s*koro|post\s*koro|share\s*(?:koro|kore\s+dao))|(?:মেসেজ|ইমেইল|ডিএম)\s*(?:টি|টা)?\s*(?:পাঠাও|পাঠিয়ে\s*দাও|পাঠিয়ে\s*দাও|করো?|দাও)|(?:message|email|dm)\s*(?:ta|ti)?\s*(?:pathao|pathiye\s+dao)/i,
     "External publishing or messaging",
   ],
   [
