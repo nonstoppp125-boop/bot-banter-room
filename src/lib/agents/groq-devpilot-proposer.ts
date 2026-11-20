@@ -51,7 +51,7 @@ export function createGroqDevPilotProposalGenerator(env: Pick<AgentEnv, "GROQ_AP
       ].join("\n"),
       messages: [{ role: "user", content: prompt }],
       maxOutputTokens: 8_000,
-      abortSignal: input.signal,
+      ...(input.signal ? { abortSignal: input.signal } : {}),
     });
     let parsed: unknown;
     try {
