@@ -1,0 +1,114 @@
+import { describe, expect, it } from "vitest";
+import { createDevPilotRunStore } from "@/lib/agents/devpilot-run-store";
+
+const now = "2026-11-20T06:00:00.000Z";
+function database(changes = 1, rows: unknown[] = []) {
+  const calls: Array<{ sql: string; values: unknown[] }> = [];
+  return {
+    calls,
+    db: {
+      prepare(sql: string) {
+        return {
+          bind(...values: unknown[]) {
+            calls.push({ sql, values });
+            return {
+              async run() { return { success: true, meta: { changes } }; },
+              async first<T>() { return null as T | null; },
+              async all<T>() { return { success: true, results: rows as T[] }; },
+            };
+          },
+        };
+      },
+    },
+  };
+}
+const identity = { id: "run-123", workspaceId: "workspace-1", userId: "user-1" };
+
+describe("DevPilot durable run store", () => {
+  it("creates runs only for workspace members with a bounded initial checkpoint", async () => {
+    const mock = database();
+    await createDevPilotRunStore(mock.db).create({
+      ...identity, repository: "owner/repo", baseBranch: "main", task: "Add tests", now,
+      checkpoint: { stage: "planned" },
+    });
+    expect(mock.calls[0]?.sql).toContain("EXISTS (SELECT 1 FROM workspace_members");
+    expect(mock.calls[0]?.sql).toContain("'queued', 0, 0");
+  });
+
+  it("claims queued work atomically and can recover only expired leases", async () => {
+    const mock = database();
+    const claimed = await createDevPilotRunStore(mock.db).claim({
+      ...identity, owner: "worker-1", now, leaseUntil: "2026-11-20T06:01:00.000Z",
+    });
+    expect(claimed).toBe(true);
+    expect(mock.calls[0]?.sql).toContain("status = 'queued'");
+    expect(mock.calls[0]?.sql).toContain("lease_expires_at <= ?");
+  });
+
+  it("uses owner-bound lease and checkpoint-version compare-and-swap", async () => {
+    const mock = database();
+    const saved = await createDevPilotRunStore(mock.db).checkpoint({
+      ...identity, owner: "worker-1", expectedVersion: 2, progress: 50,
+      checkpoint: { stage: "validation" }, now,
+    });
+    expect(saved).toBe(true);
+    expect(mock.calls[0]?.sql).toContain("checkpoint_version = ?");
+    expect(mock.calls[0]?.sql).toContain("lease_owner = ?");
+    expect(mock.calls[0]?.sql).toContain("progress <= ?");
+  });
+
+  it("releases the lease when a run pauses for human approval", async () => {
+    const mock = database();
+    await createDevPilotRunStore(mock.db).checkpoint({
+      ...identity, owner: "worker-1", expectedVersion: 1, progress: 25,
+      checkpoint: { stage: "awaiting_approval" }, status: "awaiting_approval", now,
+    });
+    expect(mock.calls[0]?.sql).toContain("lease_owner = CASE WHEN ? = 1 THEN NULL");
+    expect(mock.calls[0]?.values).toContain(1);
+  });
+
+  it("resumes only when the exact DevPilot approval is approved and unexpired", async () => {
+    const mock = database();
+    const resumed = await createDevPilotRunStore(mock.db).resumeApproved({
+      ...identity, approvalId: "approval-123", repository: "owner/repo",
+      payloadHash: "a".repeat(64), now,
+    });
+    expect(resumed).toBe(true);
+    expect(mock.calls[0]?.sql).toContain("status = 'awaiting_approval'");
+    expect(mock.calls[0]?.sql).toContain("a.payload_hash = ?");
+    expect(mock.calls[0]?.sql).toContain("a.status = 'approved'");
+    expect(mock.calls[0]?.sql).toContain("a.expires_at > ?");
+  });
+
+  it("appends evidence only when the run belongs to the same workspace and user", async () => {
+    const mock = database();
+    await createDevPilotRunStore(mock.db).appendEvent({
+      id: "event-1", runId: identity.id, ...identity, type: "verified",
+      timestamp: now, summary: "Typecheck passed", evidence: ["npm run typecheck"],
+    });
+    expect(mock.calls[0]?.sql).toContain("WHERE EXISTS (SELECT 1 FROM devpilot_runs");
+    expect(mock.calls[0]?.values).toContain(identity.workspaceId);
+    expect(mock.calls[0]?.values).toContain(identity.userId);
+  });
+
+  it("fails closed when a lease is lost or a compare-and-swap update affects no row", async () => {
+    const mock = database(0);
+    const saved = await createDevPilotRunStore(mock.db).checkpoint({
+      ...identity, owner: "worker-1", expectedVersion: 0, progress: 25, checkpoint: {}, now,
+    });
+    expect(saved).toBe(false);
+  });
+
+  it("rejects invalid progress, oversized checkpoints and invalid event metadata", async () => {
+    const store = createDevPilotRunStore(database().db);
+    await expect(store.checkpoint({
+      ...identity, owner: "worker-1", expectedVersion: 0, progress: 101, checkpoint: {}, now,
+    })).rejects.toThrow("Invalid DevPilot checkpoint");
+    await expect(store.checkpoint({
+      ...identity, owner: "worker-1", expectedVersion: 0, progress: 20, checkpoint: "x".repeat(100_001), now,
+    })).rejects.toThrow("storage limit");
+    await expect(store.appendEvent({
+      id: "", runId: identity.id, ...identity, type: "verified", timestamp: "invalid", summary: "",
+    })).rejects.toThrow("Invalid DevPilot event");
+  });
+});
