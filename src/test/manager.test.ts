@@ -102,6 +102,8 @@ describe("deterministic Manager planning", () => {
     ["এই পোস্টটা লিংকডইনে প্রকাশ করো", "External publishing or messaging"],
     ["LinkedIn e post koro", "External publishing or messaging"],
     ["Post to LinkedIn", "External publishing or messaging"],
+    ["Share this on LinkedIn", "External publishing or messaging"],
+    ["Share the post to LinkedIn", "External publishing or messaging"],
     ["Schedule a post on Instagram", "External publishing or messaging"],
     ["ফাইলটা মুছে দাও", "Destructive or irreversible change"],
     ["file ta muche felo", "Destructive or irreversible change"],
