@@ -78,7 +78,8 @@ export async function runDevPilotTask(input:{
   baseBranch:string;
   adapter:DevPilotRepositoryAdapter;
   proposeChanges:DevPilotProposalGenerator;
-  approval?:{verified:boolean;payloadHash:string};
+  approval?:{approvalId:string;payloadHash:string};
+  verifyApproval?:(input:{approvalId:string;taskId:string;repository:string;payloadHash:string})=>Promise<boolean>;
   signal?:AbortSignal;
   now?:()=>Date;
 }):Promise<DevPilotResult>{
@@ -129,11 +130,15 @@ export async function runDevPilotTask(input:{
     const effectivePlan=approvalRequired&&!plan.approvalRequired?{...plan,risk:"high" as const,approvalRequired:true,limitations:[...plan.limitations,"Sensitive deployment, migration, dependency, authentication and authorization paths require explicit approval."]}:plan;
     const approvalPayloadHash=await hashApprovalPayload({kind:"devpilot-code-change",taskId:input.taskId,repository:input.repository,baseBranch:input.baseBranch,baseSha:snapshot.headSha,targetBranch,plan:effectivePlan,proposal,review:initialReview});
     addEvent(events,input.taskId,"proposal-created","Validated code proposal and pre-apply security review completed.",[...changes.map(change=>change.path),approvalPayloadHash],now);
-    if(input.approval?.verified&&input.approval.payloadHash!==approvalPayloadHash){
+    if(input.approval&&input.approval.payloadHash!==approvalPayloadHash){
       return blocked("Approval payload does not match the current task, repository baseline and exact code proposal.",25);
     }
-    if(effectivePlan.approvalRequired&&!input.approval?.verified){
-      return{status:"awaiting_approval",progress:25,plan:effectivePlan,proposal,approvalPayloadHash,events,reason:"Exact proposal approval is required before any repository write."};
+    if(effectivePlan.approvalRequired){
+      if(!input.approval?.approvalId||!input.verifyApproval){
+        return{status:"awaiting_approval",progress:25,plan:effectivePlan,proposal,approvalPayloadHash,events,reason:"A persisted approval record and trusted approval verifier are required before repository writes."};
+      }
+      const approved=await input.verifyApproval({approvalId:input.approval.approvalId,taskId:input.taskId,repository:input.repository,payloadHash:approvalPayloadHash});
+      if(!approved)return blocked("Persisted approval is missing, expired, rejected or does not match this exact proposal.",25);
     }
     if(input.signal?.aborted)return{status:"cancelled",progress:25,plan:effectivePlan,proposal,approvalPayloadHash,events,reason:"DevPilot task was cancelled before repository writes."};
     await input.adapter.createBranch({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,...(input.signal?{signal:input.signal}:{})});
