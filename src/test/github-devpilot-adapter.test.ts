@@ -23,6 +23,9 @@ describe("GitHub DevPilot adapter", () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       calls.push({ url, ...(init ? { init } : {}) });
+      if (url.endsWith("/actions/workflows/devpilot-validation.yml")) {
+        return Response.json({ path: ".github/workflows/devpilot-validation.yml", state: "active" });
+      }
       if (url.includes("/git/ref/heads/")) return Response.json({ object: { sha: "a".repeat(40) } });
       if (url.endsWith("/dispatches")) return new Response(null, { status: 204 });
       if (url.includes("/runs?")) {
@@ -40,11 +43,31 @@ describe("GitHub DevPilot adapter", () => {
     const result = await adapter.run({ command: "npm test", timeoutMs: 5_000 });
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("123");
-    expect(calls).toHaveLength(4);
-    expect(calls[2]?.url).toContain("/actions/workflows/devpilot-validation.yml/dispatches");
-    expect(calls[2]?.init?.method).toBe("POST");
-    expect(calls[2]?.init?.headers).toMatchObject({ Authorization: "Bearer fine-grained-token" });
-    expect(calls[2]?.init?.body).toContain('"command":"npm test"');
+    expect(calls).toHaveLength(5);
+    expect(calls[0]?.url).toContain("/actions/workflows/devpilot-validation.yml");
+    expect(calls[3]?.url).toContain("/actions/workflows/devpilot-validation.yml/dispatches");
+    expect(calls[3]?.init?.method).toBe("POST");
+    expect(calls[3]?.init?.headers).toMatchObject({ Authorization: "Bearer fine-grained-token" });
+    expect(calls[3]?.init?.body).toContain('"command":"npm test"');
+  });
+
+  it("fails clearly before dispatch when the fixed workflow is missing from the default branch", async () => {
+    const calls: string[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.endsWith("/actions/workflows/devpilot-validation.yml")) {
+        return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+      }
+      return Response.json({});
+    });
+    const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", {
+      fetcher: fetcher as typeof fetch,
+    });
+    await expect(adapter.run({ command: "npm test", timeoutMs: 5_000 }))
+      .rejects.toThrow("Merge the reviewed Group 06 workflow before enabling DevPilot");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toContain("/actions/workflows/devpilot-validation.yml");
   });
 
   it("rejects arbitrary validation commands before making a network request", async () => {
