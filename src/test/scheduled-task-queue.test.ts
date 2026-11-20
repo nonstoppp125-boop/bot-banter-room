@@ -85,6 +85,28 @@ describe("Cloudflare scheduled Group 06 task queue handler", () => {
     expect(log).toHaveBeenCalledWith(expect.stringContaining("rate limit reached"));
   });
 
+  it("fails closed when the scheduled rate-limit service throws", async () => {
+    const limiter = { limit: vi.fn().mockRejectedValue(new Error("limiter unavailable")) };
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const warnLog = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.mocked(processD1TaskQueue).mockResolvedValueOnce({ recovered: 0, claimed: false });
+    const env = {
+      ACTION_DB: fakeDatabase() as never,
+      DEVPILOT_ENABLED: "true",
+      GITHUB_TOKEN: "test-token",
+      GROQ_API_KEY: "test-key",
+      GITHUB_REPOSITORY_ALLOWLIST: "nonstoppp125-boop/bot-banter-room",
+      CHAT_RATE_LIMITER: limiter,
+    } as AgentEnv;
+    await worker.scheduled(event, env, context);
+    expect(processDevPilotQueue).not.toHaveBeenCalled();
+    expect(errorLog).toHaveBeenCalledWith(
+      "DevPilot scheduled rate-limit check failed; execution skipped.",
+      expect.any(Error),
+    );
+    expect(warnLog).toHaveBeenCalledWith(expect.stringContaining("rate limit reached"));
+  });
+
   it("fails closed and skips queue processing when ACTION_DB is missing", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     await worker.scheduled(event, {} as AgentEnv, context);
