@@ -6,6 +6,7 @@ import type { AgentEnv } from "@/lib/agents/types";
 
 type RuntimeRequest = Request & { runtime?: { cloudflare?: { env?: AgentEnv } } };
 const MAX_BODY = 16_384;
+const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Cookie" } });
 function getEnv(request: Request): AgentEnv {
   return (request as RuntimeRequest).runtime?.cloudflare?.env ?? {};
 }
@@ -40,14 +41,14 @@ async function readBody(request: Request): Promise<Record<string, unknown> | nul
   finally { reader.releaseLock(); }
 }
 async function getSession(request: Request, requireOrigin = true) {
-  if (requireOrigin && !sameOrigin(request)) return { response: Response.json({ error: "Invalid request origin." }, { status: 403 }) } as const;
+  if (requireOrigin && !sameOrigin(request)) return { response: json({ error: "Invalid request origin." }, { status: 403 }) } as const;
   const env = getEnv(request);
-  if (!env.ACTION_DB) return { response: Response.json({ error: "Approval storage is unavailable." }, { status: 503 }) } as const;
+  if (!env.ACTION_DB) return { response: json({ error: "Approval storage is unavailable." }, { status: 503 }) } as const;
   const token = readSessionCookie(request.headers.get("cookie"));
-  if (!token) return { response: Response.json({ error: "Authentication required." }, { status: 401 }) } as const;
+  if (!token) return { response: json({ error: "Authentication required." }, { status: 401 }) } as const;
   const now = new Date().toISOString();
   const session = await createD1SessionStore(env.ACTION_DB).getActive(token, now);
-  if (!session?.workspaceId) return { response: Response.json({ error: "An active workspace session is required." }, { status: 403 }) } as const;
+  if (!session?.workspaceId) return { response: json({ error: "An active workspace session is required." }, { status: 403 }) } as const;
   return { env, session, now } as const;
 }
 export const Route = createFileRoute("/api/devpilot/approvals")({
@@ -60,9 +61,9 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
           const approvals = await createDevPilotApprovalStore(auth.env.ACTION_DB!).listPending({
             workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId, now: auth.now, limit: 50,
           });
-          return Response.json({ approvals });
+          return json({ approvals });
         } catch {
-          return Response.json({ error: "Unable to list pending approvals." }, { status: 500 });
+          return json({ error: "Unable to list pending approvals." }, { status: 500 });
         }
       },
       POST: async ({ request }) => {
@@ -74,7 +75,7 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
             typeof body["repository"] !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(body["repository"]) ||
             typeof body["payloadHash"] !== "string" || !/^[a-f0-9]{64}$/.test(body["payloadHash"]) ||
             typeof body["summary"] !== "string" || !body["summary"].trim() || body["summary"].length > 500) {
-            return Response.json({ error: "Invalid approval request." }, { status: 400 });
+            return json({ error: "Invalid approval request." }, { status: 400 });
           }
           const id = crypto.randomUUID().replace(/-/g, "");
           const expiresAt = new Date(Date.parse(auth.now) + 24 * 60 * 60 * 1000).toISOString();
@@ -83,9 +84,9 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
             taskId: body["taskId"], repository: body["repository"], payloadHash: body["payloadHash"],
             summary: body["summary"], createdAt: auth.now, expiresAt,
           });
-          return Response.json({ approvalId: id, status: "pending", expiresAt }, { status: 201 });
+          return json({ approvalId: id, status: "pending", expiresAt }, { status: 201 });
         } catch {
-          return Response.json({ error: "Unable to create approval request." }, { status: 500 });
+          return json({ error: "Unable to create approval request." }, { status: 500 });
         }
       },
       PATCH: async ({ request }) => {
@@ -96,14 +97,14 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
           if (!body || typeof body["approvalId"] !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body["approvalId"]) ||
             (body["decision"] !== "approved" && body["decision"] !== "rejected") ||
             typeof body["reason"] !== "string" || !body["reason"].trim() || body["reason"].length > 1000) {
-            return Response.json({ error: "Invalid approval decision." }, { status: 400 });
+            return json({ error: "Invalid approval decision." }, { status: 400 });
           }
           const approvalStore = createDevPilotApprovalStore(auth.env.ACTION_DB!);
           const updated = await approvalStore.decide({
             id: body["approvalId"], workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
             decision: body["decision"], reason: body["reason"], now: auth.now,
           });
-          if (!updated) return Response.json({ error: "Approval is unavailable, expired or already decided." }, { status: 409 });
+          if (!updated) return json({ error: "Approval is unavailable, expired or already decided." }, { status: 409 });
           const approval = await approvalStore.getForAdmin({
             id: body["approvalId"], workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
           });
@@ -118,9 +119,9 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
               ? await runs.resumeApproved(input)
               : await runs.rejectAwaitingApproval(input);
           }
-          return Response.json({ approvalId: body["approvalId"], status: body["decision"], runUpdated });
+          return json({ approvalId: body["approvalId"], status: body["decision"], runUpdated });
         } catch {
-          return Response.json({ error: "Unable to record approval decision." }, { status: 500 });
+          return json({ error: "Unable to record approval decision." }, { status: 500 });
         }
       },
     },
