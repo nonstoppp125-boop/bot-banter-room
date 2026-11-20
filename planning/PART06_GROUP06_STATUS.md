@@ -276,3 +276,15 @@ No merge to main; no production deployment.
 - DevPilot remains disabled unless all required bindings and `DEVPILOT_ENABLED=true` are explicitly configured. No Production D1 migration, Production secret/binding change, production deployment, social publishing, PR merge or external account action was performed.
 
 **GROUP 06: IN PROGRESS — source implementation and exact-head CI are green. Remaining gates are current-head Preview deployment confirmation, isolated Preview runtime configuration and authenticated end-to-end verification, plus PR review/merge. Do not start Group 07 until Group 06 is fully verified and complete.**
+
+
+## 2026-11-20 — Final code-side regression checkpoint
+
+- Added a source-level workflow contract test that reads `.github/workflows/devpilot-validation.yml` from the repository root and verifies the workflow's dispatch choices match the adapter's four fixed allowlisted commands. It also asserts repository contents permission remains read-only.
+- Exact-head GitHub Actions run `44766277448`, commit `96e503cd09f680b2a0a058b3b9b864e926cc7f3e`: SUCCESS — TypeScript PASS; **68 test files / 617 tests PASS**; Worker streaming smoke PASS; production build PASS; generated Wrangler configuration validation PASS; production dependency audit PASS with 0 vulnerabilities.
+- The first version of the workflow contract test used `import.meta.url` for a file URL; Vitest's transformed module URL was not a `file:` URL. The test failed before executing. It now resolves the workflow using `process.cwd()` plus `node:path.join`; the corrected exact-head run above passes.
+- The GitHub default branch still does not contain `.github/workflows/devpilot-validation.yml` (confirmed 404 on `main`). The adapter now checks for that prerequisite and fails closed until the reviewed workflow is merged.
+- Cloudflare Workers Build for `96e503c` was still running at this checkpoint; the latest independently confirmed Preview deployment remains `acf29ac`. A Cloudflare build result alone is not recorded as deployment success.
+- Preview D1, migrations, isolated rate limiter, Preview auth/Groq/GitHub secrets and authenticated task/approval/recovery/validation E2E remain unverified. DevPilot remains disabled until those Preview gates pass. No Production migration, secret change, deployment, social publishing or PR merge was performed.
+
+**GROUP 06: IN PROGRESS.** Source implementation and exact-head CI are green. Preview runtime configuration and authenticated E2E, default-branch workflow availability, current-head Preview deployment confirmation and PR integration remain outstanding. Do not start Group 07 before Group 06 is fully verified and complete.
