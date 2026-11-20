@@ -59,6 +59,7 @@ const env = (ACTION_DB: ReturnType<typeof database>["db"]) => ({
   GITHUB_TOKEN: "test-token",
   GITHUB_REPOSITORY_ALLOWLIST: "owner/repo",
   GROQ_API_KEY: "groq-test-key",
+  CHAT_RATE_LIMITER: { limit: async () => ({ success: true }) },
 });
 
 describe("authenticated DevPilot run API", () => {
@@ -140,6 +141,18 @@ describe("authenticated DevPilot run API", () => {
       CHAT_RATE_LIMITER: { limit: async () => ({ success: false }) },
     });
     expect(response.status).toBe(429);
+    expect(state.queries.some((query) => query.startsWith("INSERT INTO devpilot_runs"))).toBe(false);
+  });
+
+  it("fails closed when the shared rate limiter binding is missing", async () => {
+    const state = database();
+    const { CHAT_RATE_LIMITER: _limiter, ...withoutLimiter } = env(state.db);
+    const response = await handleDevPilotRunRequest(new Request(url, {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://liza.example", "Content-Type": "application/json" },
+      body: JSON.stringify({ task: "Add a utility", repository: "owner/repo" }),
+    }), withoutLimiter);
+    expect(response.status).toBe(503);
     expect(state.queries.some((query) => query.startsWith("INSERT INTO devpilot_runs"))).toBe(false);
   });
 
