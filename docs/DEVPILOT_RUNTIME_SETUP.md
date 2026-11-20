@@ -33,6 +33,7 @@ Do not grant administration, secrets, deployments, environments, or organization
 - The workflow accepts only `npm run typecheck`, `npm test`, `npm run build`, and `git diff --check`; arbitrary command strings are rejected.
 - Pull requests are created as drafts. DevPilot does not merge, deploy, publish, or change production configuration.
 - High-risk tasks require a persisted, hash-bound workspace approval. The approval inbox displays the current and proposed file contents before an administrator can approve.
-- A single active DevPilot queue run is allowed at a time, with bounded retries, short owner-bound leases, and expiry cleanup.
+- One active DevPilot queue run is allowed at a time, with bounded retries, owner-bound short leases, heartbeat renewal, and expiry cleanup.
+- A retry reuses a task-owned branch only when its existing commit is based on the original inspected SHA and every proposed file is byte-for-byte identical.
 
 If any required binding is missing, the scheduled Worker logs a safe skip and does not execute repository work. This document does not authorize enabling the feature or deploying it.
