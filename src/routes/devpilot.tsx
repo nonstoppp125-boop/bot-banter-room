@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
-export const Route = createFileRoute("/devpilot" as any)({
+export const Route = createFileRoute("/devpilot")({
   head: () => ({ meta: [{ title: "DevPilot — Liza" }, { name: "robots", content: "noindex,nofollow" }] }),
   component: DevPilotPage,
 });
