@@ -34,6 +34,20 @@ export function createDevPilotApprovalStore(database: D1Database) {
         input.summary.trim(), input.expiresAt, input.createdAt, input.workspaceId, input.userId).run();
       if (result.success === false || result.meta?.changes !== 1) throw new Error("DevPilot approval request rejected or duplicate.");
     },
+    getForAdmin: async (input: { id: string; workspaceId: string; actorUserId: string }) => {
+      if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.actorUserId)) return null;
+      const row = await database.prepare(
+        "SELECT a.id, a.workspace_id, a.user_id, a.task_id, a.repository, a.payload_hash, a.status, a.summary, a.expires_at FROM devpilot_approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'admin') WHERE a.id = ? AND a.workspace_id = ? LIMIT 1"
+      ).bind(input.actorUserId, input.id, input.workspaceId).first<{
+        id: string; workspace_id: string; user_id: string; task_id: string; repository: string;
+        payload_hash: string; status: DevPilotApprovalStatus; summary: string; expires_at: string;
+      }>();
+      return row ? {
+        id: row.id, workspaceId: row.workspace_id, userId: row.user_id, taskId: row.task_id,
+        repository: row.repository, payloadHash: row.payload_hash, status: row.status,
+        summary: row.summary, expiresAt: row.expires_at,
+      } : null;
+    },
     listPending: async (input: { workspaceId: string; actorUserId: string; now: string; limit?: number }) => {
       const limit = input.limit ?? 50;
       if (!iso(input.now) || !ID.test(input.workspaceId) || !ID.test(input.actorUserId) ||
