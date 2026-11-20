@@ -165,6 +165,17 @@ describe("bounded DevPilot repository workflow engine", () => {
     expect(state.state.pullRequests).toBe(0);
   });
 
+  it("rejects duplicate paths in the post-validation diff", async () => {
+    const state = adapter({
+      async inspectDiff() { return { files: [...changes, changes[0]!], testsChanged: true }; },
+    });
+    const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter });
+    expect(result.status).toBe("blocked");
+    expect(result.reason).toContain("malformed");
+    expect(state.state.commits).toBe(0);
+    expect(state.state.pullRequests).toBe(0);
+  });
+
   it("derives final test coverage from actual changed paths instead of adapter metadata", async () => {
     const state = adapter({
       async inspectDiff() { return { files: changes, testsChanged: false }; },
