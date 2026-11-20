@@ -92,6 +92,7 @@ export function createGitHubDevPilotAdapter(
     throw new Error("DevPilot repository is not in GITHUB_REPOSITORY_ALLOWLIST.");
   }
   assertBranch(targetBranch);
+  if (!targetBranch.startsWith("devpilot/")) throw new Error("DevPilot may write only to task-scoped branches.");
   const fetcher = options.fetcher ?? fetch;
   const pollIntervalMs = Math.max(1_000, Math.min(options.pollIntervalMs ?? 4_000, 10_000));
   const workflow = env.DEVPILOT_VALIDATION_WORKFLOW?.trim() || "devpilot-validation.yml";
@@ -186,6 +187,7 @@ export function createGitHubDevPilotAdapter(
     async createBranch(input): Promise<void> {
       if (input.repository.toLowerCase() !== repository.toLowerCase()) throw new Error("GitHub adapter repository scope mismatch.");
       assertBranch(input.branch);
+      if (!input.branch.startsWith("devpilot/") || input.branch === input.baseBranch) throw new Error("DevPilot may write only to task-scoped branches.");
       assertSha(input.baseSha);
       activeBranch = input.branch;
       try {
