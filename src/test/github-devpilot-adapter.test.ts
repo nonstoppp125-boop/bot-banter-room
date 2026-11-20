@@ -25,12 +25,13 @@ describe("GitHub DevPilot adapter", () => {
       calls.push({ url, ...(init ? { init } : {}) });
       if (url.includes("/git/ref/heads/")) return Response.json({ object: { sha: "a".repeat(40) } });
       if (url.endsWith("/dispatches")) return new Response(null, { status: 204 });
-      return Response.json({
-        workflow_runs: [
-          { id: 122, name: "DevPilot isolated validation", display_title: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "b".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/122" },
-          { id: 123, name: "DevPilot isolated validation", display_title: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "a".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/123" },
-        ],
-      });
+      if (url.includes("/runs?")) {
+        const runReads = calls.filter((call) => call.url.includes("/runs?")).length;
+        const previous = { id: 122, name: "DevPilot isolated validation", display_title: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "a".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/122" };
+        const current = { id: 123, name: "DevPilot isolated validation", display_title: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "a".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/123" };
+        return Response.json({ workflow_runs: runReads === 1 ? [previous] : [previous, current] });
+      }
+      return Response.json({ workflow_runs: [] });
     });
     const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", {
       fetcher: fetcher as typeof fetch, pollIntervalMs: 1_000,
@@ -38,11 +39,11 @@ describe("GitHub DevPilot adapter", () => {
     const result = await adapter.run({ command: "npm test", timeoutMs: 5_000 });
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("123");
-    expect(calls).toHaveLength(3);
-    expect(calls[1]?.url).toContain("/actions/workflows/devpilot-validation.yml/dispatches");
-    expect(calls[1]?.init?.method).toBe("POST");
-    expect(calls[1]?.init?.headers).toMatchObject({ Authorization: "Bearer fine-grained-token" });
-    expect(calls[1]?.init?.body).toContain('"command":"npm test"');
+    expect(calls).toHaveLength(4);
+    expect(calls[2]?.url).toContain("/actions/workflows/devpilot-validation.yml/dispatches");
+    expect(calls[2]?.init?.method).toBe("POST");
+    expect(calls[2]?.init?.headers).toMatchObject({ Authorization: "Bearer fine-grained-token" });
+    expect(calls[2]?.init?.body).toContain('"command":"npm test"');
   });
 
   it("rejects arbitrary validation commands before making a network request", async () => {
