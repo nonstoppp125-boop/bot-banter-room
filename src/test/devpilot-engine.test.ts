@@ -135,17 +135,22 @@ describe("durable DevPilot queue processor", () => {
     };
     const db = queuedDatabase({
       stage: "awaiting-approval",
-      data: { approvalId, approvalPayloadHash: hash },
+      data: {
+        approvalId, approvalPayloadHash: hash,
+        proposalFiles: changes.map((change) => ({ ...change, beforeContent: null })),
+      },
     }, approvalRow, "Deploy this to production");
     const state = adapter();
+    const proposer = vi.fn(async () => changes);
     const result = await processDevPilotQueue({
       database: db.db, owner: "worker-1", repository: "owner/repo",
       createAdapter: () => state.adapter,
-      proposeChanges: async () => changes,
+      proposeChanges: proposer,
       now: () => new Date("2026-11-20T07:00:00.000Z"),
     });
     expect(result?.status).toBe("completed");
     expect(db.calls.some((call) => call.sql.startsWith("SELECT a.* FROM devpilot_approvals"))).toBe(true);
+    expect(proposer).not.toHaveBeenCalled();
     expect(state.state.writes).toBe(2);
   });
 });
