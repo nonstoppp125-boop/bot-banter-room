@@ -180,6 +180,7 @@ export function createDevPilotCheckpointWriter(
 ) {
   const store = createDevPilotRunStore(database);
   let version = identity.initialVersion;
+  let progress = identity.initialProgress ?? 0;
   return async (input: { progress: number; stage: string; data: unknown; status?: "running" | "awaiting_approval" }) => {
     const saved = await store.checkpoint({
       id: identity.id,
@@ -194,6 +195,7 @@ export function createDevPilotCheckpointWriter(
     });
     if (!saved) throw new Error("DevPilot checkpoint rejected: lease lost, stale version or invalid progress.");
     version += 1;
+    progress = input.progress;
   };
 }
 export function createDevPilotEventWriter(
