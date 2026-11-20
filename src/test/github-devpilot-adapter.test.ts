@@ -23,13 +23,13 @@ describe("GitHub DevPilot adapter", () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       calls.push({ url, ...(init ? { init } : {}) });
+      if (url.includes("/git/ref/heads/")) return Response.json({ object: { sha: "a".repeat(40) } });
       if (url.endsWith("/dispatches")) return new Response(null, { status: 204 });
       return Response.json({
-        workflow_runs: [{
-          id: 123, name: "DevPilot validation: npm test", status: "completed",
-          conclusion: "success", head_branch: "devpilot/task-1",
-          created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/123",
-        }],
+        workflow_runs: [
+          { id: 122, name: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "b".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/122" },
+          { id: 123, name: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "a".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/123" },
+        ],
       });
     });
     const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", {
@@ -38,11 +38,11 @@ describe("GitHub DevPilot adapter", () => {
     const result = await adapter.run({ command: "npm test", timeoutMs: 5_000 });
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("123");
-    expect(calls).toHaveLength(2);
-    expect(calls[0]?.url).toContain("/actions/workflows/devpilot-validation.yml/dispatches");
-    expect(calls[0]?.init?.method).toBe("POST");
-    expect(calls[0]?.init?.headers).toMatchObject({ Authorization: "Bearer fine-grained-token" });
-    expect(calls[0]?.init?.body).toContain('"command":"npm test"');
+    expect(calls).toHaveLength(3);
+    expect(calls[1]?.url).toContain("/actions/workflows/devpilot-validation.yml/dispatches");
+    expect(calls[1]?.init?.method).toBe("POST");
+    expect(calls[1]?.init?.headers).toMatchObject({ Authorization: "Bearer fine-grained-token" });
+    expect(calls[1]?.init?.body).toContain('"command":"npm test"');
   });
 
   it("rejects arbitrary validation commands before making a network request", async () => {
@@ -119,6 +119,22 @@ describe("GitHub DevPilot adapter", () => {
     expect(tree?.body).toContain('"mode":"100755"');
     expect(update?.body).toContain('"force":false');
     expect(update?.body).toContain(commitSha);
+  });
+
+  it("rejects a proposal whose before-SHA differs from the exact base tree", async () => {
+    const baseSha = "a".repeat(40);
+    const calls: string[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input); calls.push(url);
+      if (url.includes("/git/ref/heads/")) return Response.json({ object: { sha: baseSha } });
+      if (url.includes("/git/commits/" + baseSha)) return Response.json({ commit: { tree: { sha: "b".repeat(40) } } });
+      return Response.json({ truncated: false, tree: [{ path: "src/app.ts", type: "blob", mode: "100644", sha: "c".repeat(40) }] });
+    });
+    const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", { fetcher: fetcher as typeof fetch });
+    await expect(adapter.applyChanges({ repository: "owner/repo", branch: "devpilot/task-1", baseSha, changes: [
+      { path: "src/app.ts", beforeSha: "d".repeat(40), content: "export const value = 1;" },
+    ] })).rejects.toThrow("does not match the inspected base");
+    expect(calls.some((url) => url.endsWith("/git/blobs"))).toBe(false);
   });
 
   it("reuses an identical task-owned commit after a worker retry", async () => {
