@@ -124,7 +124,8 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.sql).toContain("a.expires_at > ?");
     expect(mock.calls[0]?.sql).toContain("json_remove(checkpoint_json, '$.data.proposalFiles')");
     expect(mock.calls[0]?.sql).toContain("worker_attempt_count = 0");
-    expect(mock.calls[0]?.sql).toContain("json_set(json_remove(checkpoint_json");
+    expect(mock.calls[0]?.sql).toContain("json_set(checkpoint_json");
+    expect(mock.calls[0]?.sql).not.toContain("json_remove(checkpoint_json, '$.data.proposalFiles')");
     expect(mock.calls[0]?.values).toContain("approval-123");
     expect(mock.calls[0]?.values).toContain("a".repeat(64));
   });
