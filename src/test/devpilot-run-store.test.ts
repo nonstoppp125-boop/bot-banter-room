@@ -43,6 +43,26 @@ describe("DevPilot durable run store", () => {
     expect(claimed).toBe(true);
     expect(mock.calls[0]?.sql).toContain("status = 'queued'");
     expect(mock.calls[0]?.sql).toContain("lease_expires_at <= ?");
+    expect(mock.calls[0]?.sql).toContain("worker_attempt_count < 2");
+    expect(mock.calls[0]?.sql).toContain("worker_attempt_count = worker_attempt_count + 1");
+  });
+
+  it("recovers expired runs only after the bounded worker-attempt budget is exhausted", async () => {
+    const mock = database();
+    const recovered = await createDevPilotRunStore(mock.db).recoverExpired({ now });
+    expect(recovered).toBe(1);
+    expect(mock.calls[0]?.sql).toContain("worker_attempt_count >= 2");
+    expect(mock.calls[0]?.sql).toContain("status = 'failed'");
+    expect(mock.calls[0]?.sql).toContain("json_remove(checkpoint_json, '$.data.proposalFiles')");
+    expect(mock.calls[0]?.sql).toContain("worker_attempt_count = 0");
+  });
+
+  it("rejects DevPilot worker leases longer than two minutes", async () => {
+    const store = createDevPilotRunStore(database().db);
+    await expect(store.claim({
+      ...identity, owner: "worker-1", now,
+      leaseUntil: new Date(Date.parse(now) + 121_000).toISOString(),
+    })).rejects.toThrow("Invalid DevPilot lease claim");
   });
 
   it("uses owner-bound lease and checkpoint-version compare-and-swap", async () => {
