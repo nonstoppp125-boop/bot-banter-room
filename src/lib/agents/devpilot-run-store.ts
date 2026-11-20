@@ -122,8 +122,8 @@ export function createDevPilotRunStore(database: D1Database) {
       }
       const json = serialize(input.checkpoint, 100_000);
       const result = await database.prepare(
-        "UPDATE devpilot_runs SET status = ?, progress = ?, checkpoint_json = ?, checkpoint_version = checkpoint_version + 1, lease_owner = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'running' AND lease_owner = ? AND lease_expires_at > ?"
-      ).bind(input.status, input.progress, json, input.now, input.id, input.workspaceId, input.userId, input.owner, input.now).run();
+        "UPDATE devpilot_runs SET status = ?, progress = ?, checkpoint_json = ?, checkpoint_version = checkpoint_version + 1, lease_owner = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'running' AND lease_owner = ? AND lease_expires_at > ? AND progress <= ?"
+      ).bind(input.status, input.progress, json, input.now, input.id, input.workspaceId, input.userId, input.owner, input.now, input.progress).run();
       if (result.success === false) throw new Error("D1 DevPilot run completion failed.");
       return result.meta?.changes === 1;
     },
@@ -136,7 +136,7 @@ export function createDevPilotRunStore(database: D1Database) {
         throw new Error("Invalid DevPilot approval resume.");
       }
       const result = await database.prepare(
-        "UPDATE devpilot_runs SET status = 'queued', updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND repository = ? AND status = 'awaiting_approval' AND EXISTS (SELECT 1 FROM devpilot_approvals a WHERE a.id = ? AND a.workspace_id = devpilot_runs.workspace_id AND a.user_id = devpilot_runs.user_id AND a.task_id = devpilot_runs.id AND a.repository = devpilot_runs.repository AND a.payload_hash = ? AND a.status = 'approved' AND a.expires_at > ?)"
+        "UPDATE devpilot_runs SET status = 'queued', updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND repository = ? AND status = 'awaiting_approval' AND EXISTS (SELECT 1 FROM devpilot_approvals a WHERE a.id = ? AND a.workspace_id = devpilot_runs.workspace_id AND a.user_id = devpilot_runs.user_id AND a.task_id = devpilot_runs.id AND a.repository = devpilot_runs.repository AND a.payload_hash = ? AND a.status = 'approved' AND a.decided_by_user_id IS NOT NULL AND a.decided_at IS NOT NULL AND a.expires_at > ?)"
       ).bind(input.now, input.id, input.workspaceId, input.userId, input.repository, input.approvalId, input.payloadHash, input.now).run();
       if (result.success === false) throw new Error("D1 DevPilot approved resume failed.");
       return result.meta?.changes === 1;
