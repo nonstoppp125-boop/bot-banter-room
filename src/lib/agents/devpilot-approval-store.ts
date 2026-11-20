@@ -4,6 +4,7 @@ type D1Database = {
     bind: (...values: unknown[]) => {
       run: () => Promise<{ success?: boolean; meta?: { changes?: number } }>;
       first: <T = Record<string, unknown>>() => Promise<T | null>;
+      all: <T = Record<string, unknown>>() => Promise<{ success?: boolean; results?: T[] }>;
     };
   };
 };
