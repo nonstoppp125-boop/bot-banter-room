@@ -27,8 +27,8 @@ describe("GitHub DevPilot adapter", () => {
       if (url.endsWith("/dispatches")) return new Response(null, { status: 204 });
       return Response.json({
         workflow_runs: [
-          { id: 122, name: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "b".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/122" },
-          { id: 123, name: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "a".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/123" },
+          { id: 122, name: "DevPilot isolated validation", display_title: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "b".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/122" },
+          { id: 123, name: "DevPilot isolated validation", display_title: "DevPilot validation: npm test", status: "completed", conclusion: "success", head_branch: "devpilot/task-1", head_sha: "a".repeat(40), event: "workflow_dispatch", created_at: new Date().toISOString(), html_url: "https://github.com/owner/repo/actions/runs/123" },
         ],
       });
     });
