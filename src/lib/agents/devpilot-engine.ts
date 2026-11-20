@@ -1,4 +1,5 @@
 import { hashApprovalPayload } from "./approval-store";
+import { createDevPilotCheckpointWriter, createDevPilotEventWriter, createDevPilotRunStore } from "./devpilot-run-store";
 import {
   buildCodingPlan,
   buildRepositoryInventory,
@@ -196,4 +197,62 @@ export async function runDevPilotTask(input:{
   }catch(error){
     return failed(error instanceof Error?error.message.slice(0,500):"DevPilot workflow failed.");
   }
+}
+
+
+/** Executes a claimed D1 run with owner-bound durable checkpoints and append-only evidence. */
+export async function runClaimedDevPilotTask(input: {
+  database: Parameters<typeof createDevPilotRunStore>[0];
+  run: {
+    id: string; workspaceId: string; userId: string; repository: string; baseBranch: string;
+    task: string; checkpointVersion: number; progress: number;
+  };
+  owner: string;
+  adapter: DevPilotRepositoryAdapter;
+  proposeChanges: DevPilotProposalGenerator;
+  approval?: { approvalId: string; payloadHash: string };
+  verifyApproval?: (input: { approvalId: string; taskId: string; repository: string; payloadHash: string }) => Promise<boolean>;
+  signal?: AbortSignal;
+  now?: () => Date;
+}): Promise<DevPilotResult> {
+  const now = input.now ?? (() => new Date());
+  const onCheckpoint = createDevPilotCheckpointWriter(input.database, {
+    id: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
+    owner: input.owner, initialVersion: input.run.checkpointVersion,
+    initialProgress: input.run.progress, now,
+  });
+  const onEvent = createDevPilotEventWriter(input.database, {
+    runId: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
+  });
+  const result = await runDevPilotTask({
+    taskId: input.run.id, task: input.run.task, repository: input.run.repository,
+    baseBranch: input.run.baseBranch, adapter: input.adapter, proposeChanges: input.proposeChanges,
+    ...(input.approval ? { approval: input.approval } : {}),
+    ...(input.verifyApproval ? { verifyApproval: input.verifyApproval } : {}),
+    onCheckpoint, onEvent,
+    ...(input.signal ? { signal: input.signal } : {}),
+    now,
+  });
+  if (result.status === "awaiting_approval") return result;
+  const status = result.status === "completed" ? "completed"
+    : result.status === "blocked" ? "blocked"
+      : result.status === "cancelled" ? "cancelled" : "failed";
+  const finished = await createDevPilotRunStore(input.database).finish({
+    id: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
+    owner: input.owner, status, progress: result.progress,
+    checkpoint: {
+      status: result.status, progress: result.progress, reason: result.reason,
+      commitSha: result.commitSha, pullRequest: result.pullRequest,
+      validation: result.validation ? {
+        status: result.validation.status, passed: result.validation.passed,
+        totalDurationMs: result.validation.totalDurationMs,
+        results: result.validation.results.map(item => ({
+          command: item.command, exitCode: item.exitCode, durationMs: item.durationMs,
+        })),
+      } : undefined,
+    },
+    now: now().toISOString(),
+  });
+  if (!finished) throw new Error("DevPilot run completion rejected: lease lost or run state changed.");
+  return result;
 }
