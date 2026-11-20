@@ -128,6 +128,18 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.values).toContain("a".repeat(64));
   });
 
+  it("supports safe idempotent recovery after an approval was recorded but run resumption failed", async () => {
+    const mock = database();
+    const resumed = await createDevPilotRunStore(mock.db).resumeApproved({
+      ...identity, approvalId: "approval-123", repository: "owner/repo",
+      payloadHash: "a".repeat(64), now,
+    });
+    expect(resumed).toBe(true);
+    expect(mock.calls[0]?.sql).toContain("a.status = 'approved'");
+    expect(mock.calls[0]?.sql).toContain("status = 'awaiting_approval'");
+    expect(mock.calls[0]?.sql).toContain("a.expires_at > ?");
+  });
+
   it("marks a waiting DevPilot run blocked after the exact approval is rejected", async () => {
     const mock = database();
     const blocked = await createDevPilotRunStore(mock.db).rejectAwaitingApproval({
