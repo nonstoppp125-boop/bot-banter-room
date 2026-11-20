@@ -27,6 +27,7 @@ import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/we
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
 import { Route as ApiDevPilotApprovalsRouteImport } from './routes/api/devpilot/approvals'
+import { Route as ApiDevPilotRunsRouteImport } from './routes/api/devpilot/runs'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
 import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks/execute'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
@@ -129,6 +130,11 @@ const ApiDevPilotApprovalsRoute = ApiDevPilotApprovalsRouteImport.update({
   path: '/api/devpilot/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDevPilotRunsRoute = ApiDevPilotRunsRouteImport.update({
+  id: '/api/devpilot/runs',
+  path: '/api/devpilot/runs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTasksRoute = ApiTasksRouteImport.update({
   id: '/api/tasks',
   path: '/api/tasks',
@@ -197,6 +203,9 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
   '/api/tasks': typeof ApiTasksRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
@@ -293,6 +302,7 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ApiDevPilotApprovalsRoute: typeof ApiDevPilotApprovalsRoute
+  ApiDevPilotRunsRoute: typeof ApiDevPilotRunsRoute
   TasksRoute: typeof TasksRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
@@ -378,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/api/devpilot/approvals'
       fullPath: '/api/devpilot/approvals'
       preLoaderRoute: typeof ApiDevPilotApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/devpilot/runs': {
+      id: '/api/devpilot/runs'
+      path: '/api/devpilot/runs'
+      fullPath: '/api/devpilot/runs'
+      preLoaderRoute: typeof ApiDevPilotRunsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/tasks': {
@@ -529,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiApprovalsRoute: ApiApprovalsRoute,
   ApiTasksRoute: ApiTasksRoute,
   ApiDevPilotApprovalsRoute: ApiDevPilotApprovalsRoute,
+  ApiDevPilotRunsRoute: ApiDevPilotRunsRoute,
   ApiTasksExecuteRoute: ApiTasksExecuteRoute,
   ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiMemoriesRoute: ApiMemoriesRoute,
