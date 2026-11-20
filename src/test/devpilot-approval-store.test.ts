@@ -102,15 +102,15 @@ describe("DevPilot durable approval store", () => {
     expect(mock.calls).toHaveLength(0);
   });
 
-  it("expires pending approvals and scrubs proposal source from waiting runs", async () => {
+  it("expires pending or unclaimed approved approvals and scrubs proposal source from waiting runs", async () => {
     const mock = database();
     const result = await createDevPilotApprovalStore(mock.db).expirePending({
       now: "2026-11-21T00:00:00.000Z",
     });
     expect(result).toEqual({ approvals: 1, runs: 1 });
-    expect(mock.calls[0]?.sql).toContain("status = 'expired'");
+    expect(mock.calls[0]?.sql).toContain("status IN ('pending', 'approved')");
     expect(mock.calls[1]?.sql).toContain("json_remove(checkpoint_json, '$.data.proposalFiles')");
-    expect(mock.calls[1]?.sql).toContain("status = 'awaiting_approval'");
+    expect(mock.calls[1]?.sql).toContain("status IN ('awaiting_approval', 'queued')");
   });
 
   it("allows only an owner or admin to decide a pending unexpired approval", async () => {
