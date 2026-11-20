@@ -176,12 +176,13 @@ export function createDevPilotRunStore(database: D1Database) {
 
 export function createDevPilotCheckpointWriter(
   database: D1Database,
-  identity: { id: string; workspaceId: string; userId: string; owner: string; initialVersion: number; now?: () => Date },
+  identity: { id: string; workspaceId: string; userId: string; owner: string; initialVersion: number; initialProgress?: number; now?: () => Date },
 ) {
   const store = createDevPilotRunStore(database);
   let version = identity.initialVersion;
   let progress = identity.initialProgress ?? 0;
   return async (input: { progress: number; stage: string; data: unknown; status?: "running" | "awaiting_approval" }) => {
+    if (input.progress < progress) return;
     const saved = await store.checkpoint({
       id: identity.id,
       workspaceId: identity.workspaceId,
