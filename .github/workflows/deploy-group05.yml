@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$CONFIRM_RELEASE" != "true" ]; then echo "Release not authorized."; exit 1; fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
       - uses: actions/setup-node@v4

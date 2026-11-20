@@ -33,7 +33,7 @@ jobs:
             exit 1
           fi
           echo "Explicit Group 03 deployment approval confirmed."
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
       - uses: actions/setup-node@v4
