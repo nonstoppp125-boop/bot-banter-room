@@ -1,4 +1,5 @@
 import { hashApprovalPayload } from "./approval-store";
+import { createDevPilotApprovalStore } from "./devpilot-approval-store";
 import { createDevPilotCheckpointWriter, createDevPilotEventWriter, createDevPilotRunStore } from "./devpilot-run-store";
 import {
   buildCodingPlan,
@@ -47,6 +48,7 @@ export interface DevPilotResult {
   plan?:ReturnType<typeof buildCodingPlan>;
   proposal?:CodeChangeProposal;
   approvalPayloadHash?:string;
+  approvalId?:string;
   validation?:ValidationSuiteResult;
   commitSha?:string;
   pullRequest?:DevPilotPullRequest;
@@ -240,7 +242,34 @@ export async function runClaimedDevPilotTask(input: {
     ...(input.signal ? { signal: input.signal } : {}),
     now,
   });
-  if (result.status === "awaiting_approval") return result;
+  if (result.status === "awaiting_approval") {
+    try {
+      if (!result.approvalPayloadHash) throw new Error("Approval payload hash is missing.");
+      const createdAt = now().toISOString();
+      const approvalId = crypto.randomUUID().replace(/-/g, "");
+      await createDevPilotApprovalStore(input.database).create({
+        id: approvalId, workspaceId: input.run.workspaceId, userId: input.run.userId,
+        taskId: input.run.id, repository: input.run.repository,
+        payloadHash: result.approvalPayloadHash, summary: input.run.task.slice(0, 500),
+        createdAt, expiresAt: new Date(Date.parse(createdAt) + 24 * 60 * 60 * 1000).toISOString(),
+      });
+      await onEvent({
+        id: "approval-" + approvalId, type: "approval", timestamp: createdAt,
+        summary: "Exact code proposal submitted for workspace approval.",
+        evidence: [approvalId, result.approvalPayloadHash],
+      });
+      return { ...result, approvalId };
+    } catch {
+      await createDevPilotRunStore(input.database).blockAwaitingApproval({
+        id: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
+        now: now().toISOString(),
+      }).catch(() => false);
+      return {
+        ...result, status: "blocked",
+        reason: "Approval record could not be persisted; the proposal was not applied.",
+      };
+    }
+  }
   const status = result.status === "completed" ? "completed"
     : result.status === "blocked" ? "blocked"
       : result.status === "cancelled" ? "cancelled" : "failed";
