@@ -210,7 +210,7 @@ export function createGitHubDevPilotAdapter(
       if (ref.object.sha !== input.baseSha) {
         const existingCommit = await api<ApiCommit>("GET", `/repos/${repository}/git/commits/${ref.object.sha}`, undefined, input.signal);
         const parentMatches = existingCommit.parents?.length === 1 && existingCommit.parents[0]?.sha === input.baseSha;
-        if (!parentMatches) throw new Error("Existing DevPilot branch is not based on the inspected commit.");
+        if (!parentMatches) throw new Error("DevPilot branch HEAD changed; refusing a non-fast-forward write.");
         for (const change of input.changes) assertSafePath(change.path);
         const currentFiles = await Promise.all(input.changes.map((change) => getContent(change.path, input.branch, input.signal)));
         const identical = input.changes.every((change) =>
