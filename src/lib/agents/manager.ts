@@ -39,11 +39,11 @@ const MAX_TASK_CHARS = 20_000;
 const MAX_TASK_TIMEOUT_MS = 45_000;
 
 const HIGH_RISK_ACTIONS: readonly [RegExp, string][] = [
-  [/\b(publish|post\s+(?:this|it|the|my)|send\s+(?:this|it|the|my)|message\s+(?:this|it|the|my)|send\s+(?:a|an|the)\s+(?:message|email|dm))\b/i, "External publishing or messaging"],
-  [/\b(delete|remove|destroy|overwrite)\b/i, "Destructive or irreversible change"],
-  [/\b(deploy|release|ship\s+to\s+production)\b/i, "Production deployment or release"],
-  [/\b(purchase|buy|pay|transfer|withdraw)\b/i, "Financial or purchase action"],
-  [/\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b/i, "Account or permission modification"],
+  [/\b(publish|post\s+(?:this|it|the|my)|send\s+(?:this|it|the|my)|message\s+(?:this|it|the|my)|send\s+(?:a|an|the)\s+(?:message|email|dm))\b|(?:পোস্ট|পাবলিশ|প্রকাশ|শেয়ার|শেয়ার)\s*(?:কর|করো|দাও|করে\s*দাও)|(?:মেসেজ|বার্তা)\s*(?:পাঠাও|কর|করো)|\b(post|publish|share|send|message|dm)\s*koro\b/i, "External publishing or messaging"],
+  [/\b(delete|remove|destroy|overwrite)\b|(?:মুছে\s*(?:ফেল|ফেলো|দাও)|মুছ(?:ে\s*ফেল|ে\s*দাও)|ডিলিট\s*(?:কর|করো|করে\s*দাও))|\b(delete|remove|destroy|overwrite)\s*koro\b|\bmuche\s*(?:felo|dao)\b/i, "Destructive or irreversible change"],
+  [/\b(deploy|release|ship\s+to\s+production)\b|(?:ডিপ্লয়|ডেপ্লয়|প্রোডাকশন|রিলিজ)\s*(?:ে|কর|করো|করে\s*দাও)?|\b(deploy|release)\s*koro\b|\bproduction\s*e\b/i, "Production deployment or release"],
+  [/\b(purchase|buy|pay|transfer|withdraw)\b|(?:কিনে\s*(?:দাও|ফেলো)|কেনাকাটা\s*কর|পেমেন্ট\s*কর|টাকা\s*(?:পাঠাও|দাও)|ট্রান্সফার\s*কর|উত্তোলন\s*কর)|\b(purchase|buy|pay|transfer|withdraw)\s*koro\b/i, "Financial or purchase action"],
+  [/\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b|(?:অ্যাকাউন্ট|একাউন্ট|প্রোফাইল|পারমিশন|অনুমতি|সেটিংস).{0,20}(?:বদল|পরিবর্তন|আপডেট|চেঞ্জ)|\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b|\b(account|profile|permission|settings)\s*(?:change|update)\s*koro\b/i, "Account or permission modification"],
 ];
 
 const MEDIUM_RISK_PATTERNS: readonly [RegExp, string][] = [
