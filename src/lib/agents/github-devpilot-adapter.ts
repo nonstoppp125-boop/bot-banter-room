@@ -13,7 +13,7 @@ type GitHubEnv = {
 };
 type GitHubApiOptions = { fetcher?: typeof fetch; pollIntervalMs?: number };
 type ApiRef = { object: { sha: string } };
-type ApiCommit = { sha: string; commit: { tree: { sha: string } } };
+type ApiCommit = { sha: string; commit: { tree: { sha: string } }; parents?: Array<{ sha: string }> };
 type ApiTree = { truncated: boolean; tree: Array<{ path: string; type: string; mode?: string; sha: string; size?: number }> };
 type ApiContent = { type: string; encoding: string; content: string; sha: string; size: number };
 type ApiWorkflowRun = {
@@ -195,7 +195,8 @@ export function createGitHubDevPilotAdapter(
         }, input.signal);
       } catch (error) {
         const existing = await getRef(input.branch, input.signal).catch(() => null);
-        if (!existing || existing.object.sha !== input.baseSha) throw error;
+        if (!existing) throw error;
+        assertSha(existing.object.sha);
       }
     },
 
@@ -204,7 +205,17 @@ export function createGitHubDevPilotAdapter(
         input.changes.length === 0 || input.changes.length > 8) throw new Error("GitHub adapter change scope is invalid.");
       assertSha(input.baseSha);
       const ref = await getRef(input.branch, input.signal);
-      if (ref.object.sha !== input.baseSha) throw new Error("DevPilot branch HEAD changed; refusing a non-fast-forward write.");
+      if (ref.object.sha !== input.baseSha) {
+        const existingCommit = await api<ApiCommit>("GET", `/repos/${repository}/git/commits/${ref.object.sha}`, undefined, input.signal);
+        const parentMatches = existingCommit.parents?.length === 1 && existingCommit.parents[0]?.sha === input.baseSha;
+        if (!parentMatches) throw new Error("Existing DevPilot branch is not based on the inspected commit.");
+        for (const change of input.changes) assertSafePath(change.path);
+        const currentFiles = await Promise.all(input.changes.map((change) => getContent(change.path, input.branch, input.signal)));
+        const identical = input.changes.every((change) =>
+          currentFiles.find((file) => file.path === change.path)?.content === change.content);
+        if (!identical) throw new Error("Existing DevPilot branch differs from the persisted proposal; refusing to overwrite it.");
+        return { headSha: ref.object.sha };
+      }
       for (const change of input.changes) assertSafePath(change.path);
       const totalBytes = input.changes.reduce((sum, change) => sum + new TextEncoder().encode(change.content).byteLength, 0);
       if (totalBytes > MAX_CHANGE_BYTES || new Set(input.changes.map((change) => change.path)).size !== input.changes.length) {
