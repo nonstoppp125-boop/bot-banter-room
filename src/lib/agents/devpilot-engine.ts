@@ -336,7 +336,7 @@ export async function runClaimedDevPilotTask(input: {
 export async function processDevPilotQueue(input: {
   database: Parameters<typeof createDevPilotRunStore>[0];
   owner: string;
-  createAdapter: (input: { repository: string; baseBranch: string }) => Promise<DevPilotRepositoryAdapter> | DevPilotRepositoryAdapter;
+  createAdapter: (input: { repository: string; baseBranch: string; taskId: string; targetBranch: string }) => Promise<DevPilotRepositoryAdapter> | DevPilotRepositoryAdapter;
   proposeChanges: DevPilotProposalGenerator;
   signal?: AbortSignal;
   now?: () => Date;
@@ -363,7 +363,7 @@ export async function processDevPilotQueue(input: {
     });
     return { status: "blocked", progress: claimed.progress as DevPilotResult["progress"], events: [], reason };
   }
-  const adapter = await input.createAdapter({ repository: claimed.repository, baseBranch: claimed.baseBranch });
+  const adapter = await input.createAdapter({ repository: claimed.repository, baseBranch: claimed.baseBranch, taskId: claimed.id, targetBranch: "devpilot/" + claimed.id });
   const approval = typeof approvalId === "string" && typeof payloadHash === "string"
     ? { approvalId, payloadHash } : undefined;
   const verifyApproval = approval ? createDevPilotApprovalVerifier(input.database, {
