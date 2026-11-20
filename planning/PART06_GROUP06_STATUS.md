@@ -262,3 +262,29 @@ No merge to main; no production deployment.
 - No production D1 migration, ACTION_DB binding, scheduled runtime execution or authenticated live-D1 task/approval/queue smoke test has been performed. External-action executors remain disabled.
 
 **GROUP 06: IN PROGRESS.** Clean branch reconciliation and full CI are green. Remaining release gates: inspect production D1 migration history; obtain explicit release authorization; apply and verify Group 06 migrations; confirm ACTION_DB and scheduled cron execution; run authenticated live task, approval and queue crash-recovery smoke tests. Do not start Group 07 until these gates pass.
+
+
+## 2026-11-20 — DevPilot workflow engine and runtime-gate reconciliation
+
+- Current implementation is tracked in PR #30 on `feat/group06-devpilot-workflow-engine`; the PR is open and unmerged. The earlier `work/group06-manager-planner` branch remains separate and was not merged.
+- Added the durable DevPilot run/approval model, D1 migrations `group06/0004_devpilot_approvals.sql` and `group06/0005_devpilot_durable_runs.sql`, lease/recovery handling, approval-bound proposal execution, fixed GitHub validation workflow, safe repository writes and draft-PR creation.
+- Hardened repository allowlist canonicalization, sensitive-path and external-publishing approval gates, mandatory rate limiting, scheduled worker execution, and complete Group 05/06 SQLite migration verification with foreign-key checks.
+- GitHub adapter now checks the fixed `devpilot-validation.yml` workflow on the repository default branch before dispatch. It fails closed with an actionable error if the workflow is missing, inactive or points to an unexpected path. Regression tests cover missing, inactive and mismatched workflow metadata; arbitrary commands remain rejected before network access.
+- Exact-head GitHub Actions run `44765424738`, commit `0f98220682901102be12d8affaeb584deade24ce`: SUCCESS — TypeScript PASS; 67 test files / 615 tests PASS; local Worker streaming smoke PASS; production build PASS; generated Wrangler config validation PASS; production dependency audit PASS with 0 vulnerabilities.
+- Cloudflare Workers Build check for the same commit `0f98220` is SUCCESS (build ID `897435bd-ef16-4a7c-9ef7-16dc7beb5c7b`). At the time of this update, the Cloudflare PR comment still confirms a completed Preview deployment only through `acf29ac`; deployment of `0f98220` is not yet independently confirmed.
+- A successful Preview deployment is not an authenticated DevPilot runtime test. Preview still requires its own D1 `ACTION_DB` with Group 05/06 migrations, isolated `CHAT_RATE_LIMITER`, Preview-only auth and Groq secrets, repository-scoped Actions token, and controlled authenticated task/approval/recovery/validation E2E.
+- DevPilot remains disabled unless all required bindings and `DEVPILOT_ENABLED=true` are explicitly configured. No Production D1 migration, Production secret/binding change, production deployment, social publishing, PR merge or external account action was performed.
+
+**GROUP 06: IN PROGRESS — source implementation and exact-head CI are green. Remaining gates are current-head Preview deployment confirmation, isolated Preview runtime configuration and authenticated end-to-end verification, plus PR review/merge. Do not start Group 07 until Group 06 is fully verified and complete.**
+
+
+## 2026-11-20 — Final code-side regression checkpoint
+
+- Added a source-level workflow contract test that reads `.github/workflows/devpilot-validation.yml` from the repository root and verifies the workflow's dispatch choices match the adapter's four fixed allowlisted commands. It also asserts repository contents permission remains read-only.
+- Exact-head GitHub Actions run `44766277448`, commit `96e503cd09f680b2a0a058b3b9b864e926cc7f3e`: SUCCESS — TypeScript PASS; **68 test files / 617 tests PASS**; Worker streaming smoke PASS; production build PASS; generated Wrangler configuration validation PASS; production dependency audit PASS with 0 vulnerabilities.
+- The first version of the workflow contract test used `import.meta.url` for a file URL; Vitest's transformed module URL was not a `file:` URL. The test failed before executing. It now resolves the workflow using `process.cwd()` plus `node:path.join`; the corrected exact-head run above passes.
+- The GitHub default branch still does not contain `.github/workflows/devpilot-validation.yml` (confirmed 404 on `main`). The adapter now checks for that prerequisite and fails closed until the reviewed workflow is merged.
+- Cloudflare Workers Build for `96e503c` was still running at this checkpoint; the latest independently confirmed Preview deployment remains `acf29ac`. A Cloudflare build result alone is not recorded as deployment success.
+- Preview D1, migrations, isolated rate limiter, Preview auth/Groq/GitHub secrets and authenticated task/approval/recovery/validation E2E remain unverified. DevPilot remains disabled until those Preview gates pass. No Production migration, secret change, deployment, social publishing or PR merge was performed.
+
+**GROUP 06: IN PROGRESS.** Source implementation and exact-head CI are green. Preview runtime configuration and authenticated E2E, default-branch workflow availability, current-head Preview deployment confirmation and PR integration remain outstanding. Do not start Group 07 before Group 06 is fully verified and complete.

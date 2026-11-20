@@ -192,6 +192,7 @@ function TasksPage() {
     <main className="min-h-dvh bg-background px-4 py-6 text-foreground sm:px-8">
       <div className="mx-auto w-full max-w-4xl">
         <a href="/" className="text-sm text-muted-foreground hover:text-foreground">← Back to chat</a>
+        <a href="/devpilot" className="ml-4 text-sm font-medium text-primary hover:underline">Open DevPilot →</a>
         <header className="mb-8 mt-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Manager workspace</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Durable tasks</h1>

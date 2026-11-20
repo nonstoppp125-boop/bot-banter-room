@@ -98,6 +98,30 @@ describe("deterministic Manager planning", () => {
     expect(plan.approvalReasons).toContain("Destructive or irreversible change");
   });
 
+  it.each([
+    ["এই পোস্টটা লিংকডইনে প্রকাশ করো", "External publishing or messaging"],
+    ["LinkedIn e post koro", "External publishing or messaging"],
+    ["Post to LinkedIn", "External publishing or messaging"],
+    ["Share this on LinkedIn", "External publishing or messaging"],
+    ["Share the post to LinkedIn", "External publishing or messaging"],
+    ["Schedule a post on Instagram", "External publishing or messaging"],
+    ["ফাইলটা মুছে দাও", "Destructive or irreversible change"],
+    ["file ta muche felo", "Destructive or irreversible change"],
+    ["এটা ডিপ্লয় করো", "Production deployment or release"],
+    ["eta production e deploy koro", "Production deployment or release"],
+    ["টাকা পাঠাও", "Financial or purchase action"],
+    ["taka transfer koro", "Financial or purchase action"],
+    ["অ্যাকাউন্টের সেটিংস বদলে দাও", "Account or permission modification"],
+    ["account settings change koro", "Account or permission modification"],
+    ["কমেন্টে রিপ্লাই দাও", "External publishing or messaging"],
+    ["comment koro", "External publishing or messaging"],
+  ])("requires approval for high-risk Bangla/Banglish intent: %s", (request, reason) => {
+    const plan = buildManagerPlan(request, agents);
+    expect(plan.risk).toBe("high");
+    expect(plan.approvalRequired).toBe(true);
+    expect(plan.approvalReasons).toContain(reason);
+  });
+
   it("does not flag a request to draft a post as an external action", () => {
     const plan = buildManagerPlan("Write a LinkedIn post draft about SQL learning", agents);
     expect(plan.approvalRequired).toBe(false);

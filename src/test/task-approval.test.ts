@@ -52,6 +52,32 @@ describe("approval-bound Manager task execution", () => {
     expect(state.values()).toContain(approval.payloadHash);
   });
 
+  it.each([
+    ["এই পোস্টটা লিংকডইনে প্রকাশ করো", "social.publish"],
+    ["LinkedIn e post koro", "social.publish"],
+    ["কমেন্টে রিপ্লাই দাও", "social.reply"],
+    ["comment koro", "social.reply"],
+    ["মেসেজ পাঠাও", "external.message"],
+    ["message pathao", "external.message"],
+    ["ফাইলটা মুছে দাও", "destructive.delete"],
+    ["file ta muche felo", "destructive.delete"],
+    ["এটা ডিপ্লয় করো", "deployment"],
+    ["production e deploy koro", "deployment"],
+    ["টাকা পাঠাও", "financial.action"],
+    ["taka transfer koro", "financial.action"],
+    ["অ্যাকাউন্টের সেটিংস বদলে দাও", "account.change"],
+    ["account settings change koro", "account.change"],
+  ] as const)("maps high-risk request '%s' to %s", async (summary, expectedAction) => {
+    const state = makeDatabase();
+    const plan = buildManagerPlan(summary, listAgents());
+    expect(plan.approvalRequired).toBe(true);
+    const approval = await createManagerTaskApproval(state.database, {
+      taskId: "task-1", workspaceId: "workspace-1", userId: "user-1",
+      inputSummary: summary, plan, now,
+    });
+    expect(approval.actionType).toBe(expectedAction);
+  });
+
   it("keeps pending approvals blocked and unlocks only after an admin decision", async () => {
     const state = makeDatabase();
     const summary = "Publish this LinkedIn post";

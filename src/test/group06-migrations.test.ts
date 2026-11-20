@@ -10,11 +10,14 @@ describe("Group 05/06 production D1 migration contract", () => {
       import { DatabaseSync } from "node:sqlite";
 
       const database = new DatabaseSync(":memory:");
+      database.exec("PRAGMA foreign_keys = ON");
       const migrations = [
         "migrations/group05/0005_memory_foundation.sql",
         "migrations/group06/0001_manager_core.sql",
         "migrations/group06/0002_task_retry_budget.sql",
         "migrations/group06/0003_task_queue_leases.sql",
+        "migrations/group06/0004_devpilot_approvals.sql",
+        "migrations/group06/0005_devpilot_durable_runs.sql",
       ];
       const columns = (table) => database.prepare("PRAGMA table_info('" + table + "')").all().map((row) => row.name);
       try {
@@ -38,6 +41,24 @@ describe("Group 05/06 production D1 migration contract", () => {
           "created_at", "decided_at",
         ]);
         assertColumns("action_claims", ["idempotency_key", "claimed_at"]);
+        assertColumns("devpilot_approvals", [
+          "id", "workspace_id", "user_id", "task_id", "repository", "payload_hash",
+          "summary", "status", "decided_by_user_id", "decision_reason", "expires_at",
+          "created_at", "decided_at",
+        ]);
+        assertColumns("devpilot_runs", [
+          "id", "workspace_id", "user_id", "repository", "base_branch", "task_text",
+          "status", "progress", "worker_attempt_count", "checkpoint_version",
+          "checkpoint_json", "lease_owner", "lease_expires_at", "created_at", "updated_at",
+        ]);
+        assertColumns("devpilot_events", [
+          "id", "run_id", "workspace_id", "user_id", "event_type", "timestamp",
+          "summary", "evidence_json",
+        ]);
+        const eventForeignKeys = database.prepare("PRAGMA foreign_key_list('devpilot_events')").all();
+        if (!eventForeignKeys.some((row) => row.table === "devpilot_runs" && row.from === "run_id" && row.to === "id")) {
+          throw new Error("devpilot_events.run_id must reference devpilot_runs.id");
+        }
         const violations = database.prepare("PRAGMA foreign_key_check").all();
         if (violations.length) throw new Error("Foreign key violations: " + JSON.stringify(violations));
         process.stdout.write("Group 05/06 SQLite migration contract passed.\\n");

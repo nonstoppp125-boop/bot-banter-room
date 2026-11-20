@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as DevPilotRouteImport } from './routes/devpilot'
 import { Route as LinkedInStudioRouteImport } from './routes/linkedin-studio'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings.integrations'
 import { Route as SettingsApprovalsRouteImport } from './routes/settings.approvals'
@@ -26,6 +27,8 @@ import { Route as ApiTelegramLinkTokenRouteImport } from './routes/api/telegram/
 import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/webhook'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
+import { Route as ApiDevPilotApprovalsRouteImport } from './routes/api/devpilot/approvals'
+import { Route as ApiDevPilotRunsRouteImport } from './routes/api/devpilot/runs'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
 import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks/execute'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
@@ -51,6 +54,11 @@ const LoginRoute = LoginRouteImport.update({
 const TasksRoute = TasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevPilotRoute = DevPilotRouteImport.update({
+  id: '/devpilot',
+  path: '/devpilot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -123,6 +131,16 @@ const ApiApprovalsRoute = ApiApprovalsRouteImport.update({
   path: '/api/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDevPilotApprovalsRoute = ApiDevPilotApprovalsRouteImport.update({
+  id: '/api/devpilot/approvals',
+  path: '/api/devpilot/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDevPilotRunsRoute = ApiDevPilotRunsRouteImport.update({
+  id: '/api/devpilot/runs',
+  path: '/api/devpilot/runs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTasksRoute = ApiTasksRouteImport.update({
   id: '/api/tasks',
   path: '/api/tasks',
@@ -190,6 +208,8 @@ export interface FileRoutesByFullPath {
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/api/health': typeof ApiHealthRoute
   '/api/approvals': typeof ApiApprovalsRoute
+  '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
   '/api/tasks': typeof ApiTasksRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
@@ -211,9 +231,13 @@ export interface FileRoutesByFullPath {
   '/settings/memory': typeof SettingsMemoryRoute
   '/analytics': typeof AnalyticsRoute
   '/linkedin-studio': typeof LinkedInStudioRoute
+  '/devpilot': typeof DevPilotRoute
   '/tasks': typeof TasksRoute
 }
 export interface FileRoutesByTo {
+  '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
+  '/devpilot': typeof DevPilotRoute
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
@@ -239,6 +263,9 @@ export interface FileRoutesByTo {
   '/linkedin-studio': typeof LinkedInStudioRoute
 }
 export interface FileRoutesById {
+  '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
+  '/devpilot': typeof DevPilotRoute
   __root__: typeof rootRouteImport
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
@@ -266,10 +293,10 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  fullPaths: '/devpilot' | '/api/devpilot/approvals' | '/api/devpilot/runs' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
-  id: '__root__' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  to: '/devpilot' | '/api/devpilot/approvals' | '/api/devpilot/runs' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  id: '__root__' | '/devpilot' | '/api/devpilot/approvals' | '/api/devpilot/runs' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -283,7 +310,10 @@ export interface RootRouteChildren {
   ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  ApiDevPilotApprovalsRoute: typeof ApiDevPilotApprovalsRoute
+  ApiDevPilotRunsRoute: typeof ApiDevPilotRunsRoute
   TasksRoute: typeof TasksRoute
+  DevPilotRoute: typeof DevPilotRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
   SettingsPrivacyRoute: typeof SettingsPrivacyRoute
@@ -298,6 +328,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devpilot': {
+      id: '/devpilot'
+      path: '/devpilot'
+      fullPath: '/devpilot'
+      preLoaderRoute: typeof DevPilotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -361,6 +398,20 @@ declare module '@tanstack/react-router' {
       path: '/api/approvals'
       fullPath: '/api/approvals'
       preLoaderRoute: typeof ApiApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/devpilot/approvals': {
+      id: '/api/devpilot/approvals'
+      path: '/api/devpilot/approvals'
+      fullPath: '/api/devpilot/approvals'
+      preLoaderRoute: typeof ApiDevPilotApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/devpilot/runs': {
+      id: '/api/devpilot/runs'
+      path: '/api/devpilot/runs'
+      fullPath: '/api/devpilot/runs'
+      preLoaderRoute: typeof ApiDevPilotRunsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/tasks': {
@@ -511,6 +562,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiApprovalsRoute: ApiApprovalsRoute,
   ApiTasksRoute: ApiTasksRoute,
+  ApiDevPilotApprovalsRoute: ApiDevPilotApprovalsRoute,
+  ApiDevPilotRunsRoute: ApiDevPilotRunsRoute,
   ApiTasksExecuteRoute: ApiTasksExecuteRoute,
   ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiMemoriesRoute: ApiMemoriesRoute,
@@ -523,6 +576,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiIntegrationsRoute: ApiIntegrationsRoute,
   AnalyticsRoute: AnalyticsRoute,
   TasksRoute: TasksRoute,
+  DevPilotRoute: DevPilotRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsApprovalsRoute: SettingsApprovalsRoute,
   SettingsPrivacyRoute: SettingsPrivacyRoute,

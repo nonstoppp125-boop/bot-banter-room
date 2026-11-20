@@ -95,6 +95,8 @@ describe("production D1 config preparation", () => {
     fs.writeFileSync(path.join(group06, "0001_manager_core.sql"), "SELECT 1;");
     fs.writeFileSync(path.join(group06, "0002_task_retry_budget.sql"), "SELECT 1;");
     fs.writeFileSync(path.join(group06, "0003_task_queue_leases.sql"), "SELECT 1;");
+    fs.writeFileSync(path.join(group06, "0004_devpilot_approvals.sql"), "SELECT 1;");
+    fs.writeFileSync(path.join(group06, "0005_devpilot_durable_runs.sql"), "SELECT 1;");
 
     const result = addProductionD1Binding({}, {
       configPath,

@@ -8,5 +8,17 @@
         "period": 60
       }
     }
-  ]
+  ],
+  "previews": {
+    "ratelimits": [
+      {
+        "name": "CHAT_RATE_LIMITER",
+        "namespace_id": "68427194",
+        "simple": {
+          "limit": 30,
+          "period": 60
+        }
+      }
+    ]
+  }
 }

@@ -53,6 +53,24 @@ describe("D1 background task queue", () => {
     expect(calls[1]?.sql).toContain("status = 'running'");
   });
 
+  it("rejects completion after the lease has expired, even if the old worker still owns the row", async () => {
+    const calls: Array<{ sql: string; values: unknown[] }> = [];
+    const db = { prepare(sql: string) { return { bind(...values: unknown[]) { return { async run() { calls.push({ sql, values }); return { success: true, meta: { changes: 0 } }; }, async first<T>() { return null as T | null; }, async all<T>() { return { success: true, results: [] as T[] }; } }; } }; } };
+    const store = createD1QueueStore(db);
+    const now = "2026-11-17T10:02:00.000Z";
+    const finished = await store.finish({ id: "task-1", owner: "worker-old", status: "completed", result: { output: "late" }, now });
+    expect(finished).toBe(false);
+    expect(calls[0]?.sql).toContain("lease_expires_at > ?");
+    expect(calls[0]?.values).toEqual(["completed", JSON.stringify({ output: "late" }), now, "task-1", "worker-old", now]);
+  });
+
+  it("rejects malformed completion metadata before issuing a D1 write", async () => {
+    const { db, calls } = fakeDb();
+    const store = createD1QueueStore(db);
+    await expect(store.finish({ id: "bad id", owner: "worker-1", status: "completed", result: {}, now: "2026-11-17T10:00:00.000Z" })).rejects.toThrow("Invalid queue task completion");
+    expect(calls).toHaveLength(0);
+  });
+
   it("executes a claimed low-risk Manager task and persists its final output", async () => {
     const inputSummary = "Research current trends in cloud computing";
     const plan = buildManagerPlan(inputSummary, listAgents());
