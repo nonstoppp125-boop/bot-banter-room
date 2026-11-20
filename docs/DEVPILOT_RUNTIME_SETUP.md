@@ -8,11 +8,14 @@ Set these only after reviewing and merging the DevPilot runtime code and applyin
 
 | Name | Type | Value |
 |---|---|---|
-| `DEVPILOT_ENABLED` | Plain-text variable | `true` |
+| `ACTION_DB` | D1 binding | Production D1 only after reviewed merge; isolated Preview D1 for Preview tests |
+| `CHAT_RATE_LIMITER` | Rate-limit binding | Required; use the matching environment's namespace |
+| `DEVPILOT_ENABLED` | Plain-text variable | `true` only after all runtime gates pass; otherwise unset or `false` |
 | `GITHUB_REPOSITORY_ALLOWLIST` | Plain-text variable | `nonstoppp125-boop/bot-banter-room` |
-| `GITHUB_TOKEN` | Secret | A fine-grained token restricted to the single repository above |
+| `GROQ_API_KEY` | Secret | Environment-specific Groq API key |
+| `GITHUB_TOKEN` | Secret | Fine-grained token restricted to the single repository above |
 
-The existing `GROQ_API_KEY` is used for proposal generation. The existing `CHAT_RATE_LIMITER` binding is also mandatory; task intake fails closed if it is absent. The validation workflow defaults to `devpilot-validation.yml`; `DEVPILOT_VALIDATION_WORKFLOW` is optional.
+The validation workflow defaults to `devpilot-validation.yml`; `DEVPILOT_VALIDATION_WORKFLOW` is optional. Preview must use a separate D1 database, rate-limit namespace and secrets; never copy Production bindings or secrets into Preview.
 
 ## GitHub token permissions
 
