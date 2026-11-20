@@ -38,7 +38,7 @@ describe("Cloudflare scheduled Group 06 task queue handler", () => {
   it("contains queue invocation failures so one cron tick does not leak an unhandled rejection", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.mocked(processD1TaskQueue).mockRejectedValueOnce(new Error("database unavailable"));
-    const env = { ACTION_DB: {} as never, GROQ_API_KEY: "test-key" } as AgentEnv;
+    const env = { ACTION_DB: fakeDatabase() as never, GROQ_API_KEY: "test-key" } as AgentEnv;
     await expect(worker.scheduled(event, env, context)).resolves.toBeUndefined();
     expect(log).toHaveBeenCalledWith("D1 task queue invocation failed.", expect.any(Error));
   });
