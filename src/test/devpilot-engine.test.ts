@@ -69,9 +69,34 @@ describe("bounded DevPilot repository workflow engine", () => {
     expect(state.state.pullRequests).toBe(1);
   });
 
+  it("emits durable checkpoints and append-only events through the complete workflow", async () => {
+    const state = adapter();
+    const checkpoints: string[] = [];
+    const events: string[] = [];
+    const result = await runDevPilotTask({
+      ...baseInput(),
+      adapter: state.adapter,
+      onCheckpoint: async (checkpoint) => { checkpoints.push(checkpoint.stage); },
+      onEvent: async (event) => { events.push(event.type); },
+    });
+    expect(result.status).toBe("completed");
+    expect(checkpoints).toEqual([
+      "repository-verified", "plan-created", "proposal-created", "branch-created",
+      "changes-applied", "validation-passed", "diff-reviewed", "pull-request-created",
+    ]);
+    expect(events).toContain("proposal-created");
+    expect(events).toContain("reviewed");
+    expect(events).toContain("verified");
+  });
+
   it("returns an exact proposal approval hash before any repository write for high-risk tasks", async () => {
     const state = adapter();
-    const result = await runDevPilotTask({ ...baseInput("Deploy this to production"), adapter: state.adapter });
+    const checkpoints: Array<{ stage: string; status?: string }> = [];
+    const result = await runDevPilotTask({
+      ...baseInput("Deploy this to production"), adapter: state.adapter,
+      onCheckpoint: async (checkpoint) => { checkpoints.push({ stage: checkpoint.stage, status: checkpoint.status }); },
+    });
+    expect(checkpoints.at(-1)).toEqual({ stage: "awaiting-approval", status: "awaiting_approval" });
     expect(result.status).toBe("awaiting_approval");
     expect(result.progress).toBe(25);
     expect(result.approvalPayloadHash).toMatch(/^[a-f0-9]{64}$/);
