@@ -78,7 +78,7 @@ describe("DevPilot durable approval store", () => {
 
   it("lists pending approvals only to workspace owners and admins", async () => {
     const mock = database({ ...approvedRow, checkpoint_json: JSON.stringify({ data: { proposalFiles: [
-      { path: "src/app.ts", beforeSha: "abcdef123456", content: "export const value = 1;" },
+      { path: "src/app.ts", beforeSha: "abcdef123456", beforeContent: "export const value = 0;", content: "export const value = 1;" },
     ] } }) });
     const store = createDevPilotApprovalStore(mock.db);
     const pending = await store.listPending({
