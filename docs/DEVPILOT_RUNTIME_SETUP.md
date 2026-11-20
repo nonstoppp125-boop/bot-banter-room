@@ -37,3 +37,15 @@ Do not grant administration, secrets, deployments, environments, or organization
 - A retry reuses a task-owned branch only when its existing commit is based on the original inspected SHA and every proposed file is byte-for-byte identical.
 
 If any required binding is missing, the scheduled Worker logs a safe skip and does not execute repository work. This document does not authorize enabling the feature or deploying it.
+
+## Isolated Preview environment
+
+Preview runtime verification must use resources separate from Production:
+
+1. Create a dedicated Preview D1 database and bind it as `ACTION_DB`. Apply the Group 05 and Group 06 migrations to this Preview database only.
+2. Keep the Preview `CHAT_RATE_LIMITER` binding on the separate namespace declared under `previews.ratelimits` in `wrangler.json`.
+3. Configure Preview-only `GROQ_API_KEY` and, when enabling DevPilot for a controlled test, a fine-grained `GITHUB_TOKEN` restricted to the single allowlisted repository. Configure any existing login secrets independently for Preview.
+4. Keep `DEVPILOT_ENABLED` unset or `false` until the Preview D1 schema, authentication, rate limiter, Groq provider and GitHub token have each been verified. Enable it only for an explicitly controlled Preview test.
+5. Never bind the Production `ACTION_DB`, reuse Production secrets, or run Production migrations as a shortcut to make Preview work.
+
+A successful Preview deployment proves only that the Worker build and deployment completed. It does not prove that these runtime bindings are configured or that authenticated DevPilot execution works.
