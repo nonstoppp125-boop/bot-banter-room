@@ -21,7 +21,7 @@ Branch: work/group06-manager-planner
 - Chat UI now has an explicit per-user-message `Create Manager task` action, and `/tasks` supports plan intake, listing and queued cancellation. These are user-facing queue controls, not automatic background execution.
 - Provider usage and final synthesis cost remain approximate where provider telemetry is unavailable.
 
-GROUP 06: IN PROGRESS — planner, persisted plan execution on demand, approval-bound unlock, manual retry/stale recovery, cancellation, task/approval D1 adapters and approval UI are implemented. Remaining work includes an always-on queue/worker consumer with heartbeat and crash recovery, automated retry scheduling, live D1/Access provisioning and smoke tests, plus separately authorized external-action executors.
+GROUP 06 (CONSOLIDATED 10-GROUP ROADMAP): IN PROGRESS — planner, persisted plan execution on demand, approval-bound unlock, manual retry/stale recovery, cancellation, task/approval D1 adapters and approval UI are implemented. Remaining work includes an always-on queue/worker consumer with heartbeat and crash recovery, automated retry scheduling, live D1/Access provisioning and smoke tests, plus separately authorized external-action executors.
 No merge to main; no production deployment.
 
 
@@ -247,7 +247,7 @@ No merge to main; no production deployment.
 - Reconciliation blocker confirmed: this Group 06 branch's `/api/auth/session` route still delegates to Cloudflare Access, while current `main` uses first-party password authentication. The durable task APIs themselves use the shared `__Host-liza_session` cookie store, so porting Group 06 must preserve main's password-auth routes and adapt route registration/tests; do not copy the old Cloudflare Access auth route into main.
 - Branch remains substantially diverged from current main (601 ahead / 99 behind at the last compare). No PR or merge was opened. No production D1 migration, ACTION_DB binding, scheduled runtime execution or authenticated live-D1 smoke test has been performed.
 
-**GROUP 06: IN PROGRESS.** Source-level nested migration integration and exact-head CI are now green. Remaining gates: selective port/reconciliation onto current main with first-party password auth preserved; review migration-history behavior against the existing production D1 database; provision/verify ACTION_DB and scheduled cron against Cloudflare; run authenticated live task/approval/queue smoke tests. External-action executors remain separate and disabled. Do not start Group 07 before these gates pass.
+**GROUP 06: IN PROGRESS.** Source-level nested migration integration and exact-head CI are now green. Remaining gates: selective port/reconciliation onto current main with first-party password auth preserved; review migration-history behavior against the existing production D1 database; provision/verify ACTION_DB and scheduled cron against Cloudflare; run authenticated live task/approval/queue smoke tests. External-action executors remain separate and disabled. Do not start consolidated GROUP 07 (LinkedIn/Social/Growth/Analytics) before these gates pass.
 
 
 ## 2026-11-19 — Clean main reconciliation and first-party authentication
@@ -261,4 +261,23 @@ No merge to main; no production deployment.
 - Migration-history caveat: the prior Group 05 deployment used `migrations/group05` as its migration directory, so the new root-based nested pattern records that same SQL file as `group05/0005_memory_foundation.sql`. Cloudflare records migration names relative to `migrations_dir`; it may therefore apply the Group 05 file once more under the new path. That SQL contains only `CREATE TABLE/INDEX IF NOT EXISTS` statements and is idempotent, but the actual production D1 migration history must still be inspected before the first apply.
 - No production D1 migration, ACTION_DB binding, scheduled runtime execution or authenticated live-D1 task/approval/queue smoke test has been performed. External-action executors remain disabled.
 
-**GROUP 06: IN PROGRESS.** Clean branch reconciliation and full CI are green. Remaining release gates: inspect production D1 migration history; obtain explicit release authorization; apply and verify Group 06 migrations; confirm ACTION_DB and scheduled cron execution; run authenticated live task, approval and queue crash-recovery smoke tests. Do not start Group 07 until these gates pass.
+**GROUP 06: IN PROGRESS.** Clean branch reconciliation and full CI are green. Remaining release gates: inspect production D1 migration history; obtain explicit release authorization; apply and verify Group 06 migrations; confirm ACTION_DB and scheduled cron execution; run authenticated live task, approval and queue crash-recovery smoke tests. Do not start consolidated GROUP 07 (LinkedIn/Social/Growth/Analytics) until these gates pass.
+
+
+## 2026-11-19 — 10-Group roadmap alignment
+
+- The active master roadmap now has exactly 10 Groups. This status file belongs to consolidated GROUP 06 — Autonomous Agent Workforce and DevPilot.
+- Former workstreams 06–09 and 15 are retained as detailed traceability sections inside GROUP 06; they are not separate active Groups.
+- GROUP 06 remains IN PROGRESS. PR #13 is merged to main and its exact-head CI passed (run 44450200549). This proves the reconciled source snapshot builds and passes its CI suite, not that production D1 migrations or scheduled runtime execution have been activated.
+- Remaining blockers are production D1 migration-history inspection, explicit release authorization before any migration/deployment, ACTION_DB/cron runtime verification, and authenticated live task/approval/queue smoke tests. External-action executors remain disabled.
+
+
+## 2026-11-20 — DevPilot durable execution bridge (PR #30)
+
+- PR #30 is open and mergeable, not merged. Latest reviewed head: `273ec052c3c24114c4233c3a3692273400215884` (32 files, +3,343 lines).
+- Exact-head GitHub Actions run `44697343115` passed: TypeScript, 66 test files / 557 tests, Worker streaming smoke, production build, generated Wrangler validation, and production dependency audit.
+- The branch now includes authenticated workspace-scoped Web task intake (`/api/devpilot/runs`), a Web run dashboard (`/devpilot`), D1 durable queue/checkpoints, repository-scoped single-worker claiming, bounded retries/leases, rate limits and queue caps.
+- High-risk approvals are persisted and payload-hash bound. After approval, the worker reuses the exact stored proposal rather than regenerating code; proposal source is scrubbed on completion, rejection, expiry, or terminal failure. Run history redacts proposal contents and approval hashes.
+- A least-privilege GitHub REST adapter now inventories/read files, creates task-scoped branches, performs non-force atomic commits, reuses an identical task-owned commit safely after retry, and opens draft PRs only. Groq generates bounded proposals. Validation runs only four fixed commands in an isolated GitHub Actions workflow. No arbitrary Worker shell execution, PR merge, deployment, publishing, or production mutation is enabled.
+- Runtime remains opt-in and inactive until `DEVPILOT_ENABLED=true`, a fine-grained `GITHUB_TOKEN`, exact `GITHUB_REPOSITORY_ALLOWLIST`, and existing `GROQ_API_KEY` are configured. PR #30 is not merged; Group 06 D1 migrations are not applied; no production secret/configuration was changed and no live GitHub/D1 execution smoke test has been run.
+- GROUP 06 remains IN PROGRESS. GROUP 07 has not started. Do not merge or deploy without explicit release authorization.

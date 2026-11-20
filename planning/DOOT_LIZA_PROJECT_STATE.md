@@ -473,4 +473,187 @@ Next: finish local inventory, compare local clone with remote main, inspect depl
 - Consolidated CI run `44080900423`, commit `e36b1b8b407d01101b3745210ca71310ec4f3255`: 56/56 test files and 431/431 tests passed; TypeScript passed; production dependency audit found 0 vulnerabilities; Worker streaming smoke, production build, and generated Wrangler config validation passed.
 - Cloudflare automatic Workers Builds check failed for the feature-branch snapshot. No feature-branch deployment was attempted.
 - **Production activation is still pending:** Group 03 deployed `ACTION_DB`, but did not apply D1 migrations because the migration set contains later-group schemas. The memories table is in `0005_workspace_core.sql`; apply it only through a safe migration sequence that does not prematurely deploy later groups, then run live authenticated memory CRUD and chat smoke tests.
-- Per the required group order, **the active roadmap checkpoint remains Group 05**. The existing feature branch contains later-group baseline code, but no further Group 06 work is being advanced. Remain on Group 05 until the production D1 migration/release gate is resolved.
+- Historical checkpoint superseded on 2026-11-19: the active roadmap has advanced to consolidated GROUP 06. Group 05 implementation remains complete; its production activation gate is separately tracked.
+
+
+## 2026-11-19 — Consolidated 10-Group roadmap and active Group 06 checkpoint
+
+- The master roadmap is now exactly 10 active Groups. The former 24 Groups are retained only as detailed workstreams/task identifiers; no requirement is deleted and they are not 24 separate active Groups.
+- GROUPS 01–05: complete for their recorded implementation scope. GROUP 05 is verified 20/20; production D1/session activation remains a separate release gate.
+- GROUP 06 — Autonomous Agent Workforce and DevPilot: IN PROGRESS.
+- Group 06 source was reconciled onto current main through PR #13, merged at commit 42b561d6906e14fd38c6fe8b811c2a5bdefac22c on 2026-11-19. Exact-head GitHub Actions run 44450200549 passed TypeScript, tests, production build, generated Wrangler config and dependency audit (0 vulnerabilities).
+- The Group 06 queue worker, heartbeat/lease handling, bounded worker attempts, retry controls, approval-bound execution and nested Group 05/06 migration files are present in source and CI-tested. This is not proof of live production D1/cron execution.
+- Remaining Group 06 gates: inspect production D1 migration history/schema through the dedicated read-only workflow; only after that, request explicit approval for any migration/deployment; verify ACTION_DB and cron runtime; run authenticated task/approval/queue smoke tests. External side-effect executors remain disabled.
+- The product interface priority is Web first, Android app second, Telegram companion third; all share one backend and source of truth.
+- Current 10-Group mapping: G06 owns the agent/DevPilot workforce; G07 owns LinkedIn/social/growth/analytics; G08 owns integrations/database/identity/workspace/Telegram; G09 owns security/Web-App/infrastructure/quality; G10 owns final acceptance/release.
+- No production D1 migration or deployment was performed by this checkpoint.
+
+
+## 2026-11-19 — Group 06 source integration checkpoint
+
+The Group 06 implementation/evidence branch is `work/group06-manager-planner` at `f4a66ca5b7ce31b7701994b72cf94032136e109e`. It contains the manager/task system, scheduled D1 queue worker, lease/heartbeat recovery, bounded retry logic, migrations and focused tests. CI run `44449242096` for the pre-documentation implementation HEAD `a7c6e478a6078fdf4b603c7ab6d750ec9432207a` passed TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler validation and dependency audit.
+
+**Integration finding:** this Group 06 branch is not a safe direct merge candidate for `main` or this 10-Group roadmap branch. GitHub compare reports it is diverged from `main` by 615 commits ahead / 100 behind, and from `docs/autonomous-devpilot-master-spec` by 615 ahead / 108 behind, with merge base `3f0b138105ab3781e920b8853c41ae0d188735ec`. The feature branch contains the full accumulated application/source tree for earlier groups as well as Group 06, not an isolated Group 06 patch. A direct PR/merge would therefore bundle a large unrelated history and must not be attempted.
+
+**Safe integration plan:** keep the 10-Group roadmap branch as the documentation track; treat `work/group06-manager-planner` as the implementation evidence/source track; establish a clean integration base after the existing foundation PRs are reconciled, then port the complete dependency-closed Group 06 source set (manager/task APIs, queue worker, route/UI, migrations, generated Worker config and tests) with explicit file-level review and CI. Preserve the original branch and all older group work as traceability until this port is verified. No merge, rebase, migration, production deployment or destructive branch operation was performed.
+
+Production activation remains unverified and requires separate explicit authorization. Group 06 remains IN PROGRESS.
+
+## 2026-11-19 — Foundation PR compatibility audit (read-only)
+
+- Compared current `main` against PR #1, PR #2, PR #22, PR #23, and the Group 06 implementation branch.
+- PR #1 (`feat/base-multi-agent-orchestration`) is 14 commits ahead / 118 behind main, based on `90cfd13`. It introduces Gemini/PWA-era architecture and is not a safe current foundation; do not merge wholesale into the current Groq/first-party-auth application.
+- PR #2 (`liza/full-app-foundation`) is 23 commits ahead / 100 behind main, based on `3f0b138`. It contains a polished responsive Liza UI and browser-local chat history, but its root chat route is a separate 336-line UI implementation. The Group 06 branch's current root route is a 172-line route with task-save/task-notice integration. Replacing it wholesale would risk removing Group 06 task controls; port the UI/history features selectively and preserve task interactions.
+- PR #22 (`fix/group06-production-worker-name`) is a clean 3-commit fast-forward from current main and changes only deploy Worker-name safeguards, `bun.lock`, and the generated Wrangler config script. CI was previously verified green, but PR remains unmerged; no merge or deploy performed.
+- PR #23 remains a documentation-only 10-Group roadmap/specification track.
+- Group 06 branch still carries 615 commits ahead / 100 behind current main. It is not a direct merge candidate. Continue dependency-closed file-level integration from a clean current-main base; retain the original branch as evidence.
+- No branch was merged, rebased, force-updated, migrated, or deployed during this audit. Production remains untouched.
+
+## 2026-11-19 — Group 06 source parity recheck against current main
+
+A direct blob-SHA comparison between `main` and `work/group06-manager-planner` confirms that the following Group 06 implementation files are already present on current `main` with identical content (not merely similar filenames):
+
+- `src/lib/agents/task-queue-worker.ts`
+- `src/lib/agents/manager.ts`
+- `src/lib/agents/task-api.ts`
+- `src/routes/tasks.tsx`
+- `src/routes/api/tasks.ts`
+- `src/test/task-queue-worker.test.ts`
+- `migrations/group06/0003_task_queue_leases.sql`
+
+Therefore, the earlier 615-commit history divergence does not mean these core Group 06 files need to be ported. The immediate integration task is narrowed: audit the remaining Group 06 file set and runtime/config evidence for parity, identify only genuinely missing or different files, and avoid copying already-identical source or migrations. Keep Group 06 production activation marked BLOCKED until binding, remote migration state, scheduled invocation, and authenticated end-to-end execution are independently verified. No migration, deploy, merge, rebase, or branch rewrite was performed.
+
+## 2026-11-19 — Group 06 remaining parity audit
+
+Further blob-SHA checks confirm that the remaining core Group 06 implementation is also already identical on current `main` and `work/group06-manager-planner`: `coordination.ts`, `registry.ts`, `specialists.ts`, `action-policy.ts`, `task-approval.ts`, `task-execution-api.ts`, `routes/api/tasks/execute.ts`, and manager/task API/execution tests. `src/server.ts`, `wrangler.json`, and Group 06 migrations 0001–0003 are also identical.
+
+Two meaningful differences remain:
+
+1. `scripts/configure-production-d1.mjs` differs. Current `main` additionally requires `LIZA_AUTH_EMAIL` and `LIZA_AUTH_PASSWORD_HASH` in generated Worker secrets, while the older Group 06 branch version only declares `GROQ_API_KEY`. Current `main` is the safer and more current auth-integrated version; do not overwrite it with the branch copy.
+2. `.github/workflows/deploy.yml` differs. Current `main` validates all three required Worker secrets (Groq plus first-party email/password hash), whereas the older branch validates only Groq. Preserve current `main` workflow.
+
+The root chat route is the same 172-line task-aware implementation on current `main` and Group 06 branch. PR #2's separate polished UI/history route remains a selective UI enhancement candidate, not a wholesale replacement.
+
+Audit conclusion: no Group 06 application source, task route, tests, or migration needs porting from the 615-commit-diverged branch; the relevant core files are already in current `main`. The remaining release blockers are operational verification (production D1 binding/migration state, cron invocation, authenticated end-to-end task execution) and separate review of PR #22's Worker-name hardening. No changes to production, remote D1, or deployment configuration were made by this audit.
+
+## 2026-11-19 — PR #22 / PR #2 integration readiness
+
+- PR #22 is Open, mergeable according to GitHub, and exactly 3 commits ahead of current main with no behind commits. It changes only three files: adds the explicit `bot-banter-room` Worker-name pin to `scripts/configure-production-d1.mjs`, validates that name in `.github/workflows/deploy.yml`, and updates `bun.lock`. The PR version preserves current required Worker secrets `GROQ_API_KEY`, `LIZA_AUTH_EMAIL`, and `LIZA_AUTH_PASSWORD_HASH`. GitHub Actions typecheck/tests/build previously passed; Cloudflare Workers Builds check failed without useful diagnostic output. Do not merge automatically; production deploy remains separately gated.
+- PR #2 is Open and currently reported non-mergeable by GitHub. It is based on old commit `3f0b138`, not current main. It changes eight files, including the root chat route, orchestrator, agent types/defaults, PWA manifest, build workflow, and chat API tests. Therefore, treat it as a feature reference for selective UI/history porting, not as a merge-ready foundation. Rebase or porting would require a dedicated branch and fresh full CI; no rebase or merge was performed.
+- Immediate order: (1) review/resolve PR #22 CI failure evidence or merge only after explicit approval; (2) create a clean current-main-based UI integration branch for PR #2 features, preserving Group 06 task UI and auth; (3) run GitHub CI; (4) only then reassess product-level Group 06 acceptance. No production changes were made.
+
+## 2026-11-19 — selective current-main Web UI integration (PR #24)
+
+- Created draft PR #24, `feat: add persistent web chat history and theme toggle`, from current mainline on branch `integration/web-chat-history-theme`. It selectively ports browser-local chat history (maximum 50 chats), validated restore of locally stored messages, history open/select/delete controls, and light/dark theme toggle from the legacy PR #2 UI workstream.
+- The current Group 06 chat route was retained: Manager task creation, approval/status notices, Tasks navigation, and existing API transport remain in place. No wholesale replacement of the root route, orchestrator, auth, agent registry, or task runtime was made.
+- PR #24 head: `700bc480d757caef44af04b80e3ad12d2fe8ff0b`. GitHub Actions workflow run `44558098807` is in progress; an earlier run for the preceding commit was cancelled by the newer push. Final validation is pending; do not mark UI integration complete until typecheck, tests, Worker smoke, and production build pass.
+- PR #24 is draft/open and not merged. No production deployment, D1 migration, or Worker configuration change was made.
+
+## 2026-11-19 — PR #24 Web UI integration validation complete
+
+- PR #24 `feat: add persistent web chat history and theme toggle` is now Ready for Review (not merged), head `96138fac7a4978d1990852db7d5335acfb922dc4`.
+- CI run `44558313329` passed all required jobs: TypeScript, unit/integration tests, Cloudflare Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Selective UI features from PR #2 are now implemented on a current-main-based branch: local browser chat history (maximum 50 conversations), guarded restore of stored messages, history open/select/delete controls, and persisted light/dark theme toggle. Existing Group 06 Manager task creation, approval/status messaging, and Tasks navigation remain in the route.
+- PR #2 remains unmerged; its older orchestrator, auth, agent types, and root-route replacement were not imported. PR #24 contains one route file only.
+- PR #24 is mergeable per GitHub but intentionally not merged. No production deployment, D1 migration, or Worker configuration change was made.
+
+## 2026-11-19 — PR #24 extended UI controls and Cloudflare build parity
+
+- PR #24 head advanced to `92aa55cef15e431f1351bdb546d55fe3caf92197` with chat-history search, rename, and preservation of user-defined titles while messages update. It remains Ready for Review, open, and unmerged.
+- Latest GitHub Actions run `44558862987` passed TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Cloudflare Workers Builds check failed again for build `0d2a51a0-1edc-477b-a3e8-0739e56286fc`, with zero annotations and no error detail. The same opaque failure appears on PR #22 and PR #23 as well. Treat this as an unresolved Cloudflare build-pipeline blocker with unknown root cause; do not claim the code is the cause and do not retry production deployment without diagnostics and explicit approval.
+- PR #24 diff remains limited to `src/routes/index.tsx` (one file); current Manager task controls and route integration remain preserved. No production changes made.
+
+## 2026-11-19 — PR #24 assistant copy action and final CI
+
+- PR #24 head: `9bcc658cbe5385f814f550d541a271e7bf0e6d59`. Added a copy action for assistant responses, with a visible copied confirmation and clipboard failure handling.
+- Latest GitHub Actions run `44559367939` passed TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit. PR #24 is Ready for Review, open, mergeable, and unmerged.
+- Cloudflare Workers Builds check again failed for build `c55f728e-1218-471f-b5f4-1ae3829d7192` with no annotations/error detail. Repeated failure on PR #22, #23, and #24 indicates a common unresolved Cloudflare build pipeline issue, but does not establish a root cause. Do not label as code failure or deploy based on this check.
+- PR #24 remains limited to `src/routes/index.tsx`; no production deployment, D1 migration, or Worker configuration change.
+## 2026-11-19 — 10-Group roadmap completeness audit
+
+- Audited `planning/DOOT_LIZA_MASTER_ROADMAP.md`: all 24 former workstreams are present exactly as traceability sections and each maps to one of Groups 01–10. No missing workstream numbers (01–24).
+- Parsed 569 task identifiers across the master roadmap: 569 unique identifiers, no duplicates detected. The roadmap contains no standalone Group 11+ and no Part 33 or Part 34.
+- Confirmed consolidated mapping: workstreams 06, 07, 08, 09 and 15 → Group 06; 10–14 → Group 07; 16–19 → Group 08; 20–23 → Group 09; 24 → Group 10.
+- Found root `roadmap.md` still contained an obsolete six-item summary that could be mistaken for the complete plan. Replaced it with a pointer to the authoritative 10-Group master roadmap, current project state and DevPilot specification.
+- This is a documentation consistency audit, not proof that all roadmap features are implemented. Group 06 remains in progress; runtime activation and production release gates remain open.
+
+## 2026-11-19 — PR #24 responsive navigation checkpoint
+
+- PR #24 head `33c84dd6de8c659a24ef948907795463eef62bc9` adds responsive mobile navigation for existing app destinations and active-chat highlighting in addition to local history, search, rename/delete, persisted theme, and assistant-copy controls.
+- GitHub Actions run `44560992943` completed successfully: TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit all PASS.
+- Cloudflare Workers Builds check failed for build `9b89a9cb-8bd9-4795-8532-edda156d7708`, still with no error annotations or diagnostic text. This opaque failure repeats across PR #22/#23/#24; root cause remains unknown.
+- PR #24 remains open, Ready for Review, mergeable, and unmerged. Diff is confined to `src/routes/index.tsx`; no production deployment, D1 migration, or Worker config change.
+
+## 2026-11-19 — PR #22 exact Worker-target hardening review
+
+- Compared `fix/group06-production-worker-name` against current main: exactly three changed files. The only application/deploy code changes are the explicit Worker name `bot-banter-room` in `scripts/configure-production-d1.mjs` and a fail-closed generated-config name assertion in `.github/workflows/deploy.yml`. Third file is `bun.lock`; `package.json` is unchanged and matches main.
+- Main's current required-secret checks remain intact. The PR does not weaken first-party auth validation and does not touch the other two Workers.
+- GitHub Actions run `44551064228` passed all six CI stages. Cloudflare Workers Builds still fails opaquely with no error detail; PR #22 remains open/unmerged pending external build-pipeline diagnosis and release approval.
+
+## 2026-11-19 — PR #2 remaining legacy UI audit
+
+- Recompared PR #2 `liza/full-app-foundation` with current main after PR #24. Its remaining diffs are not safe to merge wholesale: the old root route would replace the current task-aware chat UI; its root shell omits current service-worker registration and authenticated session gating; its old orchestrator predates current Groq, memory, rate-limit, research, task and approval controls; and its workflow is materially weaker than current CI.
+- The manifest changes in PR #2 remove current `display_override`, orientation, categories and related-applications metadata, so current main's manifest is retained.
+- Useful user-facing chat controls have been selectively ported in PR #24 without replacing task interactions or security/runtime foundations. No additional PR #2 code was imported in this audit.
+## 2026-11-19 — Group 06 expired-lease completion hardening
+
+- Re-review of the D1 queue worker identified a stale-worker edge case: heartbeat() rejected expired leases, but finish() previously checked only task state and lease owner. An expired worker could therefore complete during the interval before another worker reclaimed the row.
+- Opened PR #25 (fix/group06-expired-lease-ownership) with a conditional completion write requiring lease_expires_at > now, plus validation of task ID, owner and timestamp before D1 write.
+- Regression tests cover expired-lease completion rejection and malformed completion metadata.
+- Exact-head GitHub Actions run 44563755080 PASS: TypeScript, unit/integration tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Cloudflare Workers Builds check remains failed with no diagnostic annotations/error detail; root cause unknown. PR #25 remains open/unmerged. No production deployment or D1 migration.
+
+## 2026-11-19 — Group 06 Bengali/Banglish approval-gate gap
+
+- Security review found the Manager high-risk detector was English-only. Some Bengali/Banglish commands for publishing, messaging, destructive changes, production deployment, financial actions and account changes could otherwise be misclassified as low risk.
+- Opened PR #26 (fix/group06-multilingual-approval-risk) to extend high-risk intent detection and persisted approval action classification for explicit Bengali-script and Banglish imperatives, while preserving draft-only requests as non-publishing.
+- Added regression tests for Bengali and Banglish high-risk task plans and action-type classification. Also added explicit “ফেসবুকে পোস্ট করো” and “post to LinkedIn” publishing coverage.
+- Exact-head GitHub Actions run 44563957057 PASS: TypeScript, 60 test files / 489 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit. PR #26 remains open/unmerged. No production action is executed by the patch.
+- Group 06 remains IN PROGRESS; do not start Group 07 before its complete acceptance gates pass.
+## 2026-11-19 — Group 06 scheduled-handler test coverage
+
+- Opened PR #27 (`test/group06-scheduled-handler`) with focused tests proving the Worker scheduled handler invokes the D1 queue processor only when ACTION_DB exists, fails closed when it is missing, and contains queue invocation errors.
+- Initial test run exposed only a mock setup defect (mock returned undefined); corrected the test mock to resolve the queue processor result. No production source change was needed.
+- Exact-head GitHub Actions run `44564906320` PASS: TypeScript, 61 test files / 466 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Cloudflare Workers Builds check failed opaquely with no diagnostic detail; same pipeline issue remains unresolved. PR #27 open/unmerged.
+
+## 2026-11-19 — Updated multilingual approval test coverage
+
+- PR #26 now includes additional financial-action cases for Bengali and Banglish requests. Latest exact-head run `44564819427` PASS: TypeScript, 60 test files / 495 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- PR #26 remains open/unmerged. High-risk external actions remain approval-gated; no production action or migration performed.
+## 2026-11-19 — Group 06 scheduled queue handler verification
+
+- PR #27 latest head `5c659e2b042de7617097a16aa2605b3b01f631ca`; GitHub Actions run `44564906320` PASS: TypeScript, 61 test files / 466 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Scheduled handler tests cover configured ACTION_DB invocation, missing-binding fail-closed behavior, and contained queue invocation errors. PR #27 remains open/unmerged; no production runtime claim.
+
+## 2026-11-19 — Group 06 DevPilot coding-workforce safety
+
+- PR #28 latest head `ada684ebf895cdf2be393b949c608344e376b04b`; GitHub Actions run `44566294002` PASS: TypeScript, 60 test files / 470 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Coding-workforce repository inventory now excludes additional credential/config paths (.npmrc, .pypirc, .netrc, cloud/SSH/Kubernetes/Docker credential paths, service-account JSON and common credential manifests). Diff review rejects unsafe/protected paths and recognizes common GitHub/AWS/Slack/API token formats. Coding-plan risk assessment now covers explicit Bengali/Banglish destructive, deployment, credential and permission intent.
+- This remains a planning/proposal-validation module; it does not yet inspect or modify a live repository, execute shell commands, or create commits/PRs itself. The controlled workspace/command runner and authenticated repository adapter remain unimplemented dependencies; do not claim DevPilot autonomy is complete.
+- PR #28 remains open/unmerged. Cloudflare Workers Builds check is still opaque/failed without diagnostics; no deployment or D1 migration.
+## 2026-11-19 — Group 06 bounded validation runner
+
+- PR #29 latest head `3d457e808d3ccd91a77ff6b1afb09bfddeacbc7b`; exact-head GitHub Actions run `44567459662` PASS: TypeScript, 60 test files / 469 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Added an injected validation-runner contract that preflights the full exact allowlist, runs checks sequentially, stops on first failure, handles cancellation, validates result evidence and bounds stdout/stderr. It never spawns a shell; the actual isolated command adapter remains unimplemented.
+- PR #29 open/unmerged; no production deployment.
+
+## 2026-11-19 — Group 06 DevPilot workflow engine
+
+- PR #30 latest head `4b936ec636dcce7e1acb0ceaf3c9fddf7027d63a`; exact-head GitHub Actions run `44569405137` PASS: TypeScript, 61 test files / 473 tests, Worker streaming smoke, production build, generated Wrangler config validation, and production dependency audit.
+- Added a bounded orchestration engine for repository identity/clean-tree inspection, coding plan, scoped file reads, proposal validation, pre-apply security review, exact proposal approval hashing, non-main branch creation, atomic base-SHA-conditional change application, allowlisted validation, post-change review, commit and PR creation. It never merges or deploys.
+- High-risk task intent and sensitive proposed paths (deployment workflows, migrations, Wrangler config, dependencies, authentication and authorization controls) require a verified approval hash bound to the exact proposal. Mismatched approvals are blocked before writes.
+- **Not production-autonomous yet:** no authenticated repository adapter is connected; no isolated shell/workspace implementation is connected; no persisted D1 checkpoint/resume API or Web UI is wired to this engine. These are explicit blockers, not completed capabilities. PR #30 remains open/unmerged.
+
+
+
+## 2026-11-20 — DevPilot durable execution bridge (PR #30)
+
+- PR #30 is open and mergeable, not merged. Latest reviewed head: `273ec052c3c24114c4233c3a3692273400215884` (32 files, +3,343 lines).
+- Exact-head GitHub Actions run `44697343115` passed: TypeScript, 66 test files / 557 tests, Worker streaming smoke, production build, generated Wrangler validation, and production dependency audit.
+- The branch now includes authenticated workspace-scoped Web task intake (`/api/devpilot/runs`), a Web run dashboard (`/devpilot`), D1 durable queue/checkpoints, repository-scoped single-worker claiming, bounded retries/leases, rate limits and queue caps.
+- High-risk approvals are persisted and payload-hash bound. After approval, the worker reuses the exact stored proposal rather than regenerating code; proposal source is scrubbed on completion, rejection, expiry, or terminal failure. Run history redacts proposal contents and approval hashes.
+- A least-privilege GitHub REST adapter now inventories/read files, creates task-scoped branches, performs non-force atomic commits, reuses an identical task-owned commit safely after retry, and opens draft PRs only. Groq generates bounded proposals. Validation runs only four fixed commands in an isolated GitHub Actions workflow. No arbitrary Worker shell execution, PR merge, deployment, publishing, or production mutation is enabled.
+- Runtime remains opt-in and inactive until `DEVPILOT_ENABLED=true`, a fine-grained `GITHUB_TOKEN`, exact `GITHUB_REPOSITORY_ALLOWLIST`, and existing `GROQ_API_KEY` are configured. PR #30 is not merged; Group 06 D1 migrations are not applied; no production secret/configuration was changed and no live GitHub/D1 execution smoke test has been run.
+- GROUP 06 remains IN PROGRESS. GROUP 07 has not started. Do not merge or deploy without explicit release authorization.
