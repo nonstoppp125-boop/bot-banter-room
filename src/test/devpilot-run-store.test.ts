@@ -54,7 +54,6 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.sql).toContain("worker_attempt_count >= 2");
     expect(mock.calls[0]?.sql).toContain("status = 'failed'");
     expect(mock.calls[0]?.sql).toContain("json_remove(checkpoint_json, '$.data.proposalFiles')");
-    expect(mock.calls[0]?.sql).toContain("worker_attempt_count = 0");
   });
 
   it("rejects DevPilot worker leases longer than two minutes", async () => {
@@ -111,6 +110,7 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.sql).toContain("a.status = 'approved'");
     expect(mock.calls[0]?.sql).toContain("a.expires_at > ?");
     expect(mock.calls[0]?.sql).toContain("json_remove(checkpoint_json, '$.data.proposalFiles')");
+    expect(mock.calls[0]?.sql).toContain("worker_attempt_count = 0");
   });
 
   it("marks a waiting DevPilot run blocked after the exact approval is rejected", async () => {
