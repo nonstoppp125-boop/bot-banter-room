@@ -233,15 +233,39 @@ export async function runClaimedDevPilotTask(input: {
   const onEvent = createDevPilotEventWriter(input.database, {
     runId: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
   });
-  const result = await runDevPilotTask({
-    taskId: input.run.id, task: input.run.task, repository: input.run.repository,
-    baseBranch: input.run.baseBranch, adapter: input.adapter, proposeChanges: input.proposeChanges,
-    ...(input.approval ? { approval: input.approval } : {}),
-    ...(input.verifyApproval ? { verifyApproval: input.verifyApproval } : {}),
-    onCheckpoint, onEvent,
-    ...(input.signal ? { signal: input.signal } : {}),
-    now,
-  });
+  const heartbeatController = new AbortController();
+  const abortFromInput = () => heartbeatController.abort(input.signal?.reason);
+  if (input.signal?.aborted) abortFromInput();
+  else input.signal?.addEventListener("abort", abortFromInput, { once: true });
+  let heartbeatInFlight: Promise<void> | null = null;
+  const heartbeatStore = createDevPilotRunStore(input.database);
+  const heartbeatTimer = setInterval(() => {
+    if (heartbeatInFlight || heartbeatController.signal.aborted) return;
+    const heartbeatNow = now();
+    heartbeatInFlight = heartbeatStore.heartbeat({
+      id: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
+      owner: input.owner, now: heartbeatNow.toISOString(),
+      leaseUntil: new Date(heartbeatNow.getTime() + 90_000).toISOString(),
+    }).then((alive) => {
+      if (!alive) heartbeatController.abort(new Error("DevPilot worker lease was lost."));
+    }).catch(() => {
+      heartbeatController.abort(new Error("DevPilot worker heartbeat failed."));
+    }).finally(() => { heartbeatInFlight = null; });
+  }, 20_000);
+  let result: DevPilotResult;
+  try {
+    result = await runDevPilotTask({
+      taskId: input.run.id, task: input.run.task, repository: input.run.repository,
+      baseBranch: input.run.baseBranch, adapter: input.adapter, proposeChanges: input.proposeChanges,
+      ...(input.approval ? { approval: input.approval } : {}),
+      ...(input.verifyApproval ? { verifyApproval: input.verifyApproval } : {}),
+      onCheckpoint, onEvent, signal: heartbeatController.signal, now,
+    });
+  } finally {
+    clearInterval(heartbeatTimer);
+    input.signal?.removeEventListener("abort", abortFromInput);
+    if (heartbeatInFlight) await heartbeatInFlight;
+  }
   if (result.status === "awaiting_approval") {
     try {
       if (!result.approvalPayloadHash) throw new Error("Approval payload hash is missing.");
