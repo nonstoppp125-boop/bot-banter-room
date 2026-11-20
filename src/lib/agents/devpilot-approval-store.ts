@@ -80,6 +80,18 @@ export function createDevPilotApprovalStore(database: D1Database) {
         };
       });
     },
+    expirePending: async (input: { now: string }) => {
+      if (!iso(input.now)) throw new Error("Invalid DevPilot approval expiry timestamp.");
+      const approvals = await database.prepare(
+        "UPDATE devpilot_approvals SET status = 'expired' WHERE status = 'pending' AND expires_at <= ?"
+      ).bind(input.now).run();
+      if (approvals.success === false) throw new Error("D1 DevPilot approval expiry failed.");
+      const runs = await database.prepare(
+        "UPDATE devpilot_runs SET status = 'blocked', checkpoint_json = json_remove(checkpoint_json, '$.data.proposalFiles'), checkpoint_version = checkpoint_version + 1, lease_owner = NULL, lease_expires_at = NULL, updated_at = ? WHERE status = 'awaiting_approval' AND id IN (SELECT a.task_id FROM devpilot_approvals a WHERE a.task_id = devpilot_runs.id AND a.workspace_id = devpilot_runs.workspace_id AND a.user_id = devpilot_runs.user_id AND a.status = 'expired' AND a.expires_at <= ?)"
+      ).bind(input.now, input.now).run();
+      if (runs.success === false) throw new Error("D1 DevPilot expired-run cleanup failed.");
+      return { approvals: approvals.meta?.changes ?? 0, runs: runs.meta?.changes ?? 0 };
+    },
     decide: async (input: { id: string; workspaceId: string; actorUserId: string; decision: "approved" | "rejected"; reason: string; now: string }) => {
       const reason = input.reason.trim().slice(0, 1000);
       if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.actorUserId) || !reason || !iso(input.now)) {
