@@ -57,3 +57,20 @@ export function createDevPilotApprovalStore(database: D1Database) {
     },
   };
 }
+
+export function createDevPilotApprovalVerifier(
+  database: D1Database,
+  identity: { workspaceId: string; userId: string; now?: () => Date },
+) {
+  const store = createDevPilotApprovalStore(database);
+  return (input: { approvalId: string; taskId: string; repository: string; payloadHash: string }) =>
+    store.verify({
+      id: input.approvalId,
+      workspaceId: identity.workspaceId,
+      userId: identity.userId,
+      taskId: input.taskId,
+      repository: input.repository,
+      payloadHash: input.payloadHash,
+      now: (identity.now ?? (() => new Date()))().toISOString(),
+    });
+}
