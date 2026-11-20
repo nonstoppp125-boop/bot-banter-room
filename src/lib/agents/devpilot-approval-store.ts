@@ -98,8 +98,8 @@ export function createDevPilotApprovalStore(database: D1Database) {
         throw new Error("Invalid DevPilot approval decision.");
       }
       const result = await database.prepare(
-        "UPDATE devpilot_approvals SET status = ?, decided_by_user_id = ?, decision_reason = ?, decided_at = ? WHERE id = ? AND workspace_id = ? AND status = 'pending' AND expires_at > ? AND EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = devpilot_approvals.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'admin'))"
-      ).bind(input.decision, input.actorUserId, reason, input.now, input.id, input.workspaceId, input.now, input.actorUserId).run();
+        "UPDATE devpilot_approvals SET status = ?, decided_by_user_id = ?, decision_reason = ?, decided_at = ? WHERE id = ? AND workspace_id = ? AND status = 'pending' AND expires_at > ? AND EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = devpilot_approvals.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'admin')) AND (? = 'rejected' OR EXISTS (SELECT 1 FROM devpilot_runs r WHERE r.id = devpilot_approvals.task_id AND r.workspace_id = devpilot_approvals.workspace_id AND r.user_id = devpilot_approvals.user_id AND json_array_length(json_extract(r.checkpoint_json, '$.data.proposalFiles')) > 0))"
+      ).bind(input.decision, input.actorUserId, reason, input.now, input.id, input.workspaceId, input.now, input.actorUserId, input.decision).run();
       if (result.success === false) throw new Error("D1 DevPilot approval decision failed.");
       return result.meta?.changes === 1;
     },
