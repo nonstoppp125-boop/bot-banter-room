@@ -13,6 +13,8 @@ export type AgentEnv = {
   CHAT_RATE_LIMITER?: ChatRateLimiter | undefined;
   GROQ_API_KEY?: string | undefined;
   /** Fine-grained GitHub token scoped to the repository allowlist; required only for DevPilot execution. */
+  /** Explicit opt-in switch; DevPilot execution stays disabled unless exactly "true". */
+  DEVPILOT_ENABLED?: string | undefined;
   GITHUB_TOKEN?: string | undefined;
   /** Comma-separated owner/repository allowlist for the DevPilot GitHub adapter. */
   GITHUB_REPOSITORY_ALLOWLIST?: string | undefined;
