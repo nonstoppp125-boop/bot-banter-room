@@ -51,10 +51,10 @@ export function createDevPilotRunStore(database: D1Database) {
         !input.task.trim() || input.task.length > 4000 || !iso(input.now)) throw new Error("Invalid DevPilot run.");
       const checkpoint = serialize(input.checkpoint, 100_000);
       const result = await database.prepare(
-        "INSERT INTO devpilot_runs (id, workspace_id, user_id, repository, base_branch, task_text, status, progress, checkpoint_version, checkpoint_json, created_at, updated_at) SELECT ?, ?, ?, ?, ?, ?, 'queued', 0, 0, ?, ?, ? WHERE EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?)"
+        "INSERT INTO devpilot_runs (id, workspace_id, user_id, repository, base_branch, task_text, status, progress, checkpoint_version, checkpoint_json, created_at, updated_at) SELECT ?, ?, ?, ?, ?, ?, 'queued', 0, 0, ?, ?, ? WHERE EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?) AND (SELECT COUNT(*) FROM devpilot_runs WHERE workspace_id = ? AND user_id = ? AND status IN ('queued', 'running', 'awaiting_approval')) < 3"
       ).bind(input.id, input.workspaceId, input.userId, input.repository, input.baseBranch, input.task,
-        checkpoint, input.now, input.now, input.workspaceId, input.userId).run();
-      if (result.success === false || result.meta?.changes !== 1) throw new Error("DevPilot run creation rejected or duplicated.");
+        checkpoint, input.now, input.now, input.workspaceId, input.userId, input.workspaceId, input.userId).run();
+      if (result.success === false || result.meta?.changes !== 1) throw new Error("DevPilot queue limit reached or run creation rejected.");
     },
     get: async (input: { id: string; workspaceId: string; userId: string }) => {
       if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.userId)) return null;
