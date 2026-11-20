@@ -131,6 +131,7 @@ describe("DevPilot durable approval store", () => {
     expect(mock.calls[0]?.sql).toContain("wm.role IN ('owner', 'admin')");
     expect(mock.calls[0]?.sql).toContain("status = 'pending'");
     expect(mock.calls[0]?.sql).toContain("json_array_length(json_extract(r.checkpoint_json, '$.data.proposalFiles')) > 0");
+    expect(mock.calls[0]?.sql).toContain("r.status = 'awaiting_approval'");
   });
 
   it("verifies workspace, user, task, repository, exact hash, status and expiry", async () => {
