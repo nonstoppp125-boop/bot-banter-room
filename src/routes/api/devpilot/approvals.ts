@@ -6,7 +6,13 @@ import type { AgentEnv } from "@/lib/agents/types";
 
 type RuntimeRequest = Request & { runtime?: { cloudflare?: { env?: AgentEnv } } };
 const MAX_BODY = 16_384;
-const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store", Vary: "Cookie" } });
+const json = (body: unknown, statusOrInit: number | ResponseInit = 200) => {
+  const init = typeof statusOrInit === "number" ? { status: statusOrInit } : statusOrInit;
+  const headers = new Headers(init.headers);
+  headers.set("Cache-Control", "no-store");
+  headers.set("Vary", "Cookie");
+  return Response.json(body, { ...init, headers });
+};
 function getEnv(request: Request): AgentEnv {
   return (request as RuntimeRequest).runtime?.cloudflare?.env ?? {};
 }
