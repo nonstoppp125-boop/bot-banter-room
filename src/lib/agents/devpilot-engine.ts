@@ -148,14 +148,18 @@ export async function runDevPilotTask(input:{
     const approvalRequired=plan.approvalRequired||changes.some(change=>/^(?:\.github\/workflows\/|migrations\/|wrangler(?:\.[^/]*)?$|package(?:-lock)?\.json$|bun\.lock$|src\/lib\/agents\/(?:session-auth|password-auth|approval-store|task-approval|action-policy|security-boundaries)\.ts$)/i.test(change.path));
     const effectivePlan=approvalRequired&&!plan.approvalRequired?{...plan,risk:"high" as const,approvalRequired:true,limitations:[...plan.limitations,"Sensitive deployment, migration, dependency, authentication and authorization paths require explicit approval."]}:plan;
     const approvalPayloadHash=await hashApprovalPayload({kind:"devpilot-code-change",taskId:input.taskId,repository:input.repository,baseBranch:input.baseBranch,baseSha:snapshot.headSha,targetBranch,plan:effectivePlan,proposal,review:initialReview});
+    const approvalProposalFiles=effectivePlan.approvalRequired?changes.map(change=>({path:change.path,beforeSha:change.beforeSha,content:change.content})):undefined;
+    if(approvalProposalFiles&&new TextEncoder().encode(JSON.stringify(approvalProposalFiles)).byteLength>70_000){
+      return await blocked("Approval proposal exceeds the safe inline review limit; split the change into smaller reviewable tasks.",25);
+    }
     await recordEvent("proposal-created","Validated code proposal and pre-apply security review completed.",[...changes.map(change=>change.path),approvalPayloadHash]);
-    await input.onCheckpoint?.({progress:25,stage:"proposal-created",data:{plan:effectivePlan,proposal:{id:proposal.id,repository:proposal.repository,baseSha:proposal.baseSha,targetBranch:proposal.targetBranch,paths:proposal.changes.map(change=>change.path)},approvalPayloadHash,review:initialReview}});
+    await input.onCheckpoint?.({progress:25,stage:"proposal-created",data:{plan:effectivePlan,proposal:{id:proposal.id,repository:proposal.repository,baseSha:proposal.baseSha,targetBranch:proposal.targetBranch,paths:proposal.changes.map(change=>change.path)},...(approvalProposalFiles?{proposalFiles:approvalProposalFiles}:{}),approvalPayloadHash,review:initialReview}});
     if(input.approval&&input.approval.payloadHash!==approvalPayloadHash){
       return await blocked("Approval payload does not match the current task, repository baseline and exact code proposal.",25);
     }
     if(effectivePlan.approvalRequired){
       if(!input.approval?.approvalId||!input.verifyApproval){
-        await input.onCheckpoint?.({progress:25,stage:"awaiting-approval",status:"awaiting_approval",data:{plan:effectivePlan,proposal:{id:proposal.id,repository:proposal.repository,baseSha:proposal.baseSha,targetBranch:proposal.targetBranch,paths:proposal.changes.map(change=>change.path)},approvalPayloadHash}});
+        await input.onCheckpoint?.({progress:25,stage:"awaiting-approval",status:"awaiting_approval",data:{plan:effectivePlan,proposal:{id:proposal.id,repository:proposal.repository,baseSha:proposal.baseSha,targetBranch:proposal.targetBranch,paths:proposal.changes.map(change=>change.path)},...(approvalProposalFiles?{proposalFiles:approvalProposalFiles}:{}),approvalPayloadHash}});
         return{status:"awaiting_approval",progress:25,plan:effectivePlan,proposal,approvalPayloadHash,events,reason:"A persisted approval record and trusted approval verifier are required before repository writes."};
       }
       const approved=await input.verifyApproval({approvalId:input.approval.approvalId,taskId:input.taskId,repository:input.repository,payloadHash:approvalPayloadHash});
