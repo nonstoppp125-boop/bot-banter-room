@@ -130,8 +130,8 @@ function ApprovalInboxPage() {
                 <label className="mt-4 block text-xs font-medium" htmlFor={"reason-" + item.id}>Decision reason</label>
                 <textarea id={"reason-" + item.id} value={reasons[item.id] || ""} onChange={(event) => setReasons((current) => ({ ...current, [item.id]: event.target.value }))} maxLength={1000} rows={2} placeholder="Why is this request approved or rejected?" className="mt-2 w-full resize-y rounded-lg border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
                 <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  <button onClick={() => void decide(item, "rejected")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
-                  <button onClick={() => void decide(item, "approved")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : "Approve"}</button>
+                  <button onClick={() => void decide(item, "rejected")} disabled={busy !== null} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
+                  <button onClick={() => void decide(item, "approved")} disabled={busy !== null} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : "Approve"}</button>
                 </div>
               </article>
             ))}
@@ -173,8 +173,8 @@ function ApprovalInboxPage() {
                   <label className="mt-4 block text-xs font-medium" htmlFor={"devpilot-reason-" + item.id}>Decision reason</label>
                   <textarea id={"devpilot-reason-" + item.id} value={devPilotReasons[item.id] || ""} onChange={(event) => setDevPilotReasons((current) => ({ ...current, [item.id]: event.target.value }))} maxLength={1000} rows={2} placeholder="Why is this exact code proposal approved or rejected?" className="mt-2 w-full resize-y rounded-lg border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
                   <div className="mt-3 flex flex-wrap justify-end gap-2">
-                    <button onClick={() => void decideDevPilot(item, "rejected")} disabled={busy !== null} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
-                    <button onClick={() => void decideDevPilot(item, "approved")} disabled={busy !== null} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : "Approve"}</button>
+                    <button onClick={() => void decideDevPilot(item, "rejected")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
+                    <button onClick={() => void decideDevPilot(item, "approved")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : "Approve"}</button>
                   </div>
                 </article>
               ))}
