@@ -359,10 +359,17 @@ export async function processDevPilotQueue(input: {
   const approvalId = data["approvalId"];
   const payloadHash = data["approvalPayloadHash"];
   const storedProposalFiles = data["proposalFiles"];
+  const validStoredProposal = Array.isArray(storedProposalFiles) && storedProposalFiles.length > 0 &&
+    storedProposalFiles.length <= 8 && storedProposalFiles.every((file) => {
+      if (typeof file !== "object" || file === null || Array.isArray(file)) return false;
+      const item = file as Record<string, unknown>;
+      return typeof item["path"] === "string" && item["path"].length > 0 && item["path"].length <= 240 &&
+        typeof item["content"] === "string" && item["content"].length <= 500_000 &&
+        (item["beforeSha"] === null || typeof item["beforeSha"] === "string");
+    });
   if ((approvalId !== undefined || payloadHash !== undefined) &&
     (typeof approvalId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(approvalId) ||
-      typeof payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(payloadHash) ||
-      !Array.isArray(storedProposalFiles) || storedProposalFiles.length === 0 || storedProposalFiles.length > 8)) {
+      typeof payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(payloadHash) || !validStoredProposal)) {
     const reason = "Stored DevPilot approval metadata is malformed; execution was blocked.";
     await createDevPilotRunStore(input.database).finish({
       id: claimed.id, workspaceId: claimed.workspaceId, userId: claimed.userId, owner: input.owner,
