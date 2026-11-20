@@ -98,7 +98,7 @@ export async function runValidationSuite(input:{
     if(input.signal?.aborted)return{status:"cancelled",passed:false,results,totalDurationMs,reason:"Validation suite was cancelled."};
     try{
       const result=await input.runner.run(input.signal?{command,timeoutMs,signal:input.signal}:{command,timeoutMs});
-      if(!Number.isInteger(result.exitCode)||!Number.isFinite(result.durationMs)||result.durationMs<0||typeof result.stdout!=="string"||typeof result.stderr!=="string"){
+      if(!Number.isInteger(result.exitCode)||!Number.isFinite(result.durationMs)||result.durationMs<0||result.durationMs>timeoutMs||typeof result.stdout!=="string"||typeof result.stderr!=="string"){
         return{status:"failed",passed:false,results,totalDurationMs,reason:"Validation runner returned malformed execution evidence."};
       }
       const bounded={command,exitCode:result.exitCode,stdout:result.stdout.replace(/\u0000/g,"").slice(0,maxOutputChars),stderr:result.stderr.replace(/\u0000/g,"").slice(0,maxOutputChars),durationMs:result.durationMs};
