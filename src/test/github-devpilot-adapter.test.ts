@@ -118,6 +118,36 @@ describe("GitHub DevPilot adapter", () => {
     expect(update?.body).toContain(commitSha);
   });
 
+  it("reuses an identical task-owned commit after a worker retry", async () => {
+    const baseSha = "a".repeat(40);
+    const commitSha = "b".repeat(40);
+    const source = "export const value = 2;";
+    const calls: string[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes("/git/ref/heads/")) return Response.json({ object: { sha: commitSha } });
+      if (url.includes("/git/commits/" + commitSha)) {
+        return Response.json({ parents: [{ sha: baseSha }], commit: { tree: { sha: "c".repeat(40) } } });
+      }
+      if (url.includes("/contents/src/app.ts")) {
+        return Response.json({
+          type: "file", encoding: "base64", content: btoa(source), sha: "d".repeat(40), size: source.length,
+        });
+      }
+      return Response.json({});
+    });
+    const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", {
+      fetcher: fetcher as typeof fetch,
+    });
+    const result = await adapter.applyChanges({
+      repository: "owner/repo", branch: "devpilot/task-1", baseSha,
+      changes: [{ path: "src/app.ts", beforeSha: "e".repeat(40), content: source }],
+    });
+    expect(result.headSha).toBe(commitSha);
+    expect(calls.some((url) => url.endsWith("/git/blobs"))).toBe(false);
+  });
+
   it("inventories regular files but excludes symbolic links and truncated trees", async () => {
     const sha = "a".repeat(40);
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
