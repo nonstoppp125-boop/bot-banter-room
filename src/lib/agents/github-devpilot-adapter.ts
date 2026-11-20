@@ -176,9 +176,9 @@ export function createGitHubDevPilotAdapter(
     async readFiles(input): Promise<DevPilotFileContent[]> {
       if (input.repository.toLowerCase() !== repository.toLowerCase() || input.paths.length > 20 ||
         new Set(input.paths).size !== input.paths.length) throw new Error("GitHub adapter file-read scope is invalid.");
+      for (const path of input.paths) assertSafePath(path);
       const ref = await getRef(input.branch, input.signal);
       assertSha(ref.object.sha);
-      for (const path of input.paths) assertSafePath(path);
       const files = await Promise.all(input.paths.map((path) => getContent(path, input.branch, input.signal)));
       return files;
     },
