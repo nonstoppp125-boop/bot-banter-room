@@ -4,7 +4,7 @@ import type {
   DevPilotRepositoryAdapter,
   DevPilotRepositorySnapshot,
 } from "./devpilot-engine";
-import type { CodeChangeProposal, DiffReviewInput } from "./coding-workforce";
+import type { DiffReviewInput } from "./coding-workforce";
 
 type GitHubEnv = {
   GITHUB_TOKEN?: string;
@@ -14,7 +14,7 @@ type GitHubEnv = {
 type GitHubApiOptions = { fetcher?: typeof fetch; pollIntervalMs?: number };
 type ApiRef = { object: { sha: string } };
 type ApiCommit = { sha: string; commit: { tree: { sha: string } } };
-type ApiTree = { truncated: boolean; tree: Array<{ path: string; type: string; sha: string; size?: number }> };
+type ApiTree = { truncated: boolean; tree: Array<{ path: string; type: string; mode?: string; sha: string; size?: number }> };
 type ApiContent = { type: string; encoding: string; content: string; sha: string; size: number };
 type ApiWorkflowRun = {
   id: number; name: string; status: string; conclusion: string | null;
@@ -51,6 +51,13 @@ function abortIfNeeded(signal?: AbortSignal): void {
 
 function assertSha(value: string): void {
   if (!/^[a-f0-9]{40}$/i.test(value)) throw new Error("GitHub returned an invalid commit SHA.");
+}
+
+function assertSafePath(value: string): void {
+  if (!value || value.length > 240 || value.startsWith("/") || value.includes("\\\\") ||
+    value.split("/").some((part) => !part || part === "." || part === "..")) {
+    throw new Error("DevPilot repository path is unsafe.");
+  }
 }
 
 function assertBranch(value: string): void {
@@ -156,7 +163,7 @@ export function createGitHubDevPilotAdapter(
         throw new Error("Repository inventory is too large or truncated; DevPilot refuses an incomplete inspection.");
       }
       const files = tree.tree
-        .filter((entry) => entry.type === "blob" && typeof entry.path === "string" && typeof entry.sha === "string")
+        .filter((entry) => entry.type === "blob" && (entry.mode === "100644" || entry.mode === "100755") && typeof entry.path === "string" && typeof entry.sha === "string")
         .map((entry) => ({
           path: entry.path,
           sha: entry.sha,
@@ -171,6 +178,7 @@ export function createGitHubDevPilotAdapter(
         new Set(input.paths).size !== input.paths.length) throw new Error("GitHub adapter file-read scope is invalid.");
       const ref = await getRef(input.branch, input.signal);
       assertSha(ref.object.sha);
+      for (const path of input.paths) assertSafePath(path);
       const files = await Promise.all(input.paths.map((path) => getContent(path, input.branch, input.signal)));
       return files;
     },
@@ -197,17 +205,20 @@ export function createGitHubDevPilotAdapter(
       assertSha(input.baseSha);
       const ref = await getRef(input.branch, input.signal);
       if (ref.object.sha !== input.baseSha) throw new Error("DevPilot branch HEAD changed; refusing a non-fast-forward write.");
+      for (const change of input.changes) assertSafePath(change.path);
       const totalBytes = input.changes.reduce((sum, change) => sum + new TextEncoder().encode(change.content).byteLength, 0);
       if (totalBytes > MAX_CHANGE_BYTES || new Set(input.changes.map((change) => change.path)).size !== input.changes.length) {
         throw new Error("DevPilot proposed changes exceed GitHub adapter limits.");
       }
       const baseCommit = await api<ApiCommit>("GET", `/repos/${repository}/git/commits/${input.baseSha}`, undefined, input.signal);
+      const baseTree = await api<ApiTree>("GET", `/repos/${repository}/git/trees/${baseCommit.commit.tree.sha}?recursive=1`, undefined, input.signal);
+      const baseModes = new Map(baseTree.tree.filter((entry) => entry.type === "blob").map((entry) => [entry.path, entry.mode]));
       const blobs = await Promise.all(input.changes.map(async (change) => {
         const result = await api<{ sha: string }>("POST", `/repos/${repository}/git/blobs`, {
           content: change.content,
           encoding: "utf-8",
         }, input.signal);
-        return { path: change.path, mode: "100644", type: "blob", sha: result.sha };
+        return { path: change.path, mode: baseModes.get(change.path) === "100755" ? "100755" : "100644", type: "blob", sha: result.sha };
       }));
       const tree = await api<{ sha: string }>("POST", `/repos/${repository}/git/trees`, {
         base_tree: baseCommit.commit.tree.sha,
@@ -264,6 +275,7 @@ export function createGitHubDevPilotAdapter(
         throw new Error("GitHub adapter pull-request scope mismatch.");
       }
       assertSha(input.commitSha);
+      assertBranch(input.baseBranch);
       const owner = repository.split("/")[0];
       const existing = await api<Array<{ number: number; html_url: string }>>(
         "GET",
@@ -283,6 +295,7 @@ export function createGitHubDevPilotAdapter(
 
     async run(input): Promise<{ exitCode: number; stdout: string; stderr: string; durationMs: number }> {
       if (!VALIDATION_COMMANDS.has(input.command)) throw new Error("DevPilot validation command is not allowlisted.");
+      if (!Number.isInteger(input.timeoutMs) || input.timeoutMs < 1_000 || input.timeoutMs > 300_000) throw new Error("DevPilot validation timeout is invalid.");
       if (!activeBranch) throw new Error("DevPilot validation branch is not initialized.");
       const startedAt = Date.now();
       const workflowPath = encodeURIComponent(workflow);
