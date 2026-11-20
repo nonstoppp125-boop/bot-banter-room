@@ -128,7 +128,10 @@ export async function runDevPilotTask(input:{
     await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});
     const files=await input.adapter.readFiles({repository:input.repository,branch:input.baseBranch,paths:plan.filesToInspect,...(input.signal?{signal:input.signal}:{})});
     const allowedPaths=new Set(plan.filesToInspect);
-    if(files.length!==plan.filesToInspect.length||files.length>20||files.some(file=>!allowedPaths.has(file.path)||file.content.length>1_000_000||!SHA.test(file.sha))){
+    const returnedPaths=new Set(files.map(file=>file.path));
+    if(files.length!==plan.filesToInspect.length||files.length>20||returnedPaths.size!==files.length||
+      plan.filesToInspect.some(path=>!returnedPaths.has(path))||
+      files.some(file=>!allowedPaths.has(file.path)||file.content.length>1_000_000||!SHA.test(file.sha))){
       return await blocked("Repository adapter returned an out-of-scope or oversized file.");
     }
     for(const file of files){
