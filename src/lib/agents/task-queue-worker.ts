@@ -48,9 +48,12 @@ export function createD1QueueStore(database: QueueDatabase) {
     finish: async (input: { id: string; owner: string; status: "completed" | "failed" | "cancelled"; result: unknown; now: string }) => {
       const payload = JSON.stringify(input.result);
       if (payload.length > 200_000) throw new Error("Queue result exceeds its storage limit.");
+      if (!ID.test(input.id) || !ID.test(input.owner) || !Number.isFinite(Date.parse(input.now))) {
+        throw new Error("Invalid queue task completion.");
+      }
       const result = await database.prepare(
-        "UPDATE agent_tasks SET status = ?, result_json = ?, lease_owner = NULL, lease_expires_at = NULL, heartbeat_at = NULL, updated_at = ? WHERE id = ? AND status = 'running' AND lease_owner = ?"
-      ).bind(input.status, payload, input.now, input.id, input.owner).run();
+        "UPDATE agent_tasks SET status = ?, result_json = ?, lease_owner = NULL, lease_expires_at = NULL, heartbeat_at = NULL, updated_at = ? WHERE id = ? AND status = 'running' AND lease_owner = ? AND lease_expires_at > ?"
+      ).bind(input.status, payload, input.now, input.id, input.owner, input.now).run();
       if (result.success === false) throw new Error("D1 queue task completion failed.");
       return result.meta?.changes === 1;
     },
