@@ -1,0 +1,53 @@
+name: DevPilot isolated validation
+run-name: DevPilot validation: ${{ inputs.command }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Allowlisted validation command
+        required: true
+        type: choice
+        options:
+          - npm run typecheck
+          - npm test
+          - npm run build
+          - git diff --check
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devpilot-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout requested DevPilot branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run one allowlisted validation command
+        env:
+          DEVPILOT_COMMAND: ${{ inputs.command }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$DEVPILOT_COMMAND" in
+            "npm run typecheck") npm run typecheck ;;
+            "npm test") npm test ;;
+            "npm run build") npm run build ;;
+            "git diff --check") git diff --check HEAD^ HEAD ;;
+            *) echo "Unsupported DevPilot validation command." >&2; exit 64 ;;
+          esac
