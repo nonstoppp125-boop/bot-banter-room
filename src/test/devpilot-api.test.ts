@@ -121,6 +121,18 @@ describe("authenticated DevPilot run API", () => {
     expect(state.queries.some((query) => query.startsWith("INSERT INTO devpilot_runs"))).toBe(true);
   });
 
+  it("canonicalizes repository casing to the scheduled worker queue key", async () => {
+    const state = database();
+    const response = await handleDevPilotRunRequest(new Request(url, {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://liza.example", "Content-Type": "application/json" },
+      body: JSON.stringify({ task: "Add a utility", repository: "OWNER/REPO" }),
+    }), env(state.db));
+    expect(response.status).toBe(201);
+    const payload = await response.json() as { run: { repository: string } };
+    expect(payload.run.repository).toBe("owner/repo");
+  });
+
   it("rejects repositories outside the configured allowlist", async () => {
     const response = await handleDevPilotRunRequest(new Request(url, {
       method: "POST",
