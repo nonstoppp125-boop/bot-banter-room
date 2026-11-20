@@ -107,7 +107,7 @@ describe("DevPilot durable run store", () => {
   it("appends evidence only when the run belongs to the same workspace and user", async () => {
     const mock = database();
     await createDevPilotRunStore(mock.db).appendEvent({
-      id: "event-1", runId: identity.id, ...identity, type: "verified",
+      ...identity, id: "event-1", runId: identity.id, type: "verified",
       timestamp: now, summary: "Typecheck passed", evidence: ["npm run typecheck"],
     });
     expect(mock.calls[0]?.sql).toContain("WHERE EXISTS (SELECT 1 FROM devpilot_runs");
@@ -132,7 +132,7 @@ describe("DevPilot durable run store", () => {
       ...identity, owner: "worker-1", expectedVersion: 0, progress: 20, checkpoint: "x".repeat(100_001), now,
     })).rejects.toThrow("storage limit");
     await expect(store.appendEvent({
-      id: "", runId: identity.id, ...identity, type: "verified", timestamp: "invalid", summary: "",
+      ...identity, id: "", runId: identity.id, type: "verified", timestamp: "invalid", summary: "",
     })).rejects.toThrow("Invalid DevPilot event");
   });
 });
