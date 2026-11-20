@@ -51,6 +51,26 @@ describe("GitHub DevPilot adapter", () => {
     expect(calls[3]?.init?.body).toContain('"command":"npm test"');
   });
 
+  it.each([
+    { label: "inactive workflow", response: { path: ".github/workflows/devpilot-validation.yml", state: "disabled" } },
+    { label: "unexpected workflow path", response: { path: ".github/workflows/other.yml", state: "active" } },
+  ])("fails closed for an $label before dispatch", async ({ response }) => {
+    const calls: string[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.endsWith("/actions/workflows/devpilot-validation.yml")) return Response.json(response);
+      return Response.json({});
+    });
+    const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", {
+      fetcher: fetcher as typeof fetch,
+    });
+    await expect(adapter.run({ command: "npm test", timeoutMs: 5_000 }))
+      .rejects.toThrow(response.state === "disabled" ? "not active" : "not active");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toContain("/actions/workflows/devpilot-validation.yml");
+  });
+
   it("fails clearly before dispatch when the fixed workflow is missing from the default branch", async () => {
     const calls: string[] = [];
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
