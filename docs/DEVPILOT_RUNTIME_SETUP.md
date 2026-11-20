@@ -15,7 +15,7 @@ Set these only after reviewing and merging the DevPilot runtime code and applyin
 | `GROQ_API_KEY` | Secret | Environment-specific Groq API key |
 | `GITHUB_TOKEN` | Secret | Fine-grained token restricted to the single repository above |
 
-The validation workflow defaults to `devpilot-validation.yml`; `DEVPILOT_VALIDATION_WORKFLOW` is optional. Preview must use a separate D1 database, rate-limit namespace and secrets; never copy Production bindings or secrets into Preview.
+The adapter dispatches only the fixed `devpilot-validation.yml` workflow; runtime configuration cannot select another workflow. Preview must use a separate D1 database, rate-limit namespace and secrets; never copy Production bindings or secrets into Preview.
 
 ## GitHub token permissions
 
