@@ -154,8 +154,9 @@ export async function runDevPilotTask(input:{
     const diff=await input.adapter.inspectDiff({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,...(input.signal?{signal:input.signal}:{})});
     const proposedByPath=new Map(changes.map(change=>[change.path,change.content]));
     const actualByPath=new Map(diff.files.map(file=>[file.path,file.content]));
-    const diffMatchesProposal=proposedByPath.size===actualByPath.size&&[...proposedByPath].every(([path,content])=>actualByPath.get(path)===content);
-    if(!diffMatchesProposal)return blocked("Post-validation diff does not exactly match the approved proposal.",90);
+    const actualDiffIsWellFormed=Array.isArray(diff.files)&&diff.files.length===changes.length&&actualByPath.size===diff.files.length&&diff.files.every(file=>typeof file.path==="string"&&typeof file.content==="string");
+    const diffMatchesProposal=actualDiffIsWellFormed&&proposedByPath.size===actualByPath.size&&[...proposedByPath].every(([path,content])=>actualByPath.get(path)===content);
+    if(!diffMatchesProposal)return blocked("Post-validation diff is malformed or does not exactly match the approved proposal.",90);
     const finalTestsChanged=diff.files.some(file=>/(^|\/)([^/]+\.)?(test|spec)\.[cm]?[jt]sx?$|(^|\/)(__tests__|tests)\//i.test(file.path));
     const finalReview=reviewCodeDiff({files:diff.files,testsChanged:finalTestsChanged});
     if(!finalReview.passed||!finalTestsChanged)return blocked("Post-validation diff review failed or test changes are missing.",90);
