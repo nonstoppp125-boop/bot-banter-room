@@ -270,3 +270,14 @@ No merge to main; no production deployment.
 - Former workstreams 06–09 and 15 are retained as detailed traceability sections inside GROUP 06; they are not separate active Groups.
 - GROUP 06 remains IN PROGRESS. PR #13 is merged to main and its exact-head CI passed (run 44450200549). This proves the reconciled source snapshot builds and passes its CI suite, not that production D1 migrations or scheduled runtime execution have been activated.
 - Remaining blockers are production D1 migration-history inspection, explicit release authorization before any migration/deployment, ACTION_DB/cron runtime verification, and authenticated live task/approval/queue smoke tests. External-action executors remain disabled.
+
+
+## 2026-11-20 — DevPilot durable execution bridge (PR #30)
+
+- PR #30 is open and mergeable, not merged. Latest reviewed head: `273ec052c3c24114c4233c3a3692273400215884` (32 files, +3,343 lines).
+- Exact-head GitHub Actions run `44697343115` passed: TypeScript, 66 test files / 557 tests, Worker streaming smoke, production build, generated Wrangler validation, and production dependency audit.
+- The branch now includes authenticated workspace-scoped Web task intake (`/api/devpilot/runs`), a Web run dashboard (`/devpilot`), D1 durable queue/checkpoints, repository-scoped single-worker claiming, bounded retries/leases, rate limits and queue caps.
+- High-risk approvals are persisted and payload-hash bound. After approval, the worker reuses the exact stored proposal rather than regenerating code; proposal source is scrubbed on completion, rejection, expiry, or terminal failure. Run history redacts proposal contents and approval hashes.
+- A least-privilege GitHub REST adapter now inventories/read files, creates task-scoped branches, performs non-force atomic commits, reuses an identical task-owned commit safely after retry, and opens draft PRs only. Groq generates bounded proposals. Validation runs only four fixed commands in an isolated GitHub Actions workflow. No arbitrary Worker shell execution, PR merge, deployment, publishing, or production mutation is enabled.
+- Runtime remains opt-in and inactive until `DEVPILOT_ENABLED=true`, a fine-grained `GITHUB_TOKEN`, exact `GITHUB_REPOSITORY_ALLOWLIST`, and existing `GROQ_API_KEY` are configured. PR #30 is not merged; Group 06 D1 migrations are not applied; no production secret/configuration was changed and no live GitHub/D1 execution smoke test has been run.
+- GROUP 06 remains IN PROGRESS. GROUP 07 has not started. Do not merge or deploy without explicit release authorization.
