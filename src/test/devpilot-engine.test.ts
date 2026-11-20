@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runDevPilotTask, type DevPilotRepositoryAdapter } from "@/lib/agents/devpilot-engine";
+import { runClaimedDevPilotTask, runDevPilotTask, type DevPilotRepositoryAdapter } from "@/lib/agents/devpilot-engine";
 import type { CodeChangeProposal } from "@/lib/agents/coding-workforce";
 
 const snapshot = {
@@ -37,6 +37,31 @@ function adapter(overrides: Partial<DevPilotRepositoryAdapter> = {}) {
   };
   return { adapter: base, state };
 }
+function durableDatabase(failApprovalInsert = false) {
+  const calls: Array<{ sql: string; values: unknown[] }> = [];
+  return {
+    calls,
+    db: {
+      prepare(sql: string) {
+        return {
+          bind(...values: unknown[]) {
+            calls.push({ sql, values });
+            return {
+              async run() {
+                if (failApprovalInsert && sql.startsWith("INSERT INTO devpilot_approvals")) {
+                  return { success: false, meta: { changes: 0 } };
+                }
+                return { success: true, meta: { changes: 1 } };
+              },
+              async first<T>() { return null as T | null; },
+              async all<T>() { return { success: true, results: [] as T[] }; },
+            };
+          },
+        };
+      },
+    },
+  };
+}
 const baseInput = (task = "Add a small utility and tests") => ({
   taskId: "task-123",
   task,
@@ -44,6 +69,43 @@ const baseInput = (task = "Add a small utility and tests") => ({
   baseBranch: "main",
   now: () => new Date("2026-11-19T16:00:00.000Z"),
   proposeChanges: async () => changes,
+});
+
+describe("durable DevPilot approval handoff", () => {
+  const run = {
+    id: "task-123", workspaceId: "workspace-1", userId: "user-1",
+    repository: "owner/repo", baseBranch: "main", task: "Deploy this to production",
+    checkpointVersion: 0, progress: 0,
+  };
+
+  it("creates a persisted approval request after saving the exact proposal checkpoint", async () => {
+    const db = durableDatabase();
+    const state = adapter();
+    const result = await runClaimedDevPilotTask({
+      database: db.db, run, owner: "worker-1", adapter: state.adapter,
+      proposeChanges: async () => changes,
+      now: () => new Date("2026-11-20T07:00:00.000Z"),
+    });
+    expect(result.status).toBe("awaiting_approval");
+    expect(result.approvalId).toMatch(/^[a-f0-9]{32}$/);
+    expect(db.calls.some((call) => call.sql.startsWith("INSERT INTO devpilot_approvals"))).toBe(true);
+    expect(db.calls.find((call) => call.sql.startsWith("INSERT INTO devpilot_approvals"))?.values).toContain(result.approvalPayloadHash);
+    expect(state.state.writes).toBe(0);
+  });
+
+  it("blocks the waiting run if the approval record cannot be persisted", async () => {
+    const db = durableDatabase(true);
+    const state = adapter();
+    const result = await runClaimedDevPilotTask({
+      database: db.db, run, owner: "worker-1", adapter: state.adapter,
+      proposeChanges: async () => changes,
+      now: () => new Date("2026-11-20T07:00:00.000Z"),
+    });
+    expect(result.status).toBe("blocked");
+    expect(result.reason).toContain("Approval record could not be persisted");
+    expect(db.calls.some((call) => call.sql.includes("status = 'blocked'") && call.sql.includes("status = 'awaiting_approval'"))).toBe(true);
+    expect(state.state.writes).toBe(0);
+  });
 });
 
 describe("bounded DevPilot repository workflow engine", () => {
