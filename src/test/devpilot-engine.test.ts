@@ -126,6 +126,29 @@ describe("bounded DevPilot repository workflow engine", () => {
     expect(state.state.writes).toBe(0);
   });
 
+  it("rejects a post-validation diff that adds an unapproved file", async () => {
+    const state = adapter({
+      async inspectDiff() {
+        return { files: [...changes, { path: "src/unapproved.ts", content: "export const injected = true;\\n" }], testsChanged: true };
+      },
+    });
+    const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter });
+    expect(result.status).toBe("blocked");
+    expect(result.reason).toContain("exactly match");
+    expect(state.state.commits).toBe(0);
+    expect(state.state.pullRequests).toBe(0);
+  });
+
+  it("derives final test coverage from actual changed paths instead of adapter metadata", async () => {
+    const state = adapter({
+      async inspectDiff() { return { files: changes, testsChanged: false }; },
+    });
+    const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter });
+    expect(result.status).toBe("completed");
+    expect(state.state.commits).toBe(1);
+    expect(state.state.pullRequests).toBe(1);
+  });
+
   it("does not commit or open a PR when validation fails", async () => {
     const state = adapter({ async run({ command }) { state.state.commands.push(command); return { exitCode: command === "npm test" ? 1 : 0, stdout: "", stderr: "failed", durationMs: 10 }; } });
     const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter });
