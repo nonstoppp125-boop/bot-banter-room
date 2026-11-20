@@ -60,14 +60,15 @@ export function createDevPilotApprovalStore(database: D1Database) {
       }>();
       if (result.success === false) throw new Error("D1 DevPilot approval list failed.");
       return (result.results ?? []).map(row => {
-        let proposalFiles: Array<{ path: string; beforeSha: string | null; content: string }> = [];
+        let proposalFiles: Array<{ path: string; beforeSha: string | null; beforeContent: string | null; content: string }> = [];
         try {
           const checkpoint = JSON.parse(row.checkpoint_json) as { data?: { proposalFiles?: unknown } };
           if (Array.isArray(checkpoint.data?.proposalFiles)) {
-            proposalFiles = checkpoint.data.proposalFiles.filter((file): file is { path: string; beforeSha: string | null; content: string } =>
+            proposalFiles = checkpoint.data.proposalFiles.filter((file): file is { path: string; beforeSha: string | null; beforeContent: string | null; content: string } =>
               typeof file === "object" && file !== null &&
               typeof (file as { path?: unknown }).path === "string" &&
               ((file as { beforeSha?: unknown }).beforeSha === null || typeof (file as { beforeSha?: unknown }).beforeSha === "string") &&
+              ((file as { beforeContent?: unknown }).beforeContent === null || typeof (file as { beforeContent?: unknown }).beforeContent === "string") &&
               typeof (file as { content?: unknown }).content === "string" &&
               (file as { content: string }).content.length <= 500_000
             );
