@@ -158,6 +158,21 @@ describe("bounded DevPilot repository workflow engine", () => {
     expect(state.state.commits).toBe(0);
   });
 
+  it("rejects duplicate or missing source paths returned by the repository adapter", async () => {
+    const state = adapter({
+      async readFiles() {
+        return [
+          { path: "src/app.ts", sha: "abcdef123456", content: "export const value = 0;\\n" },
+          { path: "src/app.ts", sha: "abcdef123456", content: "export const value = 0;\\n" },
+        ];
+      },
+    });
+    const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter });
+    expect(result.status).toBe("blocked");
+    expect(result.reason).toContain("out-of-scope");
+    expect(state.state.writes).toBe(0);
+  });
+
   it("preserves dirty working trees and refuses to create a branch", async () => {
     const state = adapter({ async inspectRepository() { return { ...snapshot, workingTreeClean: false }; } });
     const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter });
