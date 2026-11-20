@@ -29,7 +29,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
       - name: Require Cloudflare and D1 configuration
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -51,7 +52,7 @@ jobs:
           }
           NODE
       - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
+        run: bun install --frozen-lockfile
       - name: Audit production dependencies
         run: npm run security:audit
       - name: Verify TypeScript
