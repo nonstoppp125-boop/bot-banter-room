@@ -226,3 +226,10 @@ DevPilot is not complete until all are true:
 10. Update project-state, verification log, requirements matrix, and release docs.
 
 Do not mark any sequence item complete without source references and test/runtime evidence.
+
+
+## 2026-11-20 implementation checkpoint — PR #30
+
+The following components are implemented on the open PR #30 branch and passed exact-head CI run `44697343115` (66 test files, 557 tests, TypeScript, Worker smoke, production build, Wrangler validation, dependency audit): authenticated Web task intake/dashboard; D1 durable runs/checkpoints; approval inbox integration with hash-bound proposal persistence and deterministic approved-proposal resume; repository-scoped queue leases/retries; bounded Groq proposal generation; least-privilege GitHub REST repository adapter; task-scoped non-force commits; draft PR creation; and a GitHub Actions validation workflow restricted to four fixed commands.
+
+**Capability boundary:** this is a source-verified implementation checkpoint, not a production activation. PR #30 is unmerged. The Worker feature flag remains off unless explicitly configured; no GitHub token has been configured by this change, no Group 06 D1 migration has been applied to production, and no live authenticated GitHub/D1 end-to-end run has been verified. DevPilot does not merge PRs, deploy Workers, publish social content, or execute arbitrary shell commands inside the Worker. The A–Z master capability remains IN PROGRESS until production configuration, live approval/queue/runtime smoke tests, recovery tests, and release acceptance are explicitly completed.
