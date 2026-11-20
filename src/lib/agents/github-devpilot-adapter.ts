@@ -9,7 +9,6 @@ import type { DiffReviewInput } from "./coding-workforce";
 type GitHubEnv = {
   GITHUB_TOKEN?: string | undefined;
   GITHUB_REPOSITORY_ALLOWLIST?: string | undefined;
-  DEVPILOT_VALIDATION_WORKFLOW?: string | undefined;
 };
 type GitHubApiOptions = { fetcher?: typeof fetch; pollIntervalMs?: number };
 type ApiRef = { object: { sha: string } };
@@ -95,8 +94,8 @@ export function createGitHubDevPilotAdapter(
   if (!targetBranch.startsWith("devpilot/")) throw new Error("DevPilot may write only to task-scoped branches.");
   const fetcher = options.fetcher ?? fetch;
   const pollIntervalMs = Math.max(1_000, Math.min(options.pollIntervalMs ?? 4_000, 10_000));
-  const workflow = env.DEVPILOT_VALIDATION_WORKFLOW?.trim() || "devpilot-validation.yml";
-  if (!/^[A-Za-z0-9._/-]+\.ya?ml$/i.test(workflow)) throw new Error("DevPilot validation workflow filename is invalid.");
+  // Never let runtime configuration select a different workflow with the Actions-write token.
+  const workflow = "devpilot-validation.yml";
   let activeBranch = targetBranch;
 
   async function api<T>(
