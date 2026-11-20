@@ -337,8 +337,7 @@ export function createGitHubDevPilotAdapter(
         );
         const run = result.workflow_runs.find((candidate) =>
           !previousRunIds.has(candidate.id) && candidate.head_branch === activeBranch && candidate.head_sha === expectedHeadSha &&
-          candidate.event === "workflow_dispatch" && candidate.name === "DevPilot isolated validation" &&
-          candidate.display_title === `DevPilot validation: ${input.command}` &&
+          candidate.event === "workflow_dispatch" && candidate.display_title === `DevPilot validation: ${input.command}` &&
           Date.parse(candidate.created_at) >= startedAt - 15_000);
         if (run?.status === "completed") {
           const durationMs = Date.now() - startedAt;
