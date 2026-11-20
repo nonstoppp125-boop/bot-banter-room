@@ -59,7 +59,7 @@ export type DevPilotProposalGenerator = (input:{
 
 const SHA=/^[a-f0-9]{7,64}$/i;
 const REPOSITORY=/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
-const TASK_ID=/^(?!.*\\.\\.)(?!.*\\.$)(?!.*\\.lock$)[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/i;
+const TASK_ID=/^(?!.*\.\.)(?!.*\.$)(?!.*\.lock$)[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/i;
 
 function addEvent(events:EngineeringEvent[],taskId:string,type:EngineeringEvent["type"],summary:string,evidence:string[],now:()=>Date):void{
   const sequence=String(events.length+1).padStart(2,"0");
