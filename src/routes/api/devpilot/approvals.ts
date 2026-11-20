@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createD1SessionStore, readSessionCookie } from "@/lib/agents/session-auth";
 import { createDevPilotApprovalStore } from "@/lib/agents/devpilot-approval-store";
+import { createDevPilotRunStore } from "@/lib/agents/devpilot-run-store";
 import type { AgentEnv } from "@/lib/agents/types";
 
 type RuntimeRequest = Request & { runtime?: { cloudflare?: { env?: AgentEnv } } };
@@ -97,13 +98,27 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
             typeof body.reason !== "string" || !body.reason.trim() || body.reason.length > 1000) {
             return Response.json({ error: "Invalid approval decision." }, { status: 400 });
           }
-          const updated = await createDevPilotApprovalStore(auth.env.ACTION_DB!).decide({
+          const approvalStore = createDevPilotApprovalStore(auth.env.ACTION_DB!);
+          const updated = await approvalStore.decide({
             id: body.approvalId, workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
             decision: body.decision, reason: body.reason, now: auth.now,
           });
-          return updated
-            ? Response.json({ approvalId: body.approvalId, status: body.decision })
-            : Response.json({ error: "Approval is unavailable, expired or already decided." }, { status: 409 });
+          if (!updated) return Response.json({ error: "Approval is unavailable, expired or already decided." }, { status: 409 });
+          const approval = await approvalStore.getForAdmin({
+            id: body.approvalId, workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
+          });
+          let runUpdated = false;
+          if (approval) {
+            const runs = createDevPilotRunStore(auth.env.ACTION_DB!);
+            const input = {
+              id: approval.taskId, workspaceId: approval.workspaceId, userId: approval.userId,
+              approvalId: approval.id, repository: approval.repository, payloadHash: approval.payloadHash, now: auth.now,
+            };
+            runUpdated = body.decision === "approved"
+              ? await runs.resumeApproved(input)
+              : await runs.rejectAwaitingApproval(input);
+          }
+          return Response.json({ approvalId: body.approvalId, status: body.decision, runUpdated });
         } catch {
           return Response.json({ error: "Unable to record approval decision." }, { status: 500 });
         }
