@@ -84,6 +84,40 @@ describe("GitHub DevPilot adapter", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("commits a bounded proposal with one non-force Git ref update", async () => {
+    const baseSha = "a".repeat(40);
+    const commitSha = "b".repeat(40);
+    const calls: Array<{ url: string; method: string; body?: string }> = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method || "GET";
+      calls.push({ url, method, ...(typeof init?.body === "string" ? { body: init.body } : {}) });
+      if (url.includes("/git/ref/heads/")) return Response.json({ object: { sha: baseSha } });
+      if (url.includes("/git/commits/" + baseSha)) return Response.json({ commit: { tree: { sha: "c".repeat(40) } } });
+      if (url.includes("/git/trees/")) return Response.json({ truncated: false, tree: [{ path: "src/app.ts", type: "blob", mode: "100755", sha: "d".repeat(40) }] });
+      if (url.endsWith("/git/blobs")) return Response.json({ sha: "e".repeat(40) });
+      if (url.endsWith("/git/trees")) return Response.json({ sha: "f".repeat(40) });
+      if (url.endsWith("/git/commits")) return Response.json({ sha: commitSha });
+      if (url.includes("/git/refs/heads/")) return Response.json({ ref: "refs/heads/devpilot/task-1" });
+      return Response.json({});
+    });
+    const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", {
+      fetcher: fetcher as typeof fetch,
+    });
+    const result = await adapter.applyChanges({
+      repository: "owner/repo", branch: "devpilot/task-1", baseSha,
+      changes: [{ path: "src/app.ts", beforeSha: "d".repeat(40), content: "export const value = 2;" }],
+    });
+    expect(result.headSha).toBe(commitSha);
+    const blob = calls.find((call) => call.url.endsWith("/git/blobs"));
+    const tree = calls.find((call) => call.url.endsWith("/git/trees"));
+    const update = calls.find((call) => call.method === "PATCH");
+    expect(blob?.body).toContain('"encoding":"utf-8"');
+    expect(tree?.body).toContain('"mode":"100755"');
+    expect(update?.body).toContain('"force":false');
+    expect(update?.body).toContain(commitSha);
+  });
+
   it("inventories regular files but excludes symbolic links and truncated trees", async () => {
     const sha = "a".repeat(40);
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
