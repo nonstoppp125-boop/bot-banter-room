@@ -27,7 +27,7 @@ type ApprovalRow = {
   id: string; workspace_id: string; user_id: string; task_id: string; repository: string;
   payload_hash: string; status: "pending" | "approved" | "rejected" | "expired";
   decided_by_user_id: string | null; decision_reason: string | null;
-  expires_at: string; created_at: string; decided_at: string | null;
+  expires_at: string; created_at: string; decided_at: string | null; checkpoint_json?: string;
 };
 function database(row: ApprovalRow | null = approvedRow) {
   const calls: Array<{ sql: string; values: unknown[] }> = [];
@@ -62,6 +62,8 @@ describe("DevPilot durable approval store", () => {
     });
     expect(mock.calls[0]?.sql).toContain("EXISTS (SELECT 1 FROM workspace_members");
     expect(mock.calls[0]?.values).toContain(identity.payloadHash);
+    expect(mock.calls[0]?.sql).toContain("r.status = 'awaiting_approval'");
+    expect(mock.calls[0]?.sql).toContain("json_extract(r.checkpoint_json, '$.data.approvalPayloadHash')");
   });
 
   it("loads approval identity only for a workspace owner or admin", async () => {
@@ -75,13 +77,16 @@ describe("DevPilot durable approval store", () => {
   });
 
   it("lists pending approvals only to workspace owners and admins", async () => {
-    const mock = database();
+    const mock = database({ ...approvedRow, checkpoint_json: JSON.stringify({ data: { proposalFiles: [
+      { path: "src/app.ts", beforeSha: "abcdef123456", content: "export const value = 1;" },
+    ] } }) });
     const store = createDevPilotApprovalStore(mock.db);
     const pending = await store.listPending({
       workspaceId: identity.workspaceId, actorUserId: "admin-1", now: "2026-11-20T02:00:00.000Z",
     });
     expect(pending).toHaveLength(1);
     expect(pending[0]?.taskId).toBe(identity.taskId);
+    expect(pending[0]?.proposalFiles[0]?.path).toBe("src/app.ts");
     expect(mock.calls[0]?.sql).toContain("wm.role IN ('owner', 'admin')");
     expect(mock.calls[0]?.sql).toContain("a.status = 'pending'");
   });
