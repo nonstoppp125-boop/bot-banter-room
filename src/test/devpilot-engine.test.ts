@@ -108,7 +108,7 @@ describe("durable DevPilot queue processor", () => {
     const db = queuedDatabase();
     const state = adapter();
     const result = await processDevPilotQueue({
-      database: db.db, owner: "worker-1",
+      database: db.db, owner: "worker-1", repository: "owner/repo",
       createAdapter: () => state.adapter,
       proposeChanges: async () => changes,
       now: () => new Date("2026-11-20T07:00:00.000Z"),
@@ -139,7 +139,7 @@ describe("durable DevPilot queue processor", () => {
     }, approvalRow, "Deploy this to production");
     const state = adapter();
     const result = await processDevPilotQueue({
-      database: db.db, owner: "worker-1",
+      database: db.db, owner: "worker-1", repository: "owner/repo",
       createAdapter: () => state.adapter,
       proposeChanges: async () => changes,
       now: () => new Date("2026-11-20T07:00:00.000Z"),
