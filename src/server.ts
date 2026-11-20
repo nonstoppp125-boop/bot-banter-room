@@ -76,6 +76,7 @@ export default {
       } else {
         await processDevPilotQueue({
           database: env.ACTION_DB,
+          repository: "nonstoppp125-boop/bot-banter-room",
           owner: "devpilot-worker-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12),
           createAdapter: ({ repository, targetBranch }) =>
             createGitHubDevPilotAdapter(env, repository, targetBranch),
