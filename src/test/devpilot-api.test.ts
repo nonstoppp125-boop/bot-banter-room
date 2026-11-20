@@ -34,7 +34,7 @@ function database() {
             async all<T>() { return { success: true, results: rows as unknown as T[] }; },
             async run() {
               if (query.startsWith("INSERT INTO devpilot_runs")) {
-                const [id, workspaceId, userId, repository, baseBranch, task, , , checkpoint, createdAt, updatedAt] = args;
+                const [id, workspaceId, userId, repository, baseBranch, task, checkpoint, createdAt, updatedAt] = args;
                 rows.push({
                   id, workspace_id: workspaceId, user_id: userId, repository, base_branch: baseBranch,
                   task_text: task, status: "queued", progress: 0, worker_attempt_count: 0,
