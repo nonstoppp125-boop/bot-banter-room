@@ -233,11 +233,11 @@ export interface FileRoutesByFullPath {
   '/linkedin-studio': typeof LinkedInStudioRoute
   '/devpilot': typeof DevPilotRoute
   '/tasks': typeof TasksRoute
-  '/devpilot': typeof DevPilotRoute
 }
 export interface FileRoutesByTo {
   '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
   '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
+  '/devpilot': typeof DevPilotRoute
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
@@ -265,6 +265,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
   '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
+  '/devpilot': typeof DevPilotRoute
   __root__: typeof rootRouteImport
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
@@ -312,6 +313,7 @@ export interface RootRouteChildren {
   ApiDevPilotApprovalsRoute: typeof ApiDevPilotApprovalsRoute
   ApiDevPilotRunsRoute: typeof ApiDevPilotRunsRoute
   TasksRoute: typeof TasksRoute
+  DevPilotRoute: typeof DevPilotRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
   SettingsPrivacyRoute: typeof SettingsPrivacyRoute
