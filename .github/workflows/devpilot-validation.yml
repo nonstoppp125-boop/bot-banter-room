@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout requested DevPilot branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
