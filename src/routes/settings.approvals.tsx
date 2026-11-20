@@ -13,7 +13,7 @@ type Approval = {
 type DevPilotApproval = {
   id: string; userId: string; taskId: string; repository: string;
   summary: string; expiresAt: string; createdAt: string;
-  proposalFiles: Array<{ path: string; beforeSha: string | null; content: string }>;
+  proposalFiles: Array<{ path: string; beforeSha: string | null; beforeContent: string | null; content: string }>;
 };
 
 function ApprovalInboxPage() {
@@ -165,7 +165,9 @@ function ApprovalInboxPage() {
                           <div key={file.path}>
                             <p className="mb-1 break-all text-xs font-semibold">{file.path}</p>
                             <p className="mb-2 break-all text-[11px] text-muted-foreground">Base SHA: {file.beforeSha || "New file"}</p>
-                            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">{file.content}</pre>
+                            {file.beforeContent !== null && <><p className="mb-1 text-[11px] font-semibold text-muted-foreground">Current content</p><pre className="mb-2 max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">{file.beforeContent}</pre></>}
+                            <p className="mb-1 text-[11px] font-semibold text-muted-foreground">Proposed content</p>
+                            <pre className="max-h-60 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">{file.content}</pre>
                           </div>
                         ))}
                     </div>
