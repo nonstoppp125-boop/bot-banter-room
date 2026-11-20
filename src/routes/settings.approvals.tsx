@@ -12,7 +12,7 @@ type Approval = {
 };
 type DevPilotApproval = {
   id: string; userId: string; taskId: string; repository: string;
-  summary: string; expiresAt: string; createdAt: string;
+  summary: string; status: "pending" | "approved"; expiresAt: string; createdAt: string;
   proposalFiles: Array<{ path: string; beforeSha: string | null; beforeContent: string | null; content: string }>;
 };
 
@@ -82,10 +82,12 @@ function ApprovalInboxPage() {
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ approvalId: item.id, decision, reason }),
       });
-      const data = await response.json() as { error?: string; runUpdated?: boolean };
+      const data = await response.json() as { error?: string; runUpdated?: boolean; recovered?: boolean };
       if (!response.ok) throw new Error(data.error || "DevPilot approval decision could not be saved.");
       setNotice(decision === "approved"
-        ? (data.runUpdated ? "DevPilot approval recorded; the run is queued for a worker." : "DevPilot approval recorded; no active run was resumed.")
+        ? (data.recovered
+          ? (data.runUpdated ? "Approval was already recorded; the DevPilot run has now been re-queued." : "Approval is already recorded; the run is still waiting for recovery.")
+          : (data.runUpdated ? "DevPilot approval recorded; the run is queued for a worker." : "DevPilot approval recorded; no active run was resumed."))
         : "DevPilot proposal rejected.");
       await load();
     } catch (cause) {
@@ -120,7 +122,7 @@ function ApprovalInboxPage() {
               <article key={item.id} className="rounded-xl border border-border bg-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div><p className="font-semibold">{item.actionType}</p><p className="mt-1 text-sm">{item.summary}</p></div>
-                  <span className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">Pending</span>
+                  <span className="rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">{item.status === "approved" ? "Approved — resume pending" : "Pending"}</span>
                 </div>
                 <dl className="mt-3 grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                   <div><dt className="inline">Requester: </dt><dd className="inline break-all">{item.userId}</dd></div>
@@ -172,11 +174,11 @@ function ApprovalInboxPage() {
                         ))}
                     </div>
                   </details>
-                  <label className="mt-4 block text-xs font-medium" htmlFor={"devpilot-reason-" + item.id}>Decision reason</label>
+                  <label className="mt-4 block text-xs font-medium" htmlFor={"devpilot-reason-" + item.id}>{item.status === "approved" ? "Recovery note" : "Decision reason"}</label>
                   <textarea id={"devpilot-reason-" + item.id} value={devPilotReasons[item.id] || ""} onChange={(event) => setDevPilotReasons((current) => ({ ...current, [item.id]: event.target.value }))} maxLength={1000} rows={2} placeholder="Why is this exact code proposal approved or rejected?" className="mt-2 w-full resize-y rounded-lg border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
                   <div className="mt-3 flex flex-wrap justify-end gap-2">
-                    <button onClick={() => void decideDevPilot(item, "rejected")} disabled={busy !== null} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
-                    <button onClick={() => void decideDevPilot(item, "approved")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : "Approve"}</button>
+                    <button onClick={() => void decideDevPilot(item, "rejected")} disabled={busy !== null || item.status === "approved"} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
+                    <button onClick={() => void decideDevPilot(item, "approved")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : item.status === "approved" ? "Retry resume" : "Approve"}</button>
                   </div>
                 </article>
               ))}
