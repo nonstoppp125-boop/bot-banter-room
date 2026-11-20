@@ -73,7 +73,11 @@ export function createDevPilotRunStore(database: D1Database) {
       return (result.results ?? []).map(restore);
     },
     claimNext: async (input: { owner: string; repository: string; now: string; leaseUntil: string }) => {
-      if (!ID.test(input.owner) || !/^[A-Za-z0-9_.-]{1,100}\\/[A-Za-z0-9_.-]{1,100}$/.test(input.repository) || !iso(input.now) || !iso(input.leaseUntil) ||
+      const repositoryParts = input.repository.split("/");
+      if (!ID.test(input.owner) || repositoryParts.length !== 2 ||
+        !/^[A-Za-z0-9_.-]{1,100}$/.test(repositoryParts[0] ?? "") ||
+        !/^[A-Za-z0-9_.-]{1,100}$/.test(repositoryParts[1] ?? "") ||
+        !iso(input.now) || !iso(input.leaseUntil) ||
         Date.parse(input.leaseUntil) <= Date.parse(input.now) ||
         Date.parse(input.leaseUntil) - Date.parse(input.now) > 120_000) {
         throw new Error("Invalid DevPilot queue lease claim.");
