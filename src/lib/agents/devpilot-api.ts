@@ -119,11 +119,14 @@ export async function handleDevPilotRunRequest(request: Request, env: DevPilotAp
     if (!body || typeof body["task"] !== "string" || !body["task"].trim() || body["task"].length > 4_000) {
       return json({ error: "A task between 1 and 4,000 characters is required." }, 400);
     }
-    const repository = body["repository"];
+    const requestedRepository = body["repository"];
     const baseBranch = body["baseBranch"] ?? "main";
-    if (typeof repository !== "string" || !allowedRepositories(env).has(repository.toLowerCase())) {
+    if (typeof requestedRepository !== "string") {
       return json({ error: "Repository is not in the DevPilot allowlist." }, 403);
     }
+    // Persist the canonical allowlist spelling so scheduled workers can claim the same queue key.
+    const repository = [...allowedRepositories(env)].find((allowed) => allowed === requestedRepository.toLowerCase());
+    if (!repository) return json({ error: "Repository is not in the DevPilot allowlist." }, 403);
     if (typeof baseBranch !== "string" || !validBranch(baseBranch) || baseBranch.startsWith("devpilot/")) {
       return json({ error: "A valid base branch is required." }, 400);
     }
