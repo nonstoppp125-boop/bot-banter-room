@@ -94,7 +94,7 @@ describe("bounded DevPilot repository workflow engine", () => {
     const checkpoints: Array<{ stage: string; status?: string }> = [];
     const result = await runDevPilotTask({
       ...baseInput("Deploy this to production"), adapter: state.adapter,
-      onCheckpoint: async (checkpoint) => { checkpoints.push({ stage: checkpoint.stage, status: checkpoint.status }); },
+      onCheckpoint: async (checkpoint) => { checkpoints.push({ stage: checkpoint.stage, ...(checkpoint.status ? { status: checkpoint.status } : {}) }); },
     });
     expect(checkpoints.at(-1)).toEqual({ stage: "awaiting-approval", status: "awaiting_approval" });
     expect(result.status).toBe("awaiting_approval");
