@@ -151,7 +151,7 @@ export async function runDevPilotTask(input:{
     const actualByPath=new Map(diff.files.map(file=>[file.path,file.content]));
     const diffMatchesProposal=proposedByPath.size===actualByPath.size&&[...proposedByPath].every(([path,content])=>actualByPath.get(path)===content);
     if(!diffMatchesProposal)return blocked("Post-validation diff does not exactly match the approved proposal.",90);
-    const finalTestsChanged=diff.files.some(file=>/(?:^|\\/)(?:[^/]*\\.)?(?:test|spec)\\.[cm]?[jt]sx?$|(?:^|\\/)(__tests__|tests)\\//i.test(file.path));
+    const finalTestsChanged=diff.files.some(file=>/(^|\/)([^/]+\.)?(test|spec)\.[cm]?[jt]sx?$|(^|\/)(__tests__|tests)\//i.test(file.path));
     const finalReview=reviewCodeDiff({files:diff.files,testsChanged:finalTestsChanged});
     if(!finalReview.passed||!finalTestsChanged)return blocked("Post-validation diff review failed or test changes are missing.",90);
     currentProgress=90;
