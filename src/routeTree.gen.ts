@@ -221,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof TasksRoute
 }
 export interface FileRoutesByTo {
+  '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
@@ -246,6 +247,7 @@ export interface FileRoutesByTo {
   '/linkedin-studio': typeof LinkedInStudioRoute
 }
 export interface FileRoutesById {
+  '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
   __root__: typeof rootRouteImport
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
