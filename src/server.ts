@@ -68,8 +68,11 @@ export default {
       console.error("D1 task queue invocation failed.", error);
     });
     if (env.DEVPILOT_ENABLED === "true") {
-      if (!env.GITHUB_TOKEN || !env.GITHUB_REPOSITORY_ALLOWLIST || !env.GROQ_API_KEY) {
-        console.error("DevPilot queue is enabled but its GitHub allowlist, token or Groq key is missing; execution skipped.");
+      const allowedRepositories = new Set((env.GITHUB_REPOSITORY_ALLOWLIST ?? "")
+        .split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
+      if (!env.GITHUB_TOKEN || !env.GROQ_API_KEY ||
+        !allowedRepositories.has("nonstoppp125-boop/bot-banter-room")) {
+        console.error("DevPilot queue is enabled but its repository allowlist, GitHub token or Groq key is missing; execution skipped.");
       } else {
         await processDevPilotQueue({
           database: env.ACTION_DB,
