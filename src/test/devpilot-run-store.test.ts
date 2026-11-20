@@ -56,6 +56,7 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.sql).toContain("RETURNING id, workspace_id, user_id");
     expect(mock.calls[0]?.sql).toContain("worker_attempt_count < 2");
     expect(mock.calls[0]?.sql).toContain("ORDER BY created_at ASC LIMIT 1");
+    expect(mock.calls[0]?.sql).toContain("NOT EXISTS (SELECT 1 FROM devpilot_runs active");
     expect(mock.calls[0]?.sql).toContain("lease_expires_at <= ?");
   });
 
