@@ -225,11 +225,25 @@ export async function runClaimedDevPilotTask(input: {
   now?: () => Date;
 }): Promise<DevPilotResult> {
   const now = input.now ?? (() => new Date());
-  const onCheckpoint = createDevPilotCheckpointWriter(input.database, {
+  const checkpointWriter = createDevPilotCheckpointWriter(input.database, {
     id: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
     owner: input.owner, initialVersion: input.run.checkpointVersion,
     initialProgress: input.run.progress, now,
   });
+  const onCheckpoint = async (checkpoint: DevPilotCheckpointInput) => {
+    const data = typeof checkpoint.data === "object" && checkpoint.data !== null && !Array.isArray(checkpoint.data)
+      ? checkpoint.data as Record<string, unknown> : { value: checkpoint.data };
+    await checkpointWriter({
+      ...checkpoint,
+      data: {
+        ...data,
+        ...(input.approval ? {
+          approvalId: input.approval.approvalId,
+          approvalPayloadHash: input.approval.payloadHash,
+        } : {}),
+      },
+    });
+  };
   const onEvent = createDevPilotEventWriter(input.database, {
     runId: input.run.id, workspaceId: input.run.workspaceId, userId: input.run.userId,
   });
