@@ -89,7 +89,9 @@ export async function handleDevPilotRunRequest(request: Request, env: DevPilotAp
     const store = createDevPilotRunStore(database);
     if (request.method === "GET") {
       const runs = await store.list({ workspaceId: session.workspaceId, userId: session.userId, limit: 50 });
-      return json({ runs });
+      const enabled = env.DEVPILOT_ENABLED === "true" && Boolean(env.GITHUB_TOKEN) && Boolean(env.GROQ_API_KEY) &&
+        allowedRepositories(env).has("nonstoppp125-boop/bot-banter-room");
+      return json({ runs, enabled });
     }
     if (request.method === "HEAD") return new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } });
     if (env.DEVPILOT_ENABLED !== "true" || !env.GITHUB_TOKEN || !env.GROQ_API_KEY) {
