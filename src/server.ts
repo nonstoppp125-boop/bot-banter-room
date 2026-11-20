@@ -74,19 +74,29 @@ export default {
         !allowedRepositories.has("nonstoppp125-boop/bot-banter-room")) {
         console.error("DevPilot queue is enabled but its repository allowlist, GitHub token, Groq key or rate limiter is missing; execution skipped.");
       } else {
-        await processDevPilotQueue({
-          database: env.ACTION_DB,
-          repository: "nonstoppp125-boop/bot-banter-room",
-          owner: "devpilot-worker-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12),
-          createAdapter: ({ repository, targetBranch }) =>
-            createGitHubDevPilotAdapter(env, repository, targetBranch),
-          proposeChanges: createGroqDevPilotProposalGenerator(env),
-          now: () => new Date(),
-        }).then((result) => {
-          if (result) console.info("DevPilot queue task finished.", { status: result.status, progress: result.progress });
+        const scheduledRate = await env.CHAT_RATE_LIMITER.limit({
+          key: "devpilot:scheduled:nonstoppp125-boop/bot-banter-room",
         }).catch((error) => {
-          console.error("DevPilot queue invocation failed.", error);
+          console.error("DevPilot scheduled rate-limit check failed; execution skipped.", error);
+          return { success: false };
         });
+        if (!scheduledRate.success) {
+          console.warn("DevPilot scheduled rate limit reached or unavailable; queue remains untouched.");
+        } else {
+          await processDevPilotQueue({
+            database: env.ACTION_DB,
+            repository: "nonstoppp125-boop/bot-banter-room",
+            owner: "devpilot-worker-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12),
+            createAdapter: ({ repository, targetBranch }) =>
+              createGitHubDevPilotAdapter(env, repository, targetBranch),
+            proposeChanges: createGroqDevPilotProposalGenerator(env),
+            now: () => new Date(),
+          }).then((result) => {
+            if (result) console.info("DevPilot queue task finished.", { status: result.status, progress: result.progress });
+          }).catch((error) => {
+            console.error("DevPilot queue invocation failed.", error);
+          });
+        }
       }
     }
   },
