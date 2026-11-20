@@ -86,6 +86,8 @@ export function addProductionD1Binding(config, {
 
   return {
     ...config,
+    // Pin production deploys to the existing primary Worker; never use Nitro's auto-generated name.
+    name: "bot-banter-room",
     d1_databases,
     triggers: { ...(config.triggers ?? {}), crons: [...new Set([...(config.triggers?.crons ?? []), "* * * * *"])] },
     secrets: { ...(config.secrets ?? {}), required: [...requiredSecrets] },
