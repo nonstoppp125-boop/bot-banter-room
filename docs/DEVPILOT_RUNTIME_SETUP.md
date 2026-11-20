@@ -32,7 +32,7 @@ Do not grant administration, secrets, deployments, environments, or organization
 
 - The Worker itself does not execute shell commands.
 - Code changes are committed only to a task-specific `devpilot/<task-id>` branch.
-- Validation runs on an ephemeral GitHub-hosted runner through `.github/workflows/devpilot-validation.yml`.
+- Validation runs on an ephemeral GitHub-hosted runner through `.github/workflows/devpilot-validation.yml`. GitHub requires a `workflow_dispatch` workflow to exist on the repository default branch; the adapter verifies that the fixed workflow is present and active before dispatch and fails closed until the reviewed workflow is merged.
 - The workflow accepts only `npm run typecheck`, `npm test`, `npm run build`, and `git diff --check`; arbitrary command strings are rejected.
 - Pull requests are created as drafts. DevPilot does not merge, deploy, publish, or change production configuration.
 - High-risk tasks require a persisted, hash-bound workspace approval. The approval inbox displays the current and proposed file contents before an administrator can approve.
