@@ -38,7 +38,7 @@ describe("DevPilot durable run store", () => {
   it("claims queued work atomically and can recover only expired leases", async () => {
     const mock = database();
     const claimed = await createDevPilotRunStore(mock.db).claim({
-      ...identity, owner: "worker-1", repository: "owner/repo", now, leaseUntil: "2026-11-20T06:01:00.000Z",
+      ...identity, owner: "worker-1", now, leaseUntil: "2026-11-20T06:01:00.000Z",
     });
     expect(claimed).toBe(true);
     expect(mock.calls[0]?.sql).toContain("status = 'queued'");
@@ -50,7 +50,7 @@ describe("DevPilot durable run store", () => {
   it("claims the oldest queued or expired run atomically for a bounded worker lease", async () => {
     const mock = database();
     const claimed = await createDevPilotRunStore(mock.db).claimNext({
-      owner: "worker-1", now, leaseUntil: "2026-11-20T06:01:00.000Z",
+      owner: "worker-1", repository: "owner/repo", now, leaseUntil: "2026-11-20T06:01:00.000Z",
     });
     expect(claimed).toBeNull();
     expect(mock.calls[0]?.sql).toContain("RETURNING id, workspace_id, user_id");
