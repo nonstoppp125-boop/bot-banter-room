@@ -26,6 +26,7 @@ import { Route as ApiTelegramLinkTokenRouteImport } from './routes/api/telegram/
 import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/webhook'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiApprovalsRouteImport } from './routes/api/approvals'
+import { Route as ApiDevPilotApprovalsRouteImport } from './routes/api/devpilot/approvals'
 import { Route as ApiTasksRouteImport } from './routes/api/tasks'
 import { Route as ApiTasksExecuteRouteImport } from './routes/api/tasks/execute'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
@@ -123,6 +124,11 @@ const ApiApprovalsRoute = ApiApprovalsRouteImport.update({
   path: '/api/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDevPilotApprovalsRoute = ApiDevPilotApprovalsRouteImport.update({
+  id: '/api/devpilot/approvals',
+  path: '/api/devpilot/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTasksRoute = ApiTasksRouteImport.update({
   id: '/api/tasks',
   path: '/api/tasks',
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/api/health': typeof ApiHealthRoute
   '/api/approvals': typeof ApiApprovalsRoute
+  '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
   '/api/tasks': typeof ApiTasksRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
@@ -266,10 +273,10 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  fullPaths: '/api/devpilot/approvals' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
-  id: '__root__' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  to: '/api/devpilot/approvals' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  id: '__root__' | '/api/devpilot/approvals' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -283,6 +290,7 @@ export interface RootRouteChildren {
   ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  ApiDevPilotApprovalsRoute: typeof ApiDevPilotApprovalsRoute
   TasksRoute: typeof TasksRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsApprovalsRoute: typeof SettingsApprovalsRoute
@@ -361,6 +369,13 @@ declare module '@tanstack/react-router' {
       path: '/api/approvals'
       fullPath: '/api/approvals'
       preLoaderRoute: typeof ApiApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/devpilot/approvals': {
+      id: '/api/devpilot/approvals'
+      path: '/api/devpilot/approvals'
+      fullPath: '/api/devpilot/approvals'
+      preLoaderRoute: typeof ApiDevPilotApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/tasks': {
@@ -511,6 +526,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiApprovalsRoute: ApiApprovalsRoute,
   ApiTasksRoute: ApiTasksRoute,
+  ApiDevPilotApprovalsRoute: ApiDevPilotApprovalsRoute,
   ApiTasksExecuteRoute: ApiTasksExecuteRoute,
   ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiMemoriesRoute: ApiMemoriesRoute,
