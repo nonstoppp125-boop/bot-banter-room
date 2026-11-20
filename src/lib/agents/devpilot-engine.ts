@@ -351,8 +351,8 @@ export async function processDevPilotQueue(input: {
   const checkpoint = typeof claimed.checkpoint === "object" && claimed.checkpoint !== null
     ? claimed.checkpoint as { data?: Record<string, unknown> } : {};
   const data = checkpoint.data ?? {};
-  const approvalId = data.approvalId;
-  const payloadHash = data.approvalPayloadHash;
+  const approvalId = data["approvalId"];
+  const payloadHash = data["approvalPayloadHash"];
   if ((approvalId !== undefined || payloadHash !== undefined) &&
     (typeof approvalId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(approvalId) ||
       typeof payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(payloadHash))) {
