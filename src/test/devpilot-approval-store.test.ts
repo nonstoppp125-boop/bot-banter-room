@@ -58,6 +58,28 @@ describe("DevPilot durable approval store", () => {
     expect(mock.calls[0]?.values).toContain(identity.payloadHash);
   });
 
+  it("lists pending approvals only to workspace owners and admins", async () => {
+    const mock = database();
+    const store = createDevPilotApprovalStore(mock.db);
+    const pending = await store.listPending({
+      workspaceId: identity.workspaceId, actorUserId: "admin-1", now: "2026-11-20T02:00:00.000Z",
+    });
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.taskId).toBe(identity.taskId);
+    expect(mock.calls[0]?.sql).toContain("wm.role IN ('owner', 'admin')");
+    expect(mock.calls[0]?.sql).toContain("a.status = 'pending'");
+  });
+
+  it("rejects malformed approval metadata before any database write", async () => {
+    const mock = database();
+    const store = createDevPilotApprovalStore(mock.db);
+    await expect(store.create({
+      ...identity, payloadHash: "invalid", summary: "proposal",
+      createdAt: "2026-11-20T00:00:00.000Z", expiresAt: "2026-11-21T00:00:00.000Z",
+    })).rejects.toThrow("Invalid DevPilot approval request");
+    expect(mock.calls).toHaveLength(0);
+  });
+
   it("allows only an owner or admin to decide a pending unexpired approval", async () => {
     const mock = database();
     const store = createDevPilotApprovalStore(mock.db);
