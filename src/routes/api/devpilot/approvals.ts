@@ -50,7 +50,7 @@ async function getSession(request: Request, requireOrigin = true) {
   if (!session?.workspaceId) return { response: Response.json({ error: "An active workspace session is required." }, { status: 403 }) } as const;
   return { env, session, now } as const;
 }
-export const Route = createFileRoute("/api/devpilot/approvals" as any)({
+export const Route = createFileRoute("/api/devpilot/approvals")({
   server: {
     handlers: {
       GET: async ({ request }) => {
