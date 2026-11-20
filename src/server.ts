@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { processD1TaskQueue } from "./lib/agents/task-queue-worker";
+import { createDevPilotApprovalStore } from "./lib/agents/devpilot-approval-store";
 import type { AgentEnv } from "./lib/agents/types";
 
 type ServerEntry = {
@@ -52,6 +53,9 @@ export default {
       console.error("D1 task queue skipped: ACTION_DB is not configured.");
       return;
     }
+    await createDevPilotApprovalStore(env.ACTION_DB).expirePending({ now: new Date().toISOString() }).catch((error) => {
+      console.error("DevPilot approval expiry cleanup failed.", error);
+    });
     await processD1TaskQueue(env).catch((error) => {
       console.error("D1 task queue invocation failed.", error);
     });
