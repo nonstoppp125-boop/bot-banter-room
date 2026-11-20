@@ -148,7 +148,7 @@ export async function runDevPilotTask(input:{
     const approvalRequired=plan.approvalRequired||changes.some(change=>/^(?:\.github\/workflows\/|migrations\/|wrangler(?:\.[^/]*)?$|package(?:-lock)?\.json$|bun\.lock$|src\/lib\/agents\/(?:session-auth|password-auth|approval-store|task-approval|action-policy|security-boundaries)\.ts$)/i.test(change.path));
     const effectivePlan=approvalRequired&&!plan.approvalRequired?{...plan,risk:"high" as const,approvalRequired:true,limitations:[...plan.limitations,"Sensitive deployment, migration, dependency, authentication and authorization paths require explicit approval."]}:plan;
     const approvalPayloadHash=await hashApprovalPayload({kind:"devpilot-code-change",taskId:input.taskId,repository:input.repository,baseBranch:input.baseBranch,baseSha:snapshot.headSha,targetBranch,plan:effectivePlan,proposal,review:initialReview});
-    const approvalProposalFiles=effectivePlan.approvalRequired?changes.map(change=>({path:change.path,beforeSha:change.beforeSha,content:change.content})):undefined;
+    const approvalProposalFiles=effectivePlan.approvalRequired?changes.map(change=>({path:change.path,beforeSha:change.beforeSha,beforeContent:files.find(file=>file.path===change.path)?.content??null,content:change.content})):undefined;
     if(approvalProposalFiles&&new TextEncoder().encode(JSON.stringify(approvalProposalFiles)).byteLength>70_000){
       return await blocked("Approval proposal exceeds the safe inline review limit; split the change into smaller reviewable tasks.",25);
     }
