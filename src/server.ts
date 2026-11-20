@@ -5,6 +5,9 @@ import { renderErrorPage } from "./lib/error-page";
 import { processD1TaskQueue } from "./lib/agents/task-queue-worker";
 import { createDevPilotApprovalStore } from "./lib/agents/devpilot-approval-store";
 import { createDevPilotRunStore } from "./lib/agents/devpilot-run-store";
+import { processDevPilotQueue } from "./lib/agents/devpilot-engine";
+import { createGitHubDevPilotAdapter } from "./lib/agents/github-devpilot-adapter";
+import { createGroqDevPilotProposalGenerator } from "./lib/agents/groq-devpilot-proposer";
 import type { AgentEnv } from "./lib/agents/types";
 
 type ServerEntry = {
@@ -64,6 +67,24 @@ export default {
     await processD1TaskQueue(env).catch((error) => {
       console.error("D1 task queue invocation failed.", error);
     });
+    if (env.DEVPILOT_ENABLED === "true") {
+      if (!env.GITHUB_TOKEN || !env.GITHUB_REPOSITORY_ALLOWLIST || !env.GROQ_API_KEY) {
+        console.error("DevPilot queue is enabled but its GitHub allowlist, token or Groq key is missing; execution skipped.");
+      } else {
+        await processDevPilotQueue({
+          database: env.ACTION_DB,
+          owner: "devpilot-worker-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12),
+          createAdapter: ({ repository, targetBranch }) =>
+            createGitHubDevPilotAdapter(env, repository, targetBranch),
+          proposeChanges: createGroqDevPilotProposalGenerator(env),
+          now: () => new Date(),
+        }).then((result) => {
+          if (result) console.info("DevPilot queue task finished.", { status: result.status, progress: result.progress });
+        }).catch((error) => {
+          console.error("DevPilot queue invocation failed.", error);
+        });
+      }
+    }
   },
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
