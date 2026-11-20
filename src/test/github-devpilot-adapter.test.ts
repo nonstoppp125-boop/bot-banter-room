@@ -83,7 +83,8 @@ describe("GitHub DevPilot adapter", () => {
       repository: "owner/repo", branch: "devpilot/task-1", baseSha: "a".repeat(40),
       changes: [{ path: "src/app.ts", beforeSha: "a".repeat(40), content: "export const x = 1;" }],
     })).rejects.toThrow("HEAD changed");
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toContain("/git/commits/");
   });
 
   it("commits a bounded proposal with one non-force Git ref update", async () => {
