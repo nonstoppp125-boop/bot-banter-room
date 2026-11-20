@@ -1,4 +1,4 @@
-import { hashApprovalPayload } from "./approval-store";
+import { createDevPilotApprovalVerifier, hashApprovalPayload } from "./approval-store";
 import { createDevPilotApprovalStore } from "./devpilot-approval-store";
 import { createDevPilotCheckpointWriter, createDevPilotEventWriter, createDevPilotRunStore } from "./devpilot-run-store";
 import {
@@ -329,4 +329,57 @@ export async function runClaimedDevPilotTask(input: {
   });
   if (!finished) throw new Error("DevPilot run completion rejected: lease lost or run state changed.");
   return result;
+}
+
+
+/** Claims and runs one durable DevPilot queue item using injected repository and proposal providers. */
+export async function processDevPilotQueue(input: {
+  database: Parameters<typeof createDevPilotRunStore>[0];
+  owner: string;
+  createAdapter: (input: { repository: string; baseBranch: string }) => Promise<DevPilotRepositoryAdapter> | DevPilotRepositoryAdapter;
+  proposeChanges: DevPilotProposalGenerator;
+  signal?: AbortSignal;
+  now?: () => Date;
+}): Promise<DevPilotResult | null> {
+  const now = input.now ?? (() => new Date());
+  const claimed = await createDevPilotRunStore(input.database).claimNext({
+    owner: input.owner,
+    now: now().toISOString(),
+    leaseUntil: new Date(now().getTime() + 90_000).toISOString(),
+  });
+  if (!claimed) return null;
+  const checkpoint = typeof claimed.checkpoint === "object" && claimed.checkpoint !== null
+    ? claimed.checkpoint as { data?: Record<string, unknown> } : {};
+  const data = checkpoint.data ?? {};
+  const approvalId = data.approvalId;
+  const payloadHash = data.approvalPayloadHash;
+  if ((approvalId !== undefined || payloadHash !== undefined) &&
+    (typeof approvalId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(approvalId) ||
+      typeof payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(payloadHash))) {
+    const reason = "Stored DevPilot approval metadata is malformed; execution was blocked.";
+    await createDevPilotRunStore(input.database).finish({
+      id: claimed.id, workspaceId: claimed.workspaceId, userId: claimed.userId, owner: input.owner,
+      status: "blocked", progress: claimed.progress, checkpoint: { status: "blocked", reason }, now: now().toISOString(),
+    });
+    return { status: "blocked", progress: claimed.progress as DevPilotResult["progress"], events: [], reason };
+  }
+  const adapter = await input.createAdapter({ repository: claimed.repository, baseBranch: claimed.baseBranch });
+  const approval = typeof approvalId === "string" && typeof payloadHash === "string"
+    ? { approvalId, payloadHash } : undefined;
+  const verifyApproval = approval ? createDevPilotApprovalVerifier(input.database, {
+    workspaceId: claimed.workspaceId, userId: claimed.userId, now,
+  }) : undefined;
+  return runClaimedDevPilotTask({
+    database: input.database,
+    run: {
+      id: claimed.id, workspaceId: claimed.workspaceId, userId: claimed.userId,
+      repository: claimed.repository, baseBranch: claimed.baseBranch, task: claimed.task,
+      checkpointVersion: claimed.checkpointVersion, progress: claimed.progress,
+    },
+    owner: input.owner, adapter, proposeChanges: input.proposeChanges,
+    ...(approval ? { approval } : {}),
+    ...(verifyApproval ? { verifyApproval } : {}),
+    ...(input.signal ? { signal: input.signal } : {}),
+    now,
+  });
 }
