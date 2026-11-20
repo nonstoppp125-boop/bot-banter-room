@@ -76,7 +76,7 @@ describe("DevPilot durable approval store", () => {
     expect(mock.calls[0]?.sql).toContain("wm.role IN ('owner', 'admin')");
   });
 
-  it("lists pending approvals only to workspace owners and admins", async () => {
+  it("lists pending and approved-but-unresumed approvals only to workspace owners and admins", async () => {
     const mock = database({ ...approvedRow, checkpoint_json: JSON.stringify({ data: { proposalFiles: [
       { path: "src/app.ts", beforeSha: "abcdef123456", beforeContent: "export const value = 0;", content: "export const value = 1;" },
     ] } }) });
@@ -86,9 +86,12 @@ describe("DevPilot durable approval store", () => {
     });
     expect(pending).toHaveLength(1);
     expect(pending[0]?.taskId).toBe(identity.taskId);
+    expect(pending[0]?.status).toBe("approved");
     expect(pending[0]?.proposalFiles[0]?.path).toBe("src/app.ts");
     expect(mock.calls[0]?.sql).toContain("wm.role IN ('owner', 'admin')");
     expect(mock.calls[0]?.sql).toContain("a.status = 'pending'");
+    expect(mock.calls[0]?.sql).toContain("a.status = 'approved'");
+    expect(mock.calls[0]?.sql).toContain("r.status = 'awaiting_approval'");
     expect(mock.calls[0]?.sql).toContain("JOIN devpilot_runs r");
   });
 
