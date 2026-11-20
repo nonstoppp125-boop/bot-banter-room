@@ -20,13 +20,13 @@ export type ManagerTaskApprovalMetadata = {
 };
 
 function classifyAction(taskText: string): ApprovalAction {
-  if (/\b(publish|post)\b/i.test(taskText)) return "social.publish";
-  if (/\b(reply|comment)\b/i.test(taskText)) return "social.reply";
-  if (/\b(send|message|email|dm)\b/i.test(taskText)) return "external.message";
-  if (/\b(delete|remove|destroy|overwrite)\b/i.test(taskText)) return "destructive.delete";
-  if (/\b(deploy|release|production)\b/i.test(taskText)) return "deployment";
-  if (/\b(purchase|buy|pay|transfer|withdraw)\b/i.test(taskText)) return "financial.action";
-  if (/\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b/i.test(taskText)) return "account.change";
+  if (/\b(delete|remove|destroy|overwrite)\b|(?:মুছে\s*(?:ফেল|ফেলো|দাও)|ডিলিট\s*(?:কর|করো|করে\s*দাও))|\b(delete|remove|destroy|overwrite)\s*koro\b|\bmuche\s*(?:felo|dao)\b/i.test(taskText)) return "destructive.delete";
+  if (/\b(deploy|release|production)\b|(?:ডিপ্লয়|ডেপ্লয়|প্রোডাকশন|রিলিজ)|\b(deploy|release)\s*koro\b|\bproduction\s*e\b/i.test(taskText)) return "deployment";
+  if (/\b(purchase|buy|pay|transfer|withdraw)\b|(?:কিনে\s*(?:দাও|ফেলো)|কেনাকাটা\s*কর|পেমেন্ট\s*কর|টাকা\s*(?:পাঠাও|দাও)|ট্রান্সফার\s*কর|উত্তোলন\s*কর)|\b(purchase|buy|pay|transfer|withdraw)\s*koro\b/i.test(taskText)) return "financial.action";
+  if (/\b(change|update|modify)\s+(?:my\s+)?(?:profile|account|permissions|settings)\b|(?:অ্যাকাউন্ট|একাউন্ট|প্রোফাইল|পারমিশন|অনুমতি|সেটিংস).{0,20}(?:বদল|পরিবর্তন|আপডেট|চেঞ্জ)|\b(account|profile|permission|settings)\s*(?:change|update)\s*koro\b/i.test(taskText)) return "account.change";
+  if (/\b(publish|post)\b|(?:পোস্ট|পাবলিশ|প্রকাশ|শেয়ার|শেয়ার)\s*(?:কর|করো|দাও|করে\s*দাও)|\b(publish|post|share)\s*koro\b/i.test(taskText)) return "social.publish";
+  if (/\b(reply|comment)\b|(?:রিপ্লাই|কমেন্ট|মন্তব্য|জবাব)\s*(?:কর|করো|দাও)|\b(reply|comment)\s*koro\b/i.test(taskText)) return "social.reply";
+  if (/\b(send|message|email|dm)\b|(?:মেসেজ|বার্তা|ইমেইল)\s*(?:পাঠাও|কর|করো)|\b(send|message|email|dm)\s*koro\b/i.test(taskText)) return "external.message";
   return "external.message";
 }
 
