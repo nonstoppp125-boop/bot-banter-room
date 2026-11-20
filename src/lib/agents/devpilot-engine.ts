@@ -147,8 +147,13 @@ export async function runDevPilotTask(input:{
     currentProgress=75;
     addEvent(events,input.taskId,"verified","All allowlisted validation commands passed.",validation.results.map(result=>result.command+" (exit "+result.exitCode+")"),now);
     const diff=await input.adapter.inspectDiff({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,...(input.signal?{signal:input.signal}:{})});
-    const finalReview=reviewCodeDiff(diff);
-    if(!finalReview.passed||!diff.testsChanged)return blocked("Post-validation diff review failed or test changes are missing.",90);
+    const proposedByPath=new Map(changes.map(change=>[change.path,change.content]));
+    const actualByPath=new Map(diff.files.map(file=>[file.path,file.content]));
+    const diffMatchesProposal=proposedByPath.size===actualByPath.size&&[...proposedByPath].every(([path,content])=>actualByPath.get(path)===content);
+    if(!diffMatchesProposal)return blocked("Post-validation diff does not exactly match the approved proposal.",90);
+    const finalTestsChanged=diff.files.some(file=>/(?:^|\\/)(?:[^/]*\\.)?(?:test|spec)\\.[cm]?[jt]sx?$|(?:^|\\/)(__tests__|tests)\\//i.test(file.path));
+    const finalReview=reviewCodeDiff({files:diff.files,testsChanged:finalTestsChanged});
+    if(!finalReview.passed||!finalTestsChanged)return blocked("Post-validation diff review failed or test changes are missing.",90);
     currentProgress=90;
     addEvent(events,input.taskId,"reviewed","Post-validation diff passed the bounded security review.",diff.files.map(file=>file.path),now);
     const committed=await input.adapter.commit({repository:input.repository,branch:targetBranch,expectedHeadSha:applied.headSha,message:"devpilot: "+plan.task.slice(0,72),...(input.signal?{signal:input.signal}:{})});
