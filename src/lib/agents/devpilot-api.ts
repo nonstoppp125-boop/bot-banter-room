@@ -90,9 +90,26 @@ export async function handleDevPilotRunRequest(request: Request, env: DevPilotAp
     const store = createDevPilotRunStore(database);
     if (request.method === "GET") {
       const runs = await store.list({ workspaceId: session.workspaceId, userId: session.userId, limit: 50 });
+      const safeRuns = runs.map((run) => {
+        const checkpoint = typeof run.checkpoint === "object" && run.checkpoint !== null
+          ? run.checkpoint as Record<string, unknown> : {};
+        const data = typeof checkpoint["data"] === "object" && checkpoint["data"] !== null
+          ? checkpoint["data"] as Record<string, unknown> : {};
+        return {
+          ...run,
+          checkpoint: {
+            ...(typeof checkpoint["stage"] === "string" ? { stage: checkpoint["stage"] } : {}),
+            ...(typeof checkpoint["status"] === "string" ? { status: checkpoint["status"] } : {}),
+            ...(typeof checkpoint["reason"] === "string" ? { reason: checkpoint["reason"] } :
+              typeof data["reason"] === "string" ? { reason: data["reason"] } : {}),
+            ...(isRecord(checkpoint["pullRequest"]) ? { pullRequest: checkpoint["pullRequest"] } :
+              isRecord(data["pullRequest"]) ? { pullRequest: data["pullRequest"] } : {}),
+          },
+        };
+      });
       const enabled = env.DEVPILOT_ENABLED === "true" && Boolean(env.GITHUB_TOKEN) && Boolean(env.GROQ_API_KEY) &&
         allowedRepositories(env).has("nonstoppp125-boop/bot-banter-room");
-      return json({ runs, enabled });
+      return json({ runs: safeRuns, enabled });
     }
     if (request.method === "HEAD") return new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } });
     if (env.DEVPILOT_ENABLED !== "true" || !env.GITHUB_TOKEN || !env.GROQ_API_KEY) {
