@@ -204,8 +204,6 @@ export interface FileRoutesByFullPath {
   '/api/approvals': typeof ApiApprovalsRoute
   '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
   '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
-  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
-  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
   '/api/tasks': typeof ApiTasksRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
   '/api/tasks/execute': typeof ApiTasksExecuteRoute
@@ -231,6 +229,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
@@ -257,6 +256,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   '/api/devpilot/approvals': typeof ApiDevPilotApprovalsRoute
+  '/api/devpilot/runs': typeof ApiDevPilotRunsRoute
   __root__: typeof rootRouteImport
   '/login': typeof LoginRoute
   '/': typeof IndexRoute
@@ -284,10 +284,10 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/api/devpilot/approvals' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  fullPaths: '/api/devpilot/approvals' | '/api/devpilot/runs' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/health' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/api/devpilot/approvals' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
-  id: '__root__' | '/api/devpilot/approvals' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  to: '/api/devpilot/approvals' | '/api/devpilot/runs' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/memories' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
+  id: '__root__' | '/api/devpilot/approvals' | '/api/devpilot/runs' | '/login' | '/api/auth/login' | '/settings/privacy' | '/api/telegram/link-token' | '/api/telegram/webhook' | '/api/auth/session' | '/api/auth/logout' | '/settings/approvals' | '/settings/integrations' | '/' | '/api/chat' | '/api/approvals' | '/api/tasks' | '/api/analytics' | '/api/account/export' | '/api/account/deletion' | '/api/integrations' | '/api/integrations/oauth/start' | '/api/integrations/oauth/callback' | '/api/integrations/disconnect' | '/api/integrations/refresh' | '/analytics' | '/linkedin-studio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
