@@ -19,7 +19,6 @@ export type AgentEnv = {
   /** Comma-separated owner/repository allowlist for the DevPilot GitHub adapter. */
   GITHUB_REPOSITORY_ALLOWLIST?: string | undefined;
   /** Optional workflow filename used for isolated DevPilot validation. */
-  DEVPILOT_VALIDATION_WORKFLOW?: string | undefined;
   /** Optional server-side Tavily key; research falls back safely when absent. */
   TAVILY_API_KEY?: string | undefined;
   /** Optional Groq model override; defaults to DEFAULT_GROQ_MODEL. */
