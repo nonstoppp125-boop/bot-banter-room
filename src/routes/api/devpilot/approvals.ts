@@ -50,7 +50,7 @@ async function getSession(request: Request, requireOrigin = true) {
   if (!session?.workspaceId) return { response: Response.json({ error: "An active workspace session is required." }, { status: 403 }) } as const;
   return { env, session, now } as const;
 }
-export const Route = createFileRoute("/api/devpilot/approvals")({
+export const Route = createFileRoute("/api/devpilot/approvals" as any)({
   server: {
     handlers: {
       GET: async ({ request }) => {
@@ -70,18 +70,18 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
           const auth = await getSession(request);
           if ("response" in auth) return auth.response;
           const body = await readBody(request);
-          if (!body || typeof body.taskId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body.taskId) ||
-            typeof body.repository !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(body.repository) ||
-            typeof body.payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(body.payloadHash) ||
-            typeof body.summary !== "string" || !body.summary.trim() || body.summary.length > 500) {
+          if (!body || typeof body["taskId"] !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body["taskId"]) ||
+            typeof body["repository"] !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(body["repository"]) ||
+            typeof body["payloadHash"] !== "string" || !/^[a-f0-9]{64}$/.test(body["payloadHash"]) ||
+            typeof body["summary"] !== "string" || !body["summary"].trim() || body["summary"].length > 500) {
             return Response.json({ error: "Invalid approval request." }, { status: 400 });
           }
           const id = crypto.randomUUID().replace(/-/g, "");
           const expiresAt = new Date(Date.parse(auth.now) + 24 * 60 * 60 * 1000).toISOString();
           await createDevPilotApprovalStore(auth.env.ACTION_DB!).create({
             id, workspaceId: auth.session.workspaceId!, userId: auth.session.userId,
-            taskId: body.taskId, repository: body.repository, payloadHash: body.payloadHash,
-            summary: body.summary, createdAt: auth.now, expiresAt,
+            taskId: body["taskId"], repository: body["repository"], payloadHash: body["payloadHash"],
+            summary: body["summary"], createdAt: auth.now, expiresAt,
           });
           return Response.json({ approvalId: id, status: "pending", expiresAt }, { status: 201 });
         } catch {
@@ -93,19 +93,19 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
           const auth = await getSession(request);
           if ("response" in auth) return auth.response;
           const body = await readBody(request);
-          if (!body || typeof body.approvalId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body.approvalId) ||
-            (body.decision !== "approved" && body.decision !== "rejected") ||
-            typeof body.reason !== "string" || !body.reason.trim() || body.reason.length > 1000) {
+          if (!body || typeof body["approvalId"] !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body["approvalId"]) ||
+            (body["decision"] !== "approved" && body["decision"] !== "rejected") ||
+            typeof body["reason"] !== "string" || !body["reason"].trim() || body["reason"].length > 1000) {
             return Response.json({ error: "Invalid approval decision." }, { status: 400 });
           }
           const approvalStore = createDevPilotApprovalStore(auth.env.ACTION_DB!);
           const updated = await approvalStore.decide({
-            id: body.approvalId, workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
-            decision: body.decision, reason: body.reason, now: auth.now,
+            id: body["approvalId"], workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
+            decision: body["decision"], reason: body["reason"], now: auth.now,
           });
           if (!updated) return Response.json({ error: "Approval is unavailable, expired or already decided." }, { status: 409 });
           const approval = await approvalStore.getForAdmin({
-            id: body.approvalId, workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
+            id: body["approvalId"], workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
           });
           let runUpdated = false;
           if (approval) {
@@ -114,11 +114,11 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
               id: approval.taskId, workspaceId: approval.workspaceId, userId: approval.userId,
               approvalId: approval.id, repository: approval.repository, payloadHash: approval.payloadHash, now: auth.now,
             };
-            runUpdated = body.decision === "approved"
+            runUpdated = body["decision"] === "approved"
               ? await runs.resumeApproved(input)
               : await runs.rejectAwaitingApproval(input);
           }
-          return Response.json({ approvalId: body.approvalId, status: body.decision, runUpdated });
+          return Response.json({ approvalId: body["approvalId"], status: body["decision"], runUpdated });
         } catch {
           return Response.json({ error: "Unable to record approval decision." }, { status: 500 });
         }
