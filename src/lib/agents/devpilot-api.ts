@@ -107,13 +107,13 @@ export async function handleDevPilotRunRequest(request: Request, env: DevPilotAp
           },
         };
       });
-      const enabled = env.DEVPILOT_ENABLED === "true" && Boolean(env.GITHUB_TOKEN) && Boolean(env.GROQ_API_KEY) &&
+      const enabled = env.DEVPILOT_ENABLED === "true" && Boolean(env.GITHUB_TOKEN) && Boolean(env.GROQ_API_KEY) && Boolean(env.CHAT_RATE_LIMITER) &&
         allowedRepositories(env).has("nonstoppp125-boop/bot-banter-room");
       return json({ runs: safeRuns, enabled });
     }
     if (request.method === "HEAD") return new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } });
-    if (env.DEVPILOT_ENABLED !== "true" || !env.GITHUB_TOKEN || !env.GROQ_API_KEY) {
-      return json({ error: "DevPilot execution is not enabled for this workspace runtime." }, 503);
+    if (env.DEVPILOT_ENABLED !== "true" || !env.GITHUB_TOKEN || !env.GROQ_API_KEY || !env.CHAT_RATE_LIMITER) {
+      return json({ error: "DevPilot execution is not enabled: required runtime bindings are missing." }, 503);
     }
     const body = await readBody(request);
     if (!body || typeof body["task"] !== "string" || !body["task"].trim() || body["task"].length > 4_000) {
