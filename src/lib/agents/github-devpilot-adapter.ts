@@ -187,7 +187,7 @@ export function createGitHubDevPilotAdapter(
     async createBranch(input): Promise<void> {
       if (input.repository.toLowerCase() !== repository.toLowerCase()) throw new Error("GitHub adapter repository scope mismatch.");
       assertBranch(input.branch);
-      if (!input.branch.startsWith("devpilot/") || input.branch === input.baseBranch) throw new Error("DevPilot may write only to task-scoped branches.");
+      if (!input.branch.startsWith("devpilot/")) throw new Error("DevPilot may write only to task-scoped branches.");
       assertSha(input.baseSha);
       activeBranch = input.branch;
       try {
