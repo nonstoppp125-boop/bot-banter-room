@@ -18,7 +18,7 @@ type ApiTree = { truncated: boolean; tree: Array<{ path: string; type: string; m
 type ApiContent = { type: string; encoding: string; content: string; sha: string; size: number };
 type ApiWorkflowRun = {
   id: number; name: string; status: string; conclusion: string | null;
-  head_branch: string; head_sha: string; event: string; created_at: string; html_url: string;
+  head_branch: string; head_sha: string; event: string; display_title: string; created_at: string; html_url: string;
 };
 type ApiCompare = { files?: Array<{ filename: string; status: string }> };
 
@@ -334,7 +334,8 @@ export function createGitHubDevPilotAdapter(
         );
         const run = result.workflow_runs.find((candidate) =>
           candidate.head_branch === activeBranch && candidate.head_sha === expectedHeadSha &&
-          candidate.event === "workflow_dispatch" && candidate.name === `DevPilot validation: ${input.command}` &&
+          candidate.event === "workflow_dispatch" && candidate.name === "DevPilot isolated validation" &&
+          candidate.display_title === `DevPilot validation: ${input.command}` &&
           Date.parse(candidate.created_at) >= startedAt - 15_000);
         if (run?.status === "completed") {
           const durationMs = Date.now() - startedAt;
