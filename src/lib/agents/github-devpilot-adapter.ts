@@ -54,7 +54,7 @@ function assertSha(value: string): void {
 }
 
 function assertSafePath(value: string): void {
-  if (!value || value.length > 240 || value.startsWith("/") || value.includes("\\\\") ||
+  if (!value || value.length > 240 || value.startsWith("/") || value.includes(String.fromCharCode(92)) ||
     value.split("/").some((part) => !part || part === "." || part === "..")) {
     throw new Error("DevPilot repository path is unsafe.");
   }
