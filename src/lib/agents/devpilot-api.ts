@@ -13,6 +13,7 @@ export type DevPilotApiEnv = {
   GITHUB_TOKEN?: string | undefined;
   GITHUB_REPOSITORY_ALLOWLIST?: string | undefined;
   GROQ_API_KEY?: string | undefined;
+  CHAT_RATE_LIMITER?: { limit(input: { key: string }): Promise<{ success: boolean }> } | undefined;
 };
 
 const json = (body: unknown, status = 200) => Response.json(body, {
@@ -109,6 +110,10 @@ export async function handleDevPilotRunRequest(request: Request, env: DevPilotAp
     if (typeof baseBranch !== "string" || !validBranch(baseBranch) || baseBranch.startsWith("devpilot/")) {
       return json({ error: "A valid base branch is required." }, 400);
     }
+    if (env.CHAT_RATE_LIMITER) {
+      const rate = await env.CHAT_RATE_LIMITER.limit({ key: "devpilot:" + session.workspaceId + ":" + session.userId });
+      if (!rate.success) return json({ error: "DevPilot task rate limit reached. Try again later." }, 429);
+    }
     const id = crypto.randomUUID().replace(/-/g, "");
     await store.create({
       id, workspaceId: session.workspaceId, userId: session.userId,
@@ -119,6 +124,9 @@ export async function handleDevPilotRunRequest(request: Request, env: DevPilotAp
     if (!run) return json({ error: "DevPilot run was not persisted." }, 500);
     return json({ run }, 201);
   } catch (error) {
+    if (error instanceof Error && error.message.includes("DevPilot queue limit reached")) {
+      return json({ error: "You already have three active or queued DevPilot tasks. Wait for one to finish." }, 429);
+    }
     console.error("DevPilot run API failed.", error);
     return json({ error: "DevPilot run request failed safely." }, 500);
   }
