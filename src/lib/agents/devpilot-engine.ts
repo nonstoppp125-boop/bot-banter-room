@@ -95,7 +95,7 @@ export async function runDevPilotTask(input:{
   const now=input.now??(()=>new Date());
   let currentProgress:DevPilotResult["progress"]=0;
   const recordEvent=async(type:EngineeringEvent["type"],summary:string,evidence:string[])=>{
-    await recordEvent(type,summary,evidence);
+    addEvent(events,input.taskId,type,summary,evidence,now);
     const event=events[events.length-1];
     if(event)await input.onEvent?.(event);
   };
@@ -120,9 +120,11 @@ export async function runDevPilotTask(input:{
     const inventory=buildRepositoryInventory({repository:snapshot.repository,branch:targetBranch,headSha:snapshot.headSha,files:snapshot.files,now:now().toISOString()});
     currentProgress=10;
     await recordEvent("planned","Repository identity and clean baseline verified.",[snapshot.repository,snapshot.branch,snapshot.headSha]);
+    await input.onCheckpoint?.({progress:10,stage:"repository-verified",data:{repository:snapshot.repository,branch:snapshot.branch,headSha:snapshot.headSha}});
     const plan=buildCodingPlan(input.task,inventory);
     currentProgress=25;
-    await recordEvent("planned","Bounded coding plan created.",[...plan.acceptanceCriteria]);\n    await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});
+    await recordEvent("planned","Bounded coding plan created.",[...plan.acceptanceCriteria]);
+    await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});\n    await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});
     const files=await input.adapter.readFiles({repository:input.repository,branch:input.baseBranch,paths:plan.filesToInspect,...(input.signal?{signal:input.signal}:{})});
     const allowedPaths=new Set(plan.filesToInspect);
     if(files.length!==plan.filesToInspect.length||files.length>20||files.some(file=>!allowedPaths.has(file.path)||file.content.length>1_000_000||!SHA.test(file.sha))){
