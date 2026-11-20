@@ -6,7 +6,7 @@ function getDevPilotEnv(request: Request): DevPilotApiEnv {
     .runtime?.cloudflare?.env ?? {};
 }
 
-export const Route = createFileRoute("/api/devpilot/runs" as any)({
+export const Route = createFileRoute("/api/devpilot/runs")({
   server: {
     handlers: {
       GET: async ({ request }) => handleDevPilotRunRequest(request, getDevPilotEnv(request)),
