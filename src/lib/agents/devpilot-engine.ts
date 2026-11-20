@@ -336,6 +336,7 @@ export async function runClaimedDevPilotTask(input: {
 export async function processDevPilotQueue(input: {
   database: Parameters<typeof createDevPilotRunStore>[0];
   owner: string;
+  repository: string;
   createAdapter: (input: { repository: string; baseBranch: string; taskId: string; targetBranch: string }) => Promise<DevPilotRepositoryAdapter> | DevPilotRepositoryAdapter;
   proposeChanges: DevPilotProposalGenerator;
   signal?: AbortSignal;
@@ -344,6 +345,7 @@ export async function processDevPilotQueue(input: {
   const now = input.now ?? (() => new Date());
   const claimed = await createDevPilotRunStore(input.database).claimNext({
     owner: input.owner,
+    repository: input.repository,
     now: now().toISOString(),
     leaseUntil: new Date(now().getTime() + 90_000).toISOString(),
   });
