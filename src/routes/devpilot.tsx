@@ -17,7 +17,7 @@ type DevPilotRun = {
   workerAttemptCount: number;
   createdAt: string;
   updatedAt: string;
-  checkpoint?: { stage?: string; data?: { reason?: string; pullRequest?: { number?: number; url?: string } } };
+  checkpoint?: { stage?: string; status?: string; reason?: string; pullRequest?: { number?: number; url?: string }; data?: { reason?: string; pullRequest?: { number?: number; url?: string } } };
 };
 
 const labels: Record<DevPilotRun["status"], string> = {
@@ -178,14 +178,14 @@ function DevPilotPage() {
                   <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">{run.progress}%</span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span>Stage: {run.checkpoint?.stage ?? "queued"}</span>
+                  <span>Stage: {run.checkpoint?.stage ?? run.checkpoint?.status ?? "queued"}</span>
                   <span>Attempts: {run.workerAttemptCount}/2</span>
                   <span>Updated: {new Date(run.updatedAt).toLocaleString()}</span>
                 </div>
-                {run.checkpoint?.data?.reason && <p className="mt-2 text-sm text-muted-foreground">{run.checkpoint.data.reason}</p>}
-                {run.checkpoint?.data?.pullRequest?.url && (
-                  <a className="mt-3 inline-block text-sm font-medium text-primary underline" href={run.checkpoint.data.pullRequest.url} target="_blank" rel="noreferrer">
-                    Draft PR #{run.checkpoint.data.pullRequest.number}
+                {(run.checkpoint?.reason ?? run.checkpoint?.data?.reason) && <p className="mt-2 text-sm text-muted-foreground">{run.checkpoint?.reason ?? run.checkpoint?.data?.reason}</p>}
+                {(run.checkpoint?.pullRequest?.url ?? run.checkpoint?.data?.pullRequest?.url) && (
+                  <a className="mt-3 inline-block text-sm font-medium text-primary underline" href={run.checkpoint?.pullRequest?.url ?? run.checkpoint?.data?.pullRequest?.url} target="_blank" rel="noreferrer">
+                    Draft PR #{run.checkpoint?.pullRequest?.number ?? run.checkpoint?.data?.pullRequest?.number}
                   </a>
                 )}
               </article>
