@@ -7,9 +7,9 @@ import type {
 import type { DiffReviewInput } from "./coding-workforce";
 
 type GitHubEnv = {
-  GITHUB_TOKEN?: string;
-  GITHUB_REPOSITORY_ALLOWLIST?: string;
-  DEVPILOT_VALIDATION_WORKFLOW?: string;
+  GITHUB_TOKEN?: string | undefined;
+  GITHUB_REPOSITORY_ALLOWLIST?: string | undefined;
+  DEVPILOT_VALIDATION_WORKFLOW?: string | undefined;
 };
 type GitHubApiOptions = { fetcher?: typeof fetch; pollIntervalMs?: number };
 type ApiRef = { object: { sha: string } };
