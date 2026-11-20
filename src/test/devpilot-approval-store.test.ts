@@ -9,7 +9,7 @@ const identity = {
   repository: "owner/repo",
   payloadHash: "a".repeat(64),
 };
-const approvedRow = {
+const approvedRow: ApprovalRow = {
   id: identity.id,
   workspace_id: identity.workspaceId,
   user_id: identity.userId,
@@ -23,7 +23,12 @@ const approvedRow = {
   created_at: "2026-11-20T00:00:00.000Z",
   decided_at: "2026-11-20T01:00:00.000Z",
 };
-type ApprovalRow = Omit<typeof approvedRow, "status"> & { status: "pending" | "approved" | "rejected" | "expired" };
+type ApprovalRow = {
+  id: string; workspace_id: string; user_id: string; task_id: string; repository: string;
+  payload_hash: string; status: "pending" | "approved" | "rejected" | "expired";
+  decided_by_user_id: string | null; decision_reason: string | null;
+  expires_at: string; created_at: string; decided_at: string | null;
+};
 function database(row: ApprovalRow | null = approvedRow) {
   const calls: Array<{ sql: string; values: unknown[] }> = [];
   return {
@@ -35,7 +40,7 @@ function database(row: ApprovalRow | null = approvedRow) {
             calls.push({ sql, values });
             return {
               async run() { return { success: true, meta: { changes: 1 } }; },
-              async first<T>() { return row as T | null; },
+              async first<T>() { return row as T | null; },\n              async all<T>() { return { success: true, results: row ? [row as T] : [] }; },
             };
           },
         };
