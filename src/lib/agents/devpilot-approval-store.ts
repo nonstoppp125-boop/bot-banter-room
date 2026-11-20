@@ -29,9 +29,10 @@ export function createDevPilotApprovalStore(database: D1Database) {
         !input.summary.trim() || input.summary.length > 500 || !iso(input.createdAt) || !iso(input.expiresAt) ||
         Date.parse(input.expiresAt) <= Date.parse(input.createdAt)) throw new Error("Invalid DevPilot approval request.");
       const result = await database.prepare(
-        "INSERT INTO devpilot_approvals (id, workspace_id, user_id, task_id, repository, payload_hash, summary, status, expires_at, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ? WHERE EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?)"
+        "INSERT INTO devpilot_approvals (id, workspace_id, user_id, task_id, repository, payload_hash, summary, status, expires_at, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ? WHERE EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?) AND EXISTS (SELECT 1 FROM devpilot_runs r WHERE r.id = ? AND r.workspace_id = ? AND r.user_id = ? AND r.repository = ? AND r.status = 'awaiting_approval' AND json_extract(r.checkpoint_json, '$.data.approvalPayloadHash') = ?)"
       ).bind(input.id, input.workspaceId, input.userId, input.taskId, input.repository, input.payloadHash,
-        input.summary.trim(), input.expiresAt, input.createdAt, input.workspaceId, input.userId).run();
+        input.summary.trim(), input.expiresAt, input.createdAt, input.workspaceId, input.userId,
+        input.taskId, input.workspaceId, input.userId, input.repository, input.payloadHash).run();
       if (result.success === false || result.meta?.changes !== 1) throw new Error("DevPilot approval request rejected or duplicate.");
     },
     getForAdmin: async (input: { id: string; workspaceId: string; actorUserId: string }) => {
@@ -53,15 +54,30 @@ export function createDevPilotApprovalStore(database: D1Database) {
       if (!iso(input.now) || !ID.test(input.workspaceId) || !ID.test(input.actorUserId) ||
         !Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("Invalid DevPilot approval list request.");
       const result = await database.prepare(
-        "SELECT a.id, a.user_id, a.task_id, a.repository, a.summary, a.expires_at, a.created_at FROM devpilot_approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'admin') WHERE a.workspace_id = ? AND a.status = 'pending' AND a.expires_at > ? ORDER BY a.created_at ASC LIMIT ?"
+        "SELECT a.id, a.user_id, a.task_id, a.repository, a.summary, a.expires_at, a.created_at, r.checkpoint_json FROM devpilot_approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'admin') JOIN devpilot_runs r ON r.id = a.task_id AND r.workspace_id = a.workspace_id AND r.user_id = a.user_id AND r.repository = a.repository WHERE a.workspace_id = ? AND a.status = 'pending' AND a.expires_at > ? ORDER BY a.created_at ASC LIMIT ?"
       ).bind(input.actorUserId, input.workspaceId, input.now, limit).all<{
-        id: string; user_id: string; task_id: string; repository: string; summary: string; expires_at: string; created_at: string;
+        id: string; user_id: string; task_id: string; repository: string; summary: string; expires_at: string; created_at: string; checkpoint_json: string;
       }>();
       if (result.success === false) throw new Error("D1 DevPilot approval list failed.");
-      return (result.results ?? []).map(row => ({
-        id: row.id, userId: row.user_id, taskId: row.task_id, repository: row.repository,
-        summary: row.summary, expiresAt: row.expires_at, createdAt: row.created_at,
-      }));
+      return (result.results ?? []).map(row => {
+        let proposalFiles: Array<{ path: string; beforeSha: string | null; content: string }> = [];
+        try {
+          const checkpoint = JSON.parse(row.checkpoint_json) as { data?: { proposalFiles?: unknown } };
+          if (Array.isArray(checkpoint.data?.proposalFiles)) {
+            proposalFiles = checkpoint.data.proposalFiles.filter((file): file is { path: string; beforeSha: string | null; content: string } =>
+              typeof file === "object" && file !== null &&
+              typeof (file as { path?: unknown }).path === "string" &&
+              ((file as { beforeSha?: unknown }).beforeSha === null || typeof (file as { beforeSha?: unknown }).beforeSha === "string") &&
+              typeof (file as { content?: unknown }).content === "string" &&
+              (file as { content: string }).content.length <= 500_000
+            );
+          }
+        } catch { /* malformed checkpoints never expose proposal content */ }
+        return {
+          id: row.id, userId: row.user_id, taskId: row.task_id, repository: row.repository,
+          summary: row.summary, expiresAt: row.expires_at, createdAt: row.created_at, proposalFiles,
+        };
+      });
     },
     decide: async (input: { id: string; workspaceId: string; actorUserId: string; decision: "approved" | "rejected"; reason: string; now: string }) => {
       const reason = input.reason.trim().slice(0, 1000);
