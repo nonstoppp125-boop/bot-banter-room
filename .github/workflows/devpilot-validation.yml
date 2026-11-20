@@ -1,5 +1,5 @@
 name: DevPilot isolated validation
-run-name: DevPilot validation: ${{ inputs.command }}
+run-name: "DevPilot validation: ${{ inputs.command }}"
 
 on:
   workflow_dispatch:
