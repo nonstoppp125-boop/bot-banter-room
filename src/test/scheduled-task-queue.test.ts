@@ -48,6 +48,43 @@ describe("Cloudflare scheduled Group 06 task queue handler", () => {
     expect(log).toHaveBeenCalledWith(expect.stringContaining("rate limiter is missing"));
   });
 
+  it("consumes a scheduled rate-limit token before processing the DevPilot queue", async () => {
+    const limiter = { limit: vi.fn().mockResolvedValue({ success: true }) };
+    vi.mocked(processD1TaskQueue).mockResolvedValueOnce({ recovered: 0, claimed: false });
+    vi.mocked(processDevPilotQueue).mockResolvedValueOnce(null);
+    const env = {
+      ACTION_DB: fakeDatabase() as never,
+      DEVPILOT_ENABLED: "true",
+      GITHUB_TOKEN: "test-token",
+      GROQ_API_KEY: "test-key",
+      GITHUB_REPOSITORY_ALLOWLIST: "nonstoppp125-boop/bot-banter-room",
+      CHAT_RATE_LIMITER: limiter,
+    } as AgentEnv;
+    await worker.scheduled(event, env, context);
+    expect(limiter.limit).toHaveBeenCalledWith({
+      key: "devpilot:scheduled:nonstoppp125-boop/bot-banter-room",
+    });
+    expect(processDevPilotQueue).toHaveBeenCalledOnce();
+  });
+
+  it("fails closed when the scheduled rate limiter rejects the DevPilot tick", async () => {
+    const limiter = { limit: vi.fn().mockResolvedValue({ success: false }) };
+    const log = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.mocked(processD1TaskQueue).mockResolvedValueOnce({ recovered: 0, claimed: false });
+    const env = {
+      ACTION_DB: fakeDatabase() as never,
+      DEVPILOT_ENABLED: "true",
+      GITHUB_TOKEN: "test-token",
+      GROQ_API_KEY: "test-key",
+      GITHUB_REPOSITORY_ALLOWLIST: "nonstoppp125-boop/bot-banter-room",
+      CHAT_RATE_LIMITER: limiter,
+    } as AgentEnv;
+    await worker.scheduled(event, env, context);
+    expect(limiter.limit).toHaveBeenCalledOnce();
+    expect(processDevPilotQueue).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("rate limit reached"));
+  });
+
   it("fails closed and skips queue processing when ACTION_DB is missing", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     await worker.scheduled(event, {} as AgentEnv, context);
