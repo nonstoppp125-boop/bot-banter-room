@@ -83,6 +83,17 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
             return json({ error: "Invalid approval decision." }, { status: 400 });
           }
           const approvalStore = createDevPilotApprovalStore(auth.env.ACTION_DB!);
+          const existing = await approvalStore.getForAdmin({
+            id: body["approvalId"], workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
+          });
+          if (body["decision"] === "approved" && existing?.status === "approved" &&
+            Date.parse(existing.expiresAt) > Date.parse(auth.now)) {
+            const runUpdated = await createDevPilotRunStore(auth.env.ACTION_DB!).resumeApproved({
+              id: existing.taskId, workspaceId: existing.workspaceId, userId: existing.userId,
+              approvalId: existing.id, repository: existing.repository, payloadHash: existing.payloadHash, now: auth.now,
+            });
+            return json({ approvalId: body["approvalId"], status: "approved", runUpdated, recovered: true });
+          }
           const updated = await approvalStore.decide({
             id: body["approvalId"], workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId,
             decision: body["decision"], reason: body["reason"], now: auth.now,
