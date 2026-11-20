@@ -315,11 +315,14 @@ export function createGitHubDevPilotAdapter(
       if (!VALIDATION_COMMANDS.has(input.command)) throw new Error("DevPilot validation command is not allowlisted.");
       if (!Number.isInteger(input.timeoutMs) || input.timeoutMs < 1_000 || input.timeoutMs > 300_000) throw new Error("DevPilot validation timeout is invalid.");
       if (!activeBranch) throw new Error("DevPilot validation branch is not initialized.");
-      const startedAt = Date.now();
       const workflowPath = encodeURIComponent(workflow);
       const branchRef = await getRef(activeBranch, input.signal);
       assertSha(branchRef.object.sha);
       const expectedHeadSha = branchRef.object.sha;
+      const runsPath = `/repos/${repository}/actions/workflows/${workflowPath}/runs?branch=${encodeURIComponent(activeBranch)}&event=workflow_dispatch&per_page=20`;
+      const previousRuns = await api<{ workflow_runs: ApiWorkflowRun[] }>("GET", runsPath, undefined, input.signal);
+      const previousRunIds = new Set(previousRuns.workflow_runs.map((run) => run.id));
+      const startedAt = Date.now();
       await api("POST", `/repos/${repository}/actions/workflows/${workflowPath}/dispatches`, {
         ref: activeBranch,
         inputs: { command: input.command },
@@ -328,12 +331,12 @@ export function createGitHubDevPilotAdapter(
         abortIfNeeded(input.signal);
         const result = await api<{ workflow_runs: ApiWorkflowRun[] }>(
           "GET",
-          `/repos/${repository}/actions/workflows/${workflowPath}/runs?branch=${encodeURIComponent(activeBranch)}&event=workflow_dispatch&per_page=20`,
+          runsPath,
           undefined,
           input.signal,
         );
         const run = result.workflow_runs.find((candidate) =>
-          candidate.head_branch === activeBranch && candidate.head_sha === expectedHeadSha &&
+          !previousRunIds.has(candidate.id) && candidate.head_branch === activeBranch && candidate.head_sha === expectedHeadSha &&
           candidate.event === "workflow_dispatch" && candidate.name === "DevPilot isolated validation" &&
           candidate.display_title === `DevPilot validation: ${input.command}` &&
           Date.parse(candidate.created_at) >= startedAt - 15_000);
