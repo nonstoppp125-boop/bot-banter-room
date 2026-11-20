@@ -72,29 +72,6 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
           return json({ error: "Unable to list pending approvals." }, { status: 500 });
         }
       },
-      POST: async ({ request }) => {
-        try {
-          const auth = await getSession(request);
-          if ("response" in auth) return auth.response;
-          const body = await readBody(request);
-          if (!body || typeof body["taskId"] !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body["taskId"]) ||
-            typeof body["repository"] !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(body["repository"]) ||
-            typeof body["payloadHash"] !== "string" || !/^[a-f0-9]{64}$/.test(body["payloadHash"]) ||
-            typeof body["summary"] !== "string" || !body["summary"].trim() || body["summary"].length > 500) {
-            return json({ error: "Invalid approval request." }, { status: 400 });
-          }
-          const id = crypto.randomUUID().replace(/-/g, "");
-          const expiresAt = new Date(Date.parse(auth.now) + 24 * 60 * 60 * 1000).toISOString();
-          await createDevPilotApprovalStore(auth.env.ACTION_DB!).create({
-            id, workspaceId: auth.session.workspaceId!, userId: auth.session.userId,
-            taskId: body["taskId"], repository: body["repository"], payloadHash: body["payloadHash"],
-            summary: body["summary"], createdAt: auth.now, expiresAt,
-          });
-          return json({ approvalId: id, status: "pending", expiresAt }, { status: 201 });
-        } catch {
-          return json({ error: "Unable to create approval request." }, { status: 500 });
-        }
-      },
       PATCH: async ({ request }) => {
         try {
           const auth = await getSession(request);
