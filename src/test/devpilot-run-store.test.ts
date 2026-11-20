@@ -90,6 +90,7 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.sql).toContain("a.payload_hash = ?");
     expect(mock.calls[0]?.sql).toContain("a.status = 'approved'");
     expect(mock.calls[0]?.sql).toContain("a.expires_at > ?");
+    expect(mock.calls[0]?.sql).toContain("json_remove(checkpoint_json, '$.data.proposalFiles')");
   });
 
   it("marks a waiting DevPilot run blocked after the exact approval is rejected", async () => {
