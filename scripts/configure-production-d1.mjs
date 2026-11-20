@@ -57,6 +57,7 @@ export function addProductionD1Binding(config, {
       "group06/0002_task_retry_budget.sql",
       "group06/0003_task_queue_leases.sql",
       "group06/0004_devpilot_approvals.sql",
+      "group06/0005_devpilot_durable_runs.sql",
     ];
     if (JSON.stringify(nestedSqlFiles) !== JSON.stringify(expectedMigrations)) {
       throw new Error("The Group 05/06 migration set is incomplete or contains unreviewed SQL files.");
