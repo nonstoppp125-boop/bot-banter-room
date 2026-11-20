@@ -86,7 +86,8 @@ describe("bounded DevPilot repository workflow engine", () => {
     const result = await runDevPilotTask({
       ...baseInput("Deploy this to production"),
       adapter: state.adapter,
-      approval: { verified: true, payloadHash: first.approvalPayloadHash! },
+      approval: { approvalId: "approval-123", payloadHash: first.approvalPayloadHash! },
+      verifyApproval: async ({ approvalId, taskId, repository, payloadHash }) => approvalId === "approval-123" && taskId === "task-123" && repository === "owner/repo" && payloadHash === first.approvalPayloadHash,
     });
     expect(result.status).toBe("completed");
     expect(state.state.commits).toBe(1);
@@ -110,10 +111,26 @@ describe("bounded DevPilot repository workflow engine", () => {
     const result = await runDevPilotTask({
       ...baseInput("Deploy this to production"),
       adapter: state.adapter,
-      approval: { verified: true, payloadHash: "0".repeat(64) },
+      approval: { approvalId: "approval-123", payloadHash: "0".repeat(64) },
+      verifyApproval: async () => true,
     });
     expect(result.status).toBe("blocked");
     expect(state.state.writes).toBe(0);
+  });
+
+  it("blocks a high-risk task when persisted approval verification returns false", async () => {
+    const state = adapter();
+    const first = await runDevPilotTask({ ...baseInput("Deploy this to production"), adapter: state.adapter });
+    const result = await runDevPilotTask({
+      ...baseInput("Deploy this to production"),
+      adapter: state.adapter,
+      approval: { approvalId: "approval-123", payloadHash: first.approvalPayloadHash! },
+      verifyApproval: async () => false,
+    });
+    expect(result.status).toBe("blocked");
+    expect(result.reason).toContain("Persisted approval");
+    expect(state.state.writes).toBe(0);
+    expect(state.state.commits).toBe(0);
   });
 
   it("preserves dirty working trees and refuses to create a branch", async () => {
