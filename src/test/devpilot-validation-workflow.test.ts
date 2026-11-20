@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const workflow = readFileSync(
-  new URL("../../.github/workflows/devpilot-validation.yml", import.meta.url),
+  join(process.cwd(), ".github/workflows/devpilot-validation.yml"),
   "utf8",
 );
 
