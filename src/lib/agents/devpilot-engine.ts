@@ -378,7 +378,7 @@ export async function processDevPilotQueue(input: {
     return { status: "blocked", progress: claimed.progress as DevPilotResult["progress"], events: [], reason };
   }
   const approvedChanges = typeof approvalId === "string" && typeof payloadHash === "string"
-    ? storedProposalFiles.map((file) => {
+    ? (storedProposalFiles as Array<Record<string, unknown>>).map((file) => {
       if (typeof file !== "object" || file === null) throw new Error("Stored approved proposal is malformed.");
       const item = file as Record<string, unknown>;
       if (typeof item["path"] !== "string" || typeof item["content"] !== "string" ||
