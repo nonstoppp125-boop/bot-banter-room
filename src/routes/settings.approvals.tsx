@@ -13,6 +13,7 @@ type Approval = {
 type DevPilotApproval = {
   id: string; userId: string; taskId: string; repository: string;
   summary: string; expiresAt: string; createdAt: string;
+  proposalFiles: Array<{ path: string; beforeSha: string | null; content: string }>;
 };
 
 function ApprovalInboxPage() {
@@ -129,8 +130,8 @@ function ApprovalInboxPage() {
                 <label className="mt-4 block text-xs font-medium" htmlFor={"reason-" + item.id}>Decision reason</label>
                 <textarea id={"reason-" + item.id} value={reasons[item.id] || ""} onChange={(event) => setReasons((current) => ({ ...current, [item.id]: event.target.value }))} maxLength={1000} rows={2} placeholder="Why is this request approved or rejected?" className="mt-2 w-full resize-y rounded-lg border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
                 <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  <button onClick={() => void decide(item, "rejected")} disabled={busy !== null} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
-                  <button onClick={() => void decide(item, "approved")} disabled={busy !== null} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : "Approve"}</button>
+                  <button onClick={() => void decide(item, "rejected")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent disabled:opacity-50">{busy === item.id ? "Saving…" : "Reject"}</button>
+                  <button onClick={() => void decide(item, "approved")} disabled={busy !== null || item.proposalFiles.length === 0} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === item.id ? "Saving…" : "Approve"}</button>
                 </div>
               </article>
             ))}
@@ -155,6 +156,20 @@ function ApprovalInboxPage() {
                     <div><dt className="inline">Task ID: </dt><dd className="inline break-all font-mono">{item.taskId}</dd></div>
                     <div><dt className="inline">Expires: </dt><dd className="inline">{new Date(item.expiresAt).toLocaleString()}</dd></div>
                   </dl>
+                  <details className="mt-4 rounded-lg border border-border">
+                    <summary className="cursor-pointer px-3 py-2 text-sm font-medium">Review proposed code ({item.proposalFiles.length} files)</summary>
+                    <div className="space-y-3 border-t border-border p-3">
+                      {item.proposalFiles.length === 0
+                        ? <p className="text-sm text-destructive">No reviewable proposal content is attached. This request must not be approved.</p>
+                        : item.proposalFiles.map((file) => (
+                          <div key={file.path}>
+                            <p className="mb-1 break-all text-xs font-semibold">{file.path}</p>
+                            <p className="mb-2 break-all text-[11px] text-muted-foreground">Base SHA: {file.beforeSha || "New file"}</p>
+                            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">{file.content}</pre>
+                          </div>
+                        ))}
+                    </div>
+                  </details>
                   <label className="mt-4 block text-xs font-medium" htmlFor={"devpilot-reason-" + item.id}>Decision reason</label>
                   <textarea id={"devpilot-reason-" + item.id} value={devPilotReasons[item.id] || ""} onChange={(event) => setDevPilotReasons((current) => ({ ...current, [item.id]: event.target.value }))} maxLength={1000} rows={2} placeholder="Why is this exact code proposal approved or rejected?" className="mt-2 w-full resize-y rounded-lg border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
                   <div className="mt-3 flex flex-wrap justify-end gap-2">
