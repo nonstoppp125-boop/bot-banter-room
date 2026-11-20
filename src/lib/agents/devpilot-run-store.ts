@@ -173,3 +173,38 @@ export function createDevPilotRunStore(database: D1Database) {
     },
   };
 }
+
+export function createDevPilotCheckpointWriter(
+  database: D1Database,
+  identity: { id: string; workspaceId: string; userId: string; owner: string; initialVersion: number; now?: () => Date },
+) {
+  const store = createDevPilotRunStore(database);
+  let version = identity.initialVersion;
+  return async (input: { progress: number; stage: string; data: unknown; status?: "running" | "awaiting_approval" }) => {
+    const saved = await store.checkpoint({
+      id: identity.id,
+      workspaceId: identity.workspaceId,
+      userId: identity.userId,
+      owner: identity.owner,
+      expectedVersion: version,
+      progress: input.progress,
+      checkpoint: { stage: input.stage, data: input.data },
+      ...(input.status ? { status: input.status } : {}),
+      now: (identity.now ?? (() => new Date()))().toISOString(),
+    });
+    if (!saved) throw new Error("DevPilot checkpoint rejected: lease lost, stale version or invalid progress.");
+    version += 1;
+  };
+}
+export function createDevPilotEventWriter(
+  database: D1Database,
+  identity: { runId: string; workspaceId: string; userId: string },
+) {
+  const store = createDevPilotRunStore(database);
+  return async (event: {
+    id: string; type: DevPilotEventType; timestamp: string; summary: string; evidence: string[];
+  }) => store.appendEvent({
+    id: event.id, runId: identity.runId, workspaceId: identity.workspaceId, userId: identity.userId,
+    type: event.type, timestamp: event.timestamp, summary: event.summary, evidence: event.evidence,
+  });
+}
