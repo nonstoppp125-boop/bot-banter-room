@@ -33,7 +33,7 @@ describe("GitHub DevPilot adapter", () => {
       }
       return Response.json({ workflow_runs: [] });
     });
-    const adapter = createGitHubDevPilotAdapter(env, "owner/repo", "devpilot/task-1", {
+    const adapter = createGitHubDevPilotAdapter({ ...env, DEVPILOT_VALIDATION_WORKFLOW: "untrusted/other-workflow.yml" }, "owner/repo", "devpilot/task-1", {
       fetcher: fetcher as typeof fetch, pollIntervalMs: 1_000,
     });
     const result = await adapter.run({ command: "npm test", timeoutMs: 5_000 });
