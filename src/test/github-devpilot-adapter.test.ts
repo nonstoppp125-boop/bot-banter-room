@@ -20,7 +20,7 @@ describe("GitHub DevPilot adapter", () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      calls.push({ url, init });
+      calls.push({ url, ...(init ? { init } : {}) });
       if (url.endsWith("/dispatches")) return new Response(null, { status: 204 });
       return Response.json({
         workflow_runs: [{
