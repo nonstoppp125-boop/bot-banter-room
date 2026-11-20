@@ -72,6 +72,31 @@ describe("authenticated DevPilot run API", () => {
     expect(response.status).toBe(401);
   });
 
+  it("redacts persisted proposal source and approval hashes from the user's run history", async () => {
+    const state = database();
+    state.rows.push({
+      id: "run-1", workspace_id: "workspace-1", user_id: "user-1", repository: "owner/repo",
+      base_branch: "main", task_text: "Deploy this", status: "awaiting_approval", progress: 25,
+      worker_attempt_count: 1, checkpoint_version: 2,
+      checkpoint_json: JSON.stringify({
+        stage: "awaiting-approval",
+        data: {
+          approvalPayloadHash: "f".repeat(64),
+          proposalFiles: [{ path: "src/app.ts", beforeSha: null, beforeContent: null, content: "source-secret" }],
+        },
+      }),
+      lease_owner: null, lease_expires_at: null, created_at: now, updated_at: now,
+    });
+    const response = await handleDevPilotRunRequest(new Request(url, {
+      headers: { Cookie: cookie },
+    }), env(state.db));
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).toContain("awaiting-approval");
+    expect(text).not.toContain("source-secret");
+    expect(text).not.toContain("approvalPayloadHash");
+  });
+
   it("rejects cross-origin task creation before reading the request body", async () => {
     const response = await handleDevPilotRunRequest(new Request(url, {
       method: "POST", headers: { Origin: "https://attacker.example", "Content-Type": "application/json" },
