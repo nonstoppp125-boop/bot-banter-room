@@ -124,7 +124,7 @@ export async function runDevPilotTask(input:{
     const plan=buildCodingPlan(input.task,inventory);
     currentProgress=25;
     await recordEvent("planned","Bounded coding plan created.",[...plan.acceptanceCriteria]);
-    await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});\n    await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});
+    await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});    await input.onCheckpoint?.({progress:25,stage:"plan-created",data:{plan}});
     const files=await input.adapter.readFiles({repository:input.repository,branch:input.baseBranch,paths:plan.filesToInspect,...(input.signal?{signal:input.signal}:{})});
     const allowedPaths=new Set(plan.filesToInspect);
     if(files.length!==plan.filesToInspect.length||files.length>20||files.some(file=>!allowedPaths.has(file.path)||file.content.length>1_000_000||!SHA.test(file.sha))){
@@ -144,7 +144,7 @@ export async function runDevPilotTask(input:{
     const approvalRequired=plan.approvalRequired||changes.some(change=>/^(?:\.github\/workflows\/|migrations\/|wrangler(?:\.[^/]*)?$|package(?:-lock)?\.json$|bun\.lock$|src\/lib\/agents\/(?:session-auth|password-auth|approval-store|task-approval|action-policy|security-boundaries)\.ts$)/i.test(change.path));
     const effectivePlan=approvalRequired&&!plan.approvalRequired?{...plan,risk:"high" as const,approvalRequired:true,limitations:[...plan.limitations,"Sensitive deployment, migration, dependency, authentication and authorization paths require explicit approval."]}:plan;
     const approvalPayloadHash=await hashApprovalPayload({kind:"devpilot-code-change",taskId:input.taskId,repository:input.repository,baseBranch:input.baseBranch,baseSha:snapshot.headSha,targetBranch,plan:effectivePlan,proposal,review:initialReview});
-    await recordEvent("proposal-created","Validated code proposal and pre-apply security review completed.",[...changes.map(change=>change.path),approvalPayloadHash]);\n    await input.onCheckpoint?.({progress:25,stage:"proposal-created",data:{plan:effectivePlan,proposal,approvalPayloadHash,review:initialReview}});
+    await recordEvent("proposal-created","Validated code proposal and pre-apply security review completed.",[...changes.map(change=>change.path),approvalPayloadHash]);    await input.onCheckpoint?.({progress:25,stage:"proposal-created",data:{plan:effectivePlan,proposal,approvalPayloadHash,review:initialReview}});
     if(input.approval&&input.approval.payloadHash!==approvalPayloadHash){
       return await blocked("Approval payload does not match the current task, repository baseline and exact code proposal.",25);
     }
@@ -157,15 +157,15 @@ export async function runDevPilotTask(input:{
     }
     if(input.signal?.aborted)return{status:"cancelled",progress:25,plan:effectivePlan,proposal,approvalPayloadHash,events,reason:"DevPilot task was cancelled before repository writes."};
     await input.adapter.createBranch({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,...(input.signal?{signal:input.signal}:{})});
-    await recordEvent("planned","Isolated non-main work branch created.",[targetBranch,snapshot.headSha]);\n    await input.onCheckpoint?.({progress:25,stage:"branch-created",data:{targetBranch,baseSha:snapshot.headSha,plan:effectivePlan,proposal,approvalPayloadHash}});
+    await recordEvent("planned","Isolated non-main work branch created.",[targetBranch,snapshot.headSha]);    await input.onCheckpoint?.({progress:25,stage:"branch-created",data:{targetBranch,baseSha:snapshot.headSha,plan:effectivePlan,proposal,approvalPayloadHash}});
     const applied=await input.adapter.applyChanges({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,changes,...(input.signal?{signal:input.signal}:{})});
     if(!SHA.test(applied.headSha))return failed("Repository adapter returned an invalid post-apply HEAD.",50,{plan:effectivePlan,proposal,approvalPayloadHash});
     currentProgress=50;
-    await recordEvent("verified","Proposed files applied with a conditional base-commit check.",[applied.headSha,...changes.map(change=>change.path)]);\n    await input.onCheckpoint?.({progress:50,stage:"changes-applied",data:{headSha:applied.headSha,plan:effectivePlan,proposal,approvalPayloadHash}});
+    await recordEvent("verified","Proposed files applied with a conditional base-commit check.",[applied.headSha,...changes.map(change=>change.path)]);    await input.onCheckpoint?.({progress:50,stage:"changes-applied",data:{headSha:applied.headSha,plan:effectivePlan,proposal,approvalPayloadHash}});
     const validation=await runValidationSuite({commands:plan.validationCommands,runner:input.adapter,...(input.signal?{signal:input.signal}:{})});
     if(validation.status!=="passed")return failed(validation.reason??"Validation did not pass.",50,{plan:effectivePlan,proposal,approvalPayloadHash,validation});
     currentProgress=75;
-    await recordEvent("verified","All allowlisted validation commands passed.",validation.results.map(result=>result.command+" (exit "+result.exitCode+")"));\n    await input.onCheckpoint?.({progress:75,stage:"validation-passed",data:{headSha:applied.headSha,plan:effectivePlan,proposal,approvalPayloadHash,validation}});
+    await recordEvent("verified","All allowlisted validation commands passed.",validation.results.map(result=>result.command+" (exit "+result.exitCode+")"));    await input.onCheckpoint?.({progress:75,stage:"validation-passed",data:{headSha:applied.headSha,plan:effectivePlan,proposal,approvalPayloadHash,validation}});
     const diff=await input.adapter.inspectDiff({repository:input.repository,branch:targetBranch,baseSha:snapshot.headSha,...(input.signal?{signal:input.signal}:{})});
     const proposedByPath=new Map(changes.map(change=>[change.path,change.content]));
     const actualByPath=new Map(diff.files.map(file=>[file.path,file.content]));
@@ -176,14 +176,14 @@ export async function runDevPilotTask(input:{
     const finalReview=reviewCodeDiff({files:diff.files,testsChanged:finalTestsChanged});
     if(!finalReview.passed||!finalTestsChanged)return await blocked("Post-validation diff review failed or test changes are missing.",90);
     currentProgress=90;
-    await recordEvent("reviewed","Post-validation diff passed the bounded security review.",diff.files.map(file=>file.path));\n    await input.onCheckpoint?.({progress:90,stage:"diff-reviewed",data:{headSha:applied.headSha,plan:effectivePlan,proposal,approvalPayloadHash,validation,diff}});
+    await recordEvent("reviewed","Post-validation diff passed the bounded security review.",diff.files.map(file=>file.path));    await input.onCheckpoint?.({progress:90,stage:"diff-reviewed",data:{headSha:applied.headSha,plan:effectivePlan,proposal,approvalPayloadHash,validation,diff}});
     const committed=await input.adapter.commit({repository:input.repository,branch:targetBranch,expectedHeadSha:applied.headSha,message:"devpilot: "+plan.task.slice(0,72),...(input.signal?{signal:input.signal}:{})});
     if(!SHA.test(committed.commitSha))return failed("Repository adapter returned an invalid commit SHA.",90,{plan:effectivePlan,proposal,approvalPayloadHash,validation});
     await recordEvent("verified","Reviewed changes committed on the isolated branch.",[committed.commitSha]);
     const pullRequest=await input.adapter.createPullRequest({repository:input.repository,headBranch:targetBranch,baseBranch:input.baseBranch,title:"DevPilot: "+plan.task.slice(0,100),body:"Automated coding task.\n\n- Base: "+snapshot.headSha+"\n- Commit: "+committed.commitSha+"\n- Validation: all allowlisted checks passed.\n- Security: bounded diff review passed.\n\nNo production deployment or merge was performed.",commitSha:committed.commitSha,...(input.signal?{signal:input.signal}:{})});
     if(!Number.isInteger(pullRequest.number)||pullRequest.number<1||!/^https:\/\//.test(pullRequest.url))return failed("Repository adapter returned invalid pull-request metadata.",90,{plan:effectivePlan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha});
     currentProgress=100;
-    await recordEvent("verified","Pull request created; no merge or deployment performed.",[pullRequest.url]);\n    await input.onCheckpoint?.({progress:100,stage:"pull-request-created",data:{plan:effectivePlan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha,pullRequest},status:"running"});
+    await recordEvent("verified","Pull request created; no merge or deployment performed.",[pullRequest.url]);    await input.onCheckpoint?.({progress:100,stage:"pull-request-created",data:{plan:effectivePlan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha,pullRequest},status:"running"});
     return{status:"completed",progress:100,plan:effectivePlan,proposal,approvalPayloadHash,validation,commitSha:committed.commitSha,pullRequest,events};
   }catch(error){
     return failed(error instanceof Error?error.message.slice(0,500):"DevPilot workflow failed.");
