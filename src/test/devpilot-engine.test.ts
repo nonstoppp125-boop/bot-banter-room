@@ -47,6 +47,15 @@ const baseInput = (task = "Add a small utility and tests") => ({
 });
 
 describe("bounded DevPilot repository workflow engine", () => {
+  it.each(["task..123", "task.", "task.lock"])("rejects invalid branch identifiers before repository access: %s", async (taskId) => {
+    let inspections = 0;
+    const state = adapter({ async inspectRepository() { inspections++; return snapshot; } });
+    const result = await runDevPilotTask({ ...baseInput(), taskId, adapter: state.adapter });
+    expect(result.status).toBe("blocked");
+    expect(inspections).toBe(0);
+    expect(state.state.writes).toBe(0);
+  });
+
   it("creates a branch, applies reviewed changes, validates, commits and opens a PR", async () => {
     const state = adapter();
     const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter });
