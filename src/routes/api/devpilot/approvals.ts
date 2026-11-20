@@ -52,13 +52,27 @@ async function getSession(request: Request) {
 export const Route = createFileRoute("/api/devpilot/approvals")({
   server: {
     handlers: {
+      GET: async ({ request }) => {
+        try {
+          const auth = await getSession(request, false);
+          if ("response" in auth) return auth.response;
+          const approvals = await createDevPilotApprovalStore(auth.env.ACTION_DB!).listPending({
+            workspaceId: auth.session.workspaceId!, actorUserId: auth.session.userId, now: auth.now, limit: 50,
+          });
+          return Response.json({ approvals });
+        } catch {
+          return Response.json({ error: "Unable to list pending approvals." }, { status: 500 });
+        }
+      },
       POST: async ({ request }) => {
         try {
           const auth = await getSession(request);
           if ("response" in auth) return auth.response;
           const body = await readBody(request);
-          if (!body || typeof body.taskId !== "string" || typeof body.repository !== "string" ||
-            typeof body.payloadHash !== "string" || typeof body.summary !== "string") {
+          if (!body || typeof body.taskId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body.taskId) ||
+            typeof body.repository !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(body.repository) ||
+            typeof body.payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(body.payloadHash) ||
+            typeof body.summary !== "string" || !body.summary.trim() || body.summary.length > 500) {
             return Response.json({ error: "Invalid approval request." }, { status: 400 });
           }
           const id = crypto.randomUUID().replace(/-/g, "");
@@ -78,9 +92,9 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
           const auth = await getSession(request);
           if ("response" in auth) return auth.response;
           const body = await readBody(request);
-          if (!body || typeof body.approvalId !== "string" ||
+          if (!body || typeof body.approvalId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(body.approvalId) ||
             (body.decision !== "approved" && body.decision !== "rejected") ||
-            typeof body.reason !== "string") {
+            typeof body.reason !== "string" || !body.reason.trim() || body.reason.length > 1000) {
             return Response.json({ error: "Invalid approval decision." }, { status: 400 });
           }
           const updated = await createDevPilotApprovalStore(auth.env.ACTION_DB!).decide({
