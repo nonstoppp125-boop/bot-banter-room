@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runClaimedDevPilotTask, runDevPilotTask, type DevPilotRepositoryAdapter } from "@/lib/agents/devpilot-engine";
+import { processDevPilotQueue, runClaimedDevPilotTask, runDevPilotTask, type DevPilotRepositoryAdapter } from "@/lib/agents/devpilot-engine";
 import type { CodeChangeProposal } from "@/lib/agents/coding-workforce";
 
 const snapshot = {
@@ -62,6 +62,38 @@ function durableDatabase(failApprovalInsert = false) {
     },
   };
 }
+function queuedDatabase(checkpoint: unknown = { stage: "queued", data: {} }, approvalRow: Record<string, unknown> | null = null) {
+  const calls: Array<{ sql: string; values: unknown[] }> = [];
+  const now = "2026-11-20T07:00:00.000Z";
+  const runRow = {
+    id: "task-123", workspace_id: "workspace-1", user_id: "user-1",
+    repository: "owner/repo", base_branch: "main", task_text: "Add a small utility and tests",
+    status: "running", progress: 0, worker_attempt_count: 1, checkpoint_version: 0,
+    checkpoint_json: JSON.stringify(checkpoint), lease_owner: "worker-1",
+    lease_expires_at: "2026-11-20T07:01:30.000Z", created_at: now, updated_at: now,
+  };
+  return {
+    calls,
+    db: {
+      prepare(sql: string) {
+        return {
+          bind(...values: unknown[]) {
+            calls.push({ sql, values });
+            return {
+              async run() { return { success: true, meta: { changes: 1 } }; },
+              async first<T>() {
+                if (sql.startsWith("UPDATE devpilot_runs SET status = 'running'")) return runRow as T;
+                if (sql.startsWith("SELECT a.* FROM devpilot_approvals")) return approvalRow as T | null;
+                return null as T | null;
+              },
+              async all<T>() { return { success: true, results: [] as T[] }; },
+            };
+          },
+        };
+      },
+    },
+  };
+}
 const baseInput = (task = "Add a small utility and tests") => ({
   taskId: "task-123",
   task,
@@ -69,6 +101,53 @@ const baseInput = (task = "Add a small utility and tests") => ({
   baseBranch: "main",
   now: () => new Date("2026-11-19T16:00:00.000Z"),
   proposeChanges: async () => changes,
+});
+
+describe("durable DevPilot queue processor", () => {
+  it("claims one queued run and executes it through the injected adapter", async () => {
+    const db = queuedDatabase();
+    const state = adapter();
+    const result = await processDevPilotQueue({
+      database: db.db, owner: "worker-1",
+      createAdapter: () => state.adapter,
+      proposeChanges: async () => changes,
+      now: () => new Date("2026-11-20T07:00:00.000Z"),
+    });
+    expect(result?.status).toBe("completed");
+    expect(result?.pullRequest?.number).toBe(42);
+    expect(db.calls[0]?.sql).toContain("RETURNING id, workspace_id, user_id");
+    expect(state.state.writes).toBe(2);
+  });
+
+  it("restores and verifies the persisted approval before resuming a queued high-risk run", async () => {
+    const first = await runDevPilotTask({
+      ...baseInput("Deploy this to production"),
+      adapter: adapter().adapter,
+    });
+    const approvalId = "approval-123";
+    const hash = first.approvalPayloadHash!;
+    const approvalRow = {
+      id: approvalId, workspace_id: "workspace-1", user_id: "user-1",
+      task_id: "task-123", repository: "owner/repo", payload_hash: hash,
+      status: "approved", decided_by_user_id: "admin-1", decision_reason: "Reviewed",
+      expires_at: "2026-11-21T00:00:00.000Z", created_at: "2026-11-20T00:00:00.000Z",
+      decided_at: "2026-11-20T06:59:00.000Z",
+    };
+    const db = queuedDatabase({
+      stage: "awaiting-approval",
+      data: { approvalId, approvalPayloadHash: hash },
+    }, approvalRow);
+    const state = adapter();
+    const result = await processDevPilotQueue({
+      database: db.db, owner: "worker-1",
+      createAdapter: () => state.adapter,
+      proposeChanges: async () => changes,
+      now: () => new Date("2026-11-20T07:00:00.000Z"),
+    });
+    expect(result?.status).toBe("completed");
+    expect(db.calls.some((call) => call.sql.startsWith("SELECT a.* FROM devpilot_approvals"))).toBe(true);
+    expect(state.state.writes).toBe(2);
+  });
 });
 
 describe("durable DevPilot approval handoff", () => {
