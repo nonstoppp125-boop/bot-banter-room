@@ -67,6 +67,18 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.values).toContain(1);
   });
 
+  it("preserves the stored progress when a resumed worker replays earlier stages", async () => {
+    const mock = database();
+    const writer = (await import("@/lib/agents/devpilot-run-store")).createDevPilotCheckpointWriter(mock.db, {
+      ...identity, owner: "worker-2", initialVersion: 4, initialProgress: 25, now: () => new Date(now),
+    });
+    await writer({ progress: 10, stage: "repository-verified", data: {} });
+    expect(mock.calls).toHaveLength(0);
+    await writer({ progress: 25, stage: "plan-created", data: {} });
+    expect(mock.calls).toHaveLength(1);
+    expect(mock.calls[0]?.values).toContain(4);
+  });
+
   it("resumes only when the exact DevPilot approval is approved and unexpired", async () => {
     const mock = database();
     const resumed = await createDevPilotRunStore(mock.db).resumeApproved({
