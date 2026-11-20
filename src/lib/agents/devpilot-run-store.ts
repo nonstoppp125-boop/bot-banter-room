@@ -141,6 +141,21 @@ export function createDevPilotRunStore(database: D1Database) {
       if (result.success === false) throw new Error("D1 DevPilot approved resume failed.");
       return result.meta?.changes === 1;
     },
+    rejectAwaitingApproval: async (input: {
+      id: string; workspaceId: string; userId: string; approvalId: string;
+      repository: string; payloadHash: string; now: string;
+    }) => {
+      if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.userId) || !ID.test(input.approvalId) ||
+        !REPOSITORY.test(input.repository) || !/^[a-f0-9]{64}$/.test(input.payloadHash) || !iso(input.now)) {
+        throw new Error("Invalid DevPilot approval rejection.");
+      }
+      const checkpoint = serialize({ stage: "approval-rejected", reason: "Human approval was rejected." }, 4_000);
+      const result = await database.prepare(
+        "UPDATE devpilot_runs SET status = 'blocked', checkpoint_json = ?, checkpoint_version = checkpoint_version + 1, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND repository = ? AND status = 'awaiting_approval' AND EXISTS (SELECT 1 FROM devpilot_approvals a WHERE a.id = ? AND a.workspace_id = devpilot_runs.workspace_id AND a.user_id = devpilot_runs.user_id AND a.task_id = devpilot_runs.id AND a.repository = devpilot_runs.repository AND a.payload_hash = ? AND a.status = 'rejected')"
+      ).bind(checkpoint, input.now, input.id, input.workspaceId, input.userId, input.repository, input.approvalId, input.payloadHash).run();
+      if (result.success === false) throw new Error("D1 DevPilot approval rejection failed.");
+      return result.meta?.changes === 1;
+    },
     appendEvent: async (input: {
       id: string; runId: string; workspaceId: string; userId: string; type: DevPilotEventType;
       timestamp: string; summary: string; evidence?: unknown;
