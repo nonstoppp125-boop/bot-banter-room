@@ -72,15 +72,15 @@ export function createDevPilotRunStore(database: D1Database) {
       if (result.success === false) throw new Error("D1 DevPilot run list failed.");
       return (result.results ?? []).map(restore);
     },
-    claimNext: async (input: { owner: string; now: string; leaseUntil: string }) => {
-      if (!ID.test(input.owner) || !iso(input.now) || !iso(input.leaseUntil) ||
+    claimNext: async (input: { owner: string; repository: string; now: string; leaseUntil: string }) => {
+      if (!ID.test(input.owner) || !/^[A-Za-z0-9_.-]{1,100}\\/[A-Za-z0-9_.-]{1,100}$/.test(input.repository) || !iso(input.now) || !iso(input.leaseUntil) ||
         Date.parse(input.leaseUntil) <= Date.parse(input.now) ||
         Date.parse(input.leaseUntil) - Date.parse(input.now) > 120_000) {
         throw new Error("Invalid DevPilot queue lease claim.");
       }
       const row = await database.prepare(
-        "UPDATE devpilot_runs SET status = 'running', lease_owner = ?, lease_expires_at = ?, worker_attempt_count = worker_attempt_count + 1, updated_at = ? WHERE id = (SELECT id FROM devpilot_runs WHERE worker_attempt_count < 2 AND (status = 'queued' OR (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?)) AND NOT EXISTS (SELECT 1 FROM devpilot_runs active WHERE active.status = 'running' AND active.lease_expires_at > ?) ORDER BY created_at ASC LIMIT 1) AND worker_attempt_count < 2 AND (status = 'queued' OR (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?)) RETURNING id, workspace_id, user_id, repository, base_branch, task_text, status, progress, worker_attempt_count, checkpoint_version, checkpoint_json, lease_owner, lease_expires_at, created_at, updated_at"
-      ).bind(input.owner, input.leaseUntil, input.now, input.now, input.now, input.now).first<Parameters<typeof restore>[0]>();
+        "UPDATE devpilot_runs SET status = 'running', lease_owner = ?, lease_expires_at = ?, worker_attempt_count = worker_attempt_count + 1, updated_at = ? WHERE id = (SELECT id FROM devpilot_runs WHERE repository = ? AND worker_attempt_count < 2 AND (status = 'queued' OR (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?)) AND NOT EXISTS (SELECT 1 FROM devpilot_runs active WHERE active.status = 'running' AND active.lease_expires_at > ?) ORDER BY created_at ASC LIMIT 1) AND repository = ? AND worker_attempt_count < 2 AND (status = 'queued' OR (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?)) RETURNING id, workspace_id, user_id, repository, base_branch, task_text, status, progress, worker_attempt_count, checkpoint_version, checkpoint_json, lease_owner, lease_expires_at, created_at, updated_at"
+      ).bind(input.owner, input.leaseUntil, input.now, input.repository, input.now, input.now, input.repository, input.now).first<Parameters<typeof restore>[0]>();
       return row ? restore(row) : null;
     },
     claim: async (input: { id: string; workspaceId: string; userId: string; owner: string; now: string; leaseUntil: string }) => {
