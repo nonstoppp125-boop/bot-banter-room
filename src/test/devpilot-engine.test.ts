@@ -105,6 +105,36 @@ describe("bounded DevPilot repository workflow engine", () => {
     expect(state.state.pullRequests).toBe(0);
   });
 
+  it("persists the exact bounded file contents for human review before approval", async () => {
+    const state = adapter();
+    const checkpoints: Array<{ stage: string; data: unknown }> = [];
+    const result = await runDevPilotTask({
+      ...baseInput("Deploy this to production"),
+      adapter: state.adapter,
+      onCheckpoint: async (checkpoint) => { checkpoints.push({ stage: checkpoint.stage, data: checkpoint.data }); },
+    });
+    expect(result.status).toBe("awaiting_approval");
+    const waiting = checkpoints.find((checkpoint) => checkpoint.stage === "awaiting-approval");
+    expect(waiting?.data).toMatchObject({ proposalFiles: changes });
+    expect(state.state.writes).toBe(0);
+  });
+
+  it("blocks oversized approval proposals that cannot be safely reviewed inline", async () => {
+    const state = adapter();
+    const largeChanges: CodeChangeProposal["changes"] = [
+      { path: "src/app.ts", beforeSha: "abcdef123456", content: "x".repeat(71_000) },
+      { path: "src/app.test.ts", beforeSha: "abcdef234567", content: "expect(true).toBe(true);\\n" },
+    ];
+    const result = await runDevPilotTask({
+      ...baseInput("Deploy this to production"),
+      adapter: state.adapter,
+      proposeChanges: async () => largeChanges,
+    });
+    expect(result.status).toBe("blocked");
+    expect(result.reason).toContain("inline review limit");
+    expect(state.state.writes).toBe(0);
+  });
+
   it("executes a high-risk task only when the approval hash matches the exact proposal", async () => {
     const state = adapter();
     const first = await runDevPilotTask({ ...baseInput("Deploy this to production"), adapter: state.adapter });
