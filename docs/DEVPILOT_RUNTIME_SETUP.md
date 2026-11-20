@@ -12,7 +12,7 @@ Set these only after reviewing and merging the DevPilot runtime code and applyin
 | `GITHUB_REPOSITORY_ALLOWLIST` | Plain-text variable | `nonstoppp125-boop/bot-banter-room` |
 | `GITHUB_TOKEN` | Secret | A fine-grained token restricted to the single repository above |
 
-The existing `GROQ_API_KEY` is used for proposal generation. The validation workflow defaults to `devpilot-validation.yml`; `DEVPILOT_VALIDATION_WORKFLOW` is optional.
+The existing `GROQ_API_KEY` is used for proposal generation. The existing `CHAT_RATE_LIMITER` binding is also mandatory; task intake fails closed if it is absent. The validation workflow defaults to `devpilot-validation.yml`; `DEVPILOT_VALIDATION_WORKFLOW` is optional.
 
 ## GitHub token permissions
 
