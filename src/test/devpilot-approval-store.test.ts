@@ -23,7 +23,8 @@ const approvedRow = {
   created_at: "2026-11-20T00:00:00.000Z",
   decided_at: "2026-11-20T01:00:00.000Z",
 };
-function database(row: typeof approvedRow | null = approvedRow) {
+type ApprovalRow = Omit<typeof approvedRow, "status"> & { status: "pending" | "approved" | "rejected" | "expired" };
+function database(row: ApprovalRow | null = approvedRow) {
   const calls: Array<{ sql: string; values: unknown[] }> = [];
   return {
     calls,
