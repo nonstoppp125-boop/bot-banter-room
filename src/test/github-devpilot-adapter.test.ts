@@ -14,6 +14,8 @@ describe("GitHub DevPilot adapter", () => {
       .toThrow("GITHUB_REPOSITORY_ALLOWLIST");
     expect(() => createGitHubDevPilotAdapter(env, "other/repo", "devpilot/task-1"))
       .toThrow("not in GITHUB_REPOSITORY_ALLOWLIST");
+    expect(() => createGitHubDevPilotAdapter(env, "owner/repo", "main"))
+      .toThrow("task-scoped branches");
   });
 
   it("dispatches only allowlisted validation commands and waits for the isolated workflow", async () => {
