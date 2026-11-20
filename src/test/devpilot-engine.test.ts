@@ -62,12 +62,12 @@ function durableDatabase(failApprovalInsert = false) {
     },
   };
 }
-function queuedDatabase(checkpoint: unknown = { stage: "queued", data: {} }, approvalRow: Record<string, unknown> | null = null) {
+function queuedDatabase(checkpoint: unknown = { stage: "queued", data: {} }, approvalRow: Record<string, unknown> | null = null, taskText = "Add a small utility and tests") {
   const calls: Array<{ sql: string; values: unknown[] }> = [];
   const now = "2026-11-20T07:00:00.000Z";
   const runRow = {
     id: "task-123", workspace_id: "workspace-1", user_id: "user-1",
-    repository: "owner/repo", base_branch: "main", task_text: "Add a small utility and tests",
+    repository: "owner/repo", base_branch: "main", task_text: taskText,
     status: "running", progress: 0, worker_attempt_count: 1, checkpoint_version: 0,
     checkpoint_json: JSON.stringify(checkpoint), lease_owner: "worker-1",
     lease_expires_at: "2026-11-20T07:01:30.000Z", created_at: now, updated_at: now,
@@ -136,7 +136,7 @@ describe("durable DevPilot queue processor", () => {
     const db = queuedDatabase({
       stage: "awaiting-approval",
       data: { approvalId, approvalPayloadHash: hash },
-    }, approvalRow);
+    }, approvalRow, "Deploy this to production");
     const state = adapter();
     const result = await processDevPilotQueue({
       database: db.db, owner: "worker-1",
