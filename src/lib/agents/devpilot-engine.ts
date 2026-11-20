@@ -87,6 +87,7 @@ export async function runDevPilotTask(input:{
   baseBranch:string;
   adapter:DevPilotRepositoryAdapter;
   proposeChanges:DevPilotProposalGenerator;
+  approvedChanges?: CodeChangeProposal["changes"];
   approval?:{approvalId:string;payloadHash:string};
   verifyApproval?:(input:{approvalId:string;taskId:string;repository:string;payloadHash:string})=>Promise<boolean>;
   onCheckpoint?:(checkpoint:DevPilotCheckpointInput)=>Promise<void>;
@@ -140,7 +141,7 @@ export async function runDevPilotTask(input:{
       const expected=inventory.files.find(item=>item.path===file.path)?.sha;
       if(expected&&expected!==file.sha)return await blocked("Repository file changed during inspection: "+file.path);
     }
-    const changes=await input.proposeChanges({task:input.task,repository:input.repository,baseBranch:input.baseBranch,targetBranch,baseSha:snapshot.headSha,plan,files,...(input.signal?{signal:input.signal}:{})});
+    const changes=input.approvedChanges ?? await input.proposeChanges({task:input.task,repository:input.repository,baseBranch:input.baseBranch,targetBranch,baseSha:snapshot.headSha,plan,files,...(input.signal?{signal:input.signal}:{})});
     const proposal=createCodeChangeProposal({id:input.taskId,inventory,targetBranch,changes});
     const testsChanged=changes.some(change=>/(?:^|\/)(?:[^/]*\.)?(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)(__tests__|tests)\//i.test(change.path));
     const sourceChanged=changes.some(change=>/\.(?:ts|tsx|js|jsx|py|go|rs|java|kt|swift)$/i.test(change.path));
@@ -219,6 +220,7 @@ export async function runClaimedDevPilotTask(input: {
   owner: string;
   adapter: DevPilotRepositoryAdapter;
   proposeChanges: DevPilotProposalGenerator;
+  approvedChanges?: CodeChangeProposal["changes"];
   approval?: { approvalId: string; payloadHash: string };
   verifyApproval?: (input: { approvalId: string; taskId: string; repository: string; payloadHash: string }) => Promise<boolean>;
   signal?: AbortSignal;
@@ -271,6 +273,7 @@ export async function runClaimedDevPilotTask(input: {
     result = await runDevPilotTask({
       taskId: input.run.id, task: input.run.task, repository: input.run.repository,
       baseBranch: input.run.baseBranch, adapter: input.adapter, proposeChanges: input.proposeChanges,
+      ...(input.approvedChanges ? { approvedChanges: input.approvedChanges } : {}),
       ...(input.approval ? { approval: input.approval } : {}),
       ...(input.verifyApproval ? { verifyApproval: input.verifyApproval } : {}),
       onCheckpoint, onEvent, signal: heartbeatController.signal, now,
@@ -355,9 +358,11 @@ export async function processDevPilotQueue(input: {
   const data = checkpoint.data ?? {};
   const approvalId = data["approvalId"];
   const payloadHash = data["approvalPayloadHash"];
+  const storedProposalFiles = data["proposalFiles"];
   if ((approvalId !== undefined || payloadHash !== undefined) &&
     (typeof approvalId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(approvalId) ||
-      typeof payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(payloadHash))) {
+      typeof payloadHash !== "string" || !/^[a-f0-9]{64}$/.test(payloadHash) ||
+      !Array.isArray(storedProposalFiles) || storedProposalFiles.length === 0 || storedProposalFiles.length > 8)) {
     const reason = "Stored DevPilot approval metadata is malformed; execution was blocked.";
     await createDevPilotRunStore(input.database).finish({
       id: claimed.id, workspaceId: claimed.workspaceId, userId: claimed.userId, owner: input.owner,
@@ -365,6 +370,16 @@ export async function processDevPilotQueue(input: {
     });
     return { status: "blocked", progress: claimed.progress as DevPilotResult["progress"], events: [], reason };
   }
+  const approvedChanges = typeof approvalId === "string" && typeof payloadHash === "string"
+    ? storedProposalFiles.map((file) => {
+      if (typeof file !== "object" || file === null) throw new Error("Stored approved proposal is malformed.");
+      const item = file as Record<string, unknown>;
+      if (typeof item["path"] !== "string" || typeof item["content"] !== "string" ||
+        !(item["beforeSha"] === null || typeof item["beforeSha"] === "string")) {
+        throw new Error("Stored approved proposal is malformed.");
+      }
+      return { path: item["path"], beforeSha: item["beforeSha"], content: item["content"] };
+    }) : undefined;
   const adapter = await input.createAdapter({ repository: claimed.repository, baseBranch: claimed.baseBranch, taskId: claimed.id, targetBranch: "devpilot/" + claimed.id });
   const approval = typeof approvalId === "string" && typeof payloadHash === "string"
     ? { approvalId, payloadHash } : undefined;
@@ -380,6 +395,7 @@ export async function processDevPilotQueue(input: {
     },
     owner: input.owner, adapter, proposeChanges: input.proposeChanges,
     ...(approval ? { approval } : {}),
+    ...(approvedChanges ? { approvedChanges } : {}),
     ...(verifyApproval ? { verifyApproval } : {}),
     ...(input.signal ? { signal: input.signal } : {}),
     now,
