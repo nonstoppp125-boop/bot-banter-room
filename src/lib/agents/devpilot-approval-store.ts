@@ -54,9 +54,9 @@ export function createDevPilotApprovalStore(database: D1Database) {
       if (!iso(input.now) || !ID.test(input.workspaceId) || !ID.test(input.actorUserId) ||
         !Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("Invalid DevPilot approval list request.");
       const result = await database.prepare(
-        "SELECT a.id, a.user_id, a.task_id, a.repository, a.summary, a.expires_at, a.created_at, r.checkpoint_json FROM devpilot_approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'admin') JOIN devpilot_runs r ON r.id = a.task_id AND r.workspace_id = a.workspace_id AND r.user_id = a.user_id AND r.repository = a.repository WHERE a.workspace_id = ? AND a.status = 'pending' AND a.expires_at > ? ORDER BY a.created_at ASC LIMIT ?"
-      ).bind(input.actorUserId, input.workspaceId, input.now, limit).all<{
-        id: string; user_id: string; task_id: string; repository: string; summary: string; expires_at: string; created_at: string; checkpoint_json: string;
+        "SELECT a.id, a.user_id, a.task_id, a.repository, a.summary, a.expires_at, a.created_at, r.checkpoint_json FROM devpilot_approvals a JOIN workspace_members wm ON wm.workspace_id = a.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'admin') JOIN devpilot_runs r ON r.id = a.task_id AND r.workspace_id = a.workspace_id AND r.user_id = a.user_id AND r.repository = a.repository WHERE a.workspace_id = ? AND ((a.status = 'pending' AND a.expires_at > ?) OR (a.status = 'approved' AND a.expires_at > ? AND r.status = 'awaiting_approval')) ORDER BY a.created_at ASC LIMIT ?"
+      ).bind(input.actorUserId, input.workspaceId, input.now, input.now, limit).all<{
+        id: string; user_id: string; task_id: string; repository: string; summary: string; status: DevPilotApprovalStatus; expires_at: string; created_at: string; checkpoint_json: string;
       }>();
       if (result.success === false) throw new Error("D1 DevPilot approval list failed.");
       return (result.results ?? []).map(row => {
@@ -76,7 +76,7 @@ export function createDevPilotApprovalStore(database: D1Database) {
         } catch { /* malformed checkpoints never expose proposal content */ }
         return {
           id: row.id, userId: row.user_id, taskId: row.task_id, repository: row.repository,
-          summary: row.summary, expiresAt: row.expires_at, createdAt: row.created_at, proposalFiles,
+          summary: row.summary, status: row.status, expiresAt: row.expires_at, createdAt: row.created_at, proposalFiles,
         };
       });
     },
