@@ -127,6 +127,16 @@ export function createDevPilotRunStore(database: D1Database) {
       if (result.success === false) throw new Error("D1 DevPilot run completion failed.");
       return result.meta?.changes === 1;
     },
+    blockAwaitingApproval: async (input: { id: string; workspaceId: string; userId: string; now: string }) => {
+      if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.userId) || !iso(input.now)) {
+        throw new Error("Invalid DevPilot approval failure transition.");
+      }
+      const result = await database.prepare(
+        "UPDATE devpilot_runs SET status = 'blocked', checkpoint_json = json_remove(checkpoint_json, '$.data.proposalFiles'), checkpoint_version = checkpoint_version + 1, lease_owner = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'awaiting_approval'"
+      ).bind(input.now, input.id, input.workspaceId, input.userId).run();
+      if (result.success === false) throw new Error("D1 DevPilot approval failure transition failed.");
+      return result.meta?.changes === 1;
+    },
     resumeApproved: async (input: {
       id: string; workspaceId: string; userId: string; approvalId: string;
       repository: string; payloadHash: string; now: string;
