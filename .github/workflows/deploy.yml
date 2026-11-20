@@ -95,6 +95,10 @@ jobs:
             console.error("Generated Wrangler config is incomplete:", missing.join(", "));
             process.exit(1);
           }
+          if (config.name !== "bot-banter-room") {
+            console.error(`Production deployment blocked: expected Worker bot-banter-room, received ${config.name}.`);
+            process.exit(1);
+          }
           const migrationsDir = config.d1_databases?.find((binding) => binding.binding === "ACTION_DB")?.migrations_dir;
           const migrationsPattern = config.d1_databases?.find((binding) => binding.binding === "ACTION_DB")?.migrations_pattern;
           if (migrationsDir !== "../../migrations" || migrationsPattern !== "../../migrations/*/*.sql") {
@@ -133,6 +137,8 @@ jobs:
             "group06/0001_manager_core.sql",
             "group06/0002_task_retry_budget.sql",
             "group06/0003_task_queue_leases.sql",
+            "group06/0004_devpilot_approvals.sql",
+            "group06/0005_devpilot_durable_runs.sql",
           ];
           if (JSON.stringify(nestedMigrations) !== JSON.stringify(expectedMigrations)) {
             console.error("Production deployment blocked: the Group 05/06 D1 migration set differs from the reviewed sequence.");
