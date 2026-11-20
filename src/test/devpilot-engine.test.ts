@@ -307,6 +307,18 @@ describe("bounded DevPilot repository workflow engine", () => {
     expect(state.state.writes).toBe(0);
   });
 
+  it.each(["src/lib/agents/devpilot-api.ts","src/lib/agents/devpilot-approval-store.ts","src/lib/agents/github-devpilot-adapter.ts","src/routes/api/devpilot/approvals.ts","src/server.ts"])("requires approval before changing the DevPilot control plane: %s", async (path) => {
+    const state = adapter();
+    const sensitiveChanges: CodeChangeProposal["changes"] = [
+      { path, beforeSha: null, content: "export const guarded = true;\\n" },
+      { path: "src/app.test.ts", beforeSha: "abcdef234567", content: "expect(true).toBe(true);\\n" },
+    ];
+    const result = await runDevPilotTask({ ...baseInput(), adapter: state.adapter, proposeChanges: async () => sensitiveChanges });
+    expect(result.status).toBe("awaiting_approval");
+    expect(result.plan?.approvalRequired).toBe(true);
+    expect(state.state.writes).toBe(0);
+  });
+
   it("blocks a mismatched approval before any repository write", async () => {
     const state = adapter();
     const result = await runDevPilotTask({
