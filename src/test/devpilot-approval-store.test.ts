@@ -58,6 +58,16 @@ describe("DevPilot durable approval store", () => {
     expect(mock.calls[0]?.values).toContain(identity.payloadHash);
   });
 
+  it("loads approval identity only for a workspace owner or admin", async () => {
+    const mock = database();
+    const record = await createDevPilotApprovalStore(mock.db).getForAdmin({
+      id: identity.id, workspaceId: identity.workspaceId, actorUserId: "admin-1",
+    });
+    expect(record?.taskId).toBe(identity.taskId);
+    expect(record?.payloadHash).toBe(identity.payloadHash);
+    expect(mock.calls[0]?.sql).toContain("wm.role IN ('owner', 'admin')");
+  });
+
   it("lists pending approvals only to workspace owners and admins", async () => {
     const mock = database();
     const store = createDevPilotApprovalStore(mock.db);
