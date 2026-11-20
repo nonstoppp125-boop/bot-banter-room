@@ -38,8 +38,8 @@ async function readBody(request: Request): Promise<Record<string, unknown> | nul
   } catch { return null; }
   finally { reader.releaseLock(); }
 }
-async function getSession(request: Request) {
-  if (!sameOrigin(request)) return { response: Response.json({ error: "Invalid request origin." }, { status: 403 }) } as const;
+async function getSession(request: Request, requireOrigin = true) {
+  if (requireOrigin && !sameOrigin(request)) return { response: Response.json({ error: "Invalid request origin." }, { status: 403 }) } as const;
   const env = getEnv(request);
   if (!env.ACTION_DB) return { response: Response.json({ error: "Approval storage is unavailable." }, { status: 503 }) } as const;
   const token = readSessionCookie(request.headers.get("cookie"));
@@ -84,7 +84,7 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
           });
           return Response.json({ approvalId: id, status: "pending", expiresAt }, { status: 201 });
         } catch {
-          return Response.json({ error: "Unable to create approval request." }, { status: 400 });
+          return Response.json({ error: "Unable to create approval request." }, { status: 500 });
         }
       },
       PATCH: async ({ request }) => {
@@ -105,7 +105,7 @@ export const Route = createFileRoute("/api/devpilot/approvals")({
             ? Response.json({ approvalId: body.approvalId, status: body.decision })
             : Response.json({ error: "Approval is unavailable, expired or already decided." }, { status: 409 });
         } catch {
-          return Response.json({ error: "Unable to record approval decision." }, { status: 400 });
+          return Response.json({ error: "Unable to record approval decision." }, { status: 500 });
         }
       },
     },
