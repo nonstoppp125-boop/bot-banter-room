@@ -47,6 +47,18 @@ describe("DevPilot durable run store", () => {
     expect(mock.calls[0]?.sql).toContain("worker_attempt_count = worker_attempt_count + 1");
   });
 
+  it("claims the oldest queued or expired run atomically for a bounded worker lease", async () => {
+    const mock = database();
+    const claimed = await createDevPilotRunStore(mock.db).claimNext({
+      owner: "worker-1", now, leaseUntil: "2026-11-20T06:01:00.000Z",
+    });
+    expect(claimed).toBeNull();
+    expect(mock.calls[0]?.sql).toContain("RETURNING id, workspace_id, user_id");
+    expect(mock.calls[0]?.sql).toContain("worker_attempt_count < 2");
+    expect(mock.calls[0]?.sql).toContain("ORDER BY created_at ASC LIMIT 1");
+    expect(mock.calls[0]?.sql).toContain("lease_expires_at <= ?");
+  });
+
   it("recovers expired runs only after the bounded worker-attempt budget is exhausted", async () => {
     const mock = database();
     const recovered = await createDevPilotRunStore(mock.db).recoverExpired({ now });
