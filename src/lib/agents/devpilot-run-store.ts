@@ -24,20 +24,20 @@ function parseJson(value: string): unknown {
 }
 export function createDevPilotRunStore(database: D1Database) {
   if (!database || typeof database.prepare !== "function") throw new Error("A valid D1 database is required.");
-  const select = "SELECT id, workspace_id, user_id, repository, base_branch, task_text, status, progress, checkpoint_version, checkpoint_json, lease_owner, lease_expires_at, created_at, updated_at FROM devpilot_runs";
+  const select = "SELECT id, workspace_id, user_id, repository, base_branch, task_text, status, progress, worker_attempt_count, checkpoint_version, checkpoint_json, lease_owner, lease_expires_at, created_at, updated_at FROM devpilot_runs";
   const restore = (row: {
     id: string; workspace_id: string; user_id: string; repository: string; base_branch: string; task_text: string;
-    status: string; progress: number; checkpoint_version: number; checkpoint_json: string;
+    status: string; progress: number; worker_attempt_count: number; checkpoint_version: number; checkpoint_json: string;
     lease_owner: string | null; lease_expires_at: string | null; created_at: string; updated_at: string;
   }) => {
     if (!STATUSES.has(row.status as DevPilotRunStatus) || !Number.isInteger(row.progress) ||
-      row.progress < 0 || row.progress > 100 || !Number.isInteger(row.checkpoint_version) || row.checkpoint_version < 0) {
+      row.progress < 0 || row.progress > 100 || !Number.isInteger(row.worker_attempt_count) || row.worker_attempt_count < 0 || row.worker_attempt_count > 2 || !Number.isInteger(row.checkpoint_version) || row.checkpoint_version < 0) {
       throw new Error("Stored DevPilot run metadata is invalid.");
     }
     return {
       id: row.id, workspaceId: row.workspace_id, userId: row.user_id, repository: row.repository,
       baseBranch: row.base_branch, task: row.task_text, status: row.status as DevPilotRunStatus,
-      progress: row.progress, checkpointVersion: row.checkpoint_version, checkpoint: parseJson(row.checkpoint_json),
+      progress: row.progress, workerAttemptCount: row.worker_attempt_count, checkpointVersion: row.checkpoint_version, checkpoint: parseJson(row.checkpoint_json),
       leaseOwner: row.lease_owner, leaseExpiresAt: row.lease_expires_at, createdAt: row.created_at, updatedAt: row.updated_at,
     };
   };
@@ -74,16 +74,16 @@ export function createDevPilotRunStore(database: D1Database) {
     },
     claim: async (input: { id: string; workspaceId: string; userId: string; owner: string; now: string; leaseUntil: string }) => {
       if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.userId) || !ID.test(input.owner) ||
-        !iso(input.now) || !iso(input.leaseUntil) || Date.parse(input.leaseUntil) <= Date.parse(input.now)) throw new Error("Invalid DevPilot lease claim.");
+        !iso(input.now) || !iso(input.leaseUntil) || Date.parse(input.leaseUntil) <= Date.parse(input.now) || Date.parse(input.leaseUntil) - Date.parse(input.now) > 120_000) throw new Error("Invalid DevPilot lease claim.");
       const result = await database.prepare(
-        "UPDATE devpilot_runs SET status = 'running', lease_owner = ?, lease_expires_at = ?, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND (status = 'queued' OR (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?))"
+        "UPDATE devpilot_runs SET status = 'running', lease_owner = ?, lease_expires_at = ?, worker_attempt_count = worker_attempt_count + 1, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND worker_attempt_count < 2 AND (status = 'queued' OR (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?))"
       ).bind(input.owner, input.leaseUntil, input.now, input.id, input.workspaceId, input.userId, input.now).run();
       if (result.success === false) throw new Error("D1 DevPilot lease claim failed.");
       return result.meta?.changes === 1;
     },
     heartbeat: async (input: { id: string; workspaceId: string; userId: string; owner: string; now: string; leaseUntil: string }) => {
       if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.userId) || !ID.test(input.owner) ||
-        !iso(input.now) || !iso(input.leaseUntil) || Date.parse(input.leaseUntil) <= Date.parse(input.now)) throw new Error("Invalid DevPilot heartbeat.");
+        !iso(input.now) || !iso(input.leaseUntil) || Date.parse(input.leaseUntil) <= Date.parse(input.now) || Date.parse(input.leaseUntil) - Date.parse(input.now) > 120_000) throw new Error("Invalid DevPilot heartbeat.");
       const result = await database.prepare(
         "UPDATE devpilot_runs SET lease_expires_at = ?, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND status = 'running' AND lease_owner = ? AND lease_expires_at > ?"
       ).bind(input.leaseUntil, input.now, input.id, input.workspaceId, input.userId, input.owner, input.now).run();
@@ -127,6 +127,14 @@ export function createDevPilotRunStore(database: D1Database) {
       if (result.success === false) throw new Error("D1 DevPilot run completion failed.");
       return result.meta?.changes === 1;
     },
+    recoverExpired: async (input: { now: string }) => {
+      if (!iso(input.now)) throw new Error("Invalid DevPilot lease recovery timestamp.");
+      const result = await database.prepare(
+        "UPDATE devpilot_runs SET status = 'failed', checkpoint_json = json_remove(checkpoint_json, '$.data.proposalFiles'), checkpoint_version = checkpoint_version + 1, lease_owner = NULL, lease_expires_at = NULL, updated_at = ? WHERE status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= ? AND worker_attempt_count >= 2"
+      ).bind(input.now, input.now).run();
+      if (result.success === false) throw new Error("D1 expired DevPilot lease recovery failed.");
+      return result.meta?.changes ?? 0;
+    },
     blockAwaitingApproval: async (input: { id: string; workspaceId: string; userId: string; now: string }) => {
       if (!ID.test(input.id) || !ID.test(input.workspaceId) || !ID.test(input.userId) || !iso(input.now)) {
         throw new Error("Invalid DevPilot approval failure transition.");
@@ -146,7 +154,7 @@ export function createDevPilotRunStore(database: D1Database) {
         throw new Error("Invalid DevPilot approval resume.");
       }
       const result = await database.prepare(
-        "UPDATE devpilot_runs SET status = 'queued', checkpoint_json = json_remove(checkpoint_json, '$.data.proposalFiles'), checkpoint_version = checkpoint_version + 1, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND repository = ? AND status = 'awaiting_approval' AND EXISTS (SELECT 1 FROM devpilot_approvals a WHERE a.id = ? AND a.workspace_id = devpilot_runs.workspace_id AND a.user_id = devpilot_runs.user_id AND a.task_id = devpilot_runs.id AND a.repository = devpilot_runs.repository AND a.payload_hash = ? AND a.status = 'approved' AND a.decided_by_user_id IS NOT NULL AND a.decided_at IS NOT NULL AND a.expires_at > ?)"
+        "UPDATE devpilot_runs SET status = 'queued', worker_attempt_count = 0, checkpoint_json = json_remove(checkpoint_json, '$.data.proposalFiles'), checkpoint_version = checkpoint_version + 1, updated_at = ? WHERE id = ? AND workspace_id = ? AND user_id = ? AND repository = ? AND status = 'awaiting_approval' AND EXISTS (SELECT 1 FROM devpilot_approvals a WHERE a.id = ? AND a.workspace_id = devpilot_runs.workspace_id AND a.user_id = devpilot_runs.user_id AND a.task_id = devpilot_runs.id AND a.repository = devpilot_runs.repository AND a.payload_hash = ? AND a.status = 'approved' AND a.decided_by_user_id IS NOT NULL AND a.decided_at IS NOT NULL AND a.expires_at > ?)"
       ).bind(input.now, input.id, input.workspaceId, input.userId, input.repository, input.approvalId, input.payloadHash, input.now).run();
       if (result.success === false) throw new Error("D1 DevPilot approved resume failed.");
       return result.meta?.changes === 1;
