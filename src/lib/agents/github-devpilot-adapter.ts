@@ -315,6 +315,23 @@ export function createGitHubDevPilotAdapter(
       if (!Number.isInteger(input.timeoutMs) || input.timeoutMs < 1_000 || input.timeoutMs > 300_000) throw new Error("DevPilot validation timeout is invalid.");
       if (!activeBranch) throw new Error("DevPilot validation branch is not initialized.");
       const workflowPath = encodeURIComponent(workflow);
+      let workflowInfo: { path: string; state: string };
+      try {
+        workflowInfo = await api<{ path: string; state: string }>(
+          "GET",
+          `/repos/${repository}/actions/workflows/${workflowPath}`,
+          undefined,
+          input.signal,
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("HTTP 404")) {
+          throw new Error("DevPilot validation workflow is not available on the repository default branch. Merge the reviewed Group 06 workflow before enabling DevPilot.");
+        }
+        throw error;
+      }
+      if (workflowInfo.path !== `.github/workflows/${workflow}` || workflowInfo.state !== "active") {
+        throw new Error("DevPilot validation workflow is not active on the repository default branch.");
+      }
       const branchRef = await getRef(activeBranch, input.signal);
       assertSha(branchRef.object.sha);
       const expectedHeadSha = branchRef.object.sha;
