@@ -89,6 +89,7 @@ describe("DevPilot durable approval store", () => {
     expect(pending[0]?.proposalFiles[0]?.path).toBe("src/app.ts");
     expect(mock.calls[0]?.sql).toContain("wm.role IN ('owner', 'admin')");
     expect(mock.calls[0]?.sql).toContain("a.status = 'pending'");
+    expect(mock.calls[0]?.sql).toContain("JOIN devpilot_runs r");
   });
 
   it("rejects malformed approval metadata before any database write", async () => {
