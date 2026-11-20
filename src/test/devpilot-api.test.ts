@@ -104,6 +104,20 @@ describe("authenticated DevPilot run API", () => {
     expect(response.status).toBe(403);
   });
 
+  it("applies the shared per-user rate limiter before inserting a run", async () => {
+    const state = database();
+    const response = await handleDevPilotRunRequest(new Request(url, {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://liza.example", "Content-Type": "application/json" },
+      body: JSON.stringify({ task: "Add a utility", repository: "owner/repo" }),
+    }), {
+      ...env(state.db),
+      CHAT_RATE_LIMITER: { limit: async () => ({ success: false }) },
+    });
+    expect(response.status).toBe(429);
+    expect(state.queries.some((query) => query.startsWith("INSERT INTO devpilot_runs"))).toBe(false);
+  });
+
   it("does not accept task intake while the runtime is disabled", async () => {
     const state = database();
     const response = await handleDevPilotRunRequest(new Request(url, {
