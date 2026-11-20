@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS devpilot_runs (
   task_text TEXT NOT NULL CHECK (length(task_text) BETWEEN 1 AND 4000),
   status TEXT NOT NULL CHECK (status IN ('queued', 'running', 'awaiting_approval', 'completed', 'blocked', 'failed', 'cancelled')),
   progress INTEGER NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
+  worker_attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (worker_attempt_count BETWEEN 0 AND 2),
   checkpoint_version INTEGER NOT NULL DEFAULT 0 CHECK (checkpoint_version >= 0),
   checkpoint_json TEXT NOT NULL DEFAULT '{}',
   lease_owner TEXT,
