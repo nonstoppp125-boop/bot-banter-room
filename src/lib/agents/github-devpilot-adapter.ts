@@ -18,7 +18,7 @@ type ApiTree = { truncated: boolean; tree: Array<{ path: string; type: string; m
 type ApiContent = { type: string; encoding: string; content: string; sha: string; size: number };
 type ApiWorkflowRun = {
   id: number; name: string; status: string; conclusion: string | null;
-  head_branch: string; created_at: string; html_url: string;
+  head_branch: string; head_sha: string; event: string; created_at: string; html_url: string;
 };
 type ApiCompare = { files?: Array<{ filename: string; status: string }> };
 
@@ -225,13 +225,18 @@ export function createGitHubDevPilotAdapter(
       }
       const baseCommit = await api<ApiCommit>("GET", `/repos/${repository}/git/commits/${input.baseSha}`, undefined, input.signal);
       const baseTree = await api<ApiTree>("GET", `/repos/${repository}/git/trees/${baseCommit.commit.tree.sha}?recursive=1`, undefined, input.signal);
-      const baseModes = new Map(baseTree.tree.filter((entry) => entry.type === "blob").map((entry) => [entry.path, entry.mode]));
+      if (baseTree.truncated || baseTree.tree.length > MAX_REPOSITORY_FILES) throw new Error("DevPilot base tree is incomplete; refusing to apply changes.");
+      const baseEntries = new Map(baseTree.tree.filter((entry) => entry.type === "blob").map((entry) => [entry.path, { sha: entry.sha, mode: entry.mode }]));
+      for (const change of input.changes) {
+        const expectedSha = baseEntries.get(change.path)?.sha ?? null;
+        if (change.beforeSha !== expectedSha) throw new Error(`DevPilot proposal SHA does not match the inspected base: ${change.path}`);
+      }
       const blobs = await Promise.all(input.changes.map(async (change) => {
         const result = await api<{ sha: string }>("POST", `/repos/${repository}/git/blobs`, {
           content: change.content,
           encoding: "utf-8",
         }, input.signal);
-        return { path: change.path, mode: baseModes.get(change.path) === "100755" ? "100755" : "100644", type: "blob", sha: result.sha };
+        return { path: change.path, mode: baseEntries.get(change.path)?.mode === "100755" ? "100755" : "100644", type: "blob", sha: result.sha };
       }));
       const tree = await api<{ sha: string }>("POST", `/repos/${repository}/git/trees`, {
         base_tree: baseCommit.commit.tree.sha,
@@ -312,6 +317,9 @@ export function createGitHubDevPilotAdapter(
       if (!activeBranch) throw new Error("DevPilot validation branch is not initialized.");
       const startedAt = Date.now();
       const workflowPath = encodeURIComponent(workflow);
+      const branchRef = await getRef(activeBranch, input.signal);
+      assertSha(branchRef.object.sha);
+      const expectedHeadSha = branchRef.object.sha;
       await api("POST", `/repos/${repository}/actions/workflows/${workflowPath}/dispatches`, {
         ref: activeBranch,
         inputs: { command: input.command },
@@ -325,8 +333,8 @@ export function createGitHubDevPilotAdapter(
           input.signal,
         );
         const run = result.workflow_runs.find((candidate) =>
-          candidate.head_branch === activeBranch &&
-          candidate.name === `DevPilot validation: ${input.command}` &&
+          candidate.head_branch === activeBranch && candidate.head_sha === expectedHeadSha &&
+          candidate.event === "workflow_dispatch" && candidate.name === `DevPilot validation: ${input.command}` &&
           Date.parse(candidate.created_at) >= startedAt - 15_000);
         if (run?.status === "completed") {
           const durationMs = Date.now() - startedAt;
