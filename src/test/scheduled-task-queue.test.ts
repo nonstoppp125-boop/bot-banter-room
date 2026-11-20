@@ -34,6 +34,7 @@ describe("Cloudflare scheduled Group 06 task queue handler", () => {
 
   it("fails closed for DevPilot execution when the required rate limiter is missing", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(processD1TaskQueue).mockResolvedValueOnce({ recovered: 0, claimed: false });
     const env = {
       ACTION_DB: fakeDatabase() as never,
       DEVPILOT_ENABLED: "true",
