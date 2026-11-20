@@ -40,7 +40,8 @@ function database(row: ApprovalRow | null = approvedRow) {
             calls.push({ sql, values });
             return {
               async run() { return { success: true, meta: { changes: 1 } }; },
-              async first<T>() { return row as T | null; },\n              async all<T>() { return { success: true, results: row ? [row as T] : [] }; },
+              async first<T>() { return row as T | null; },
+              async all<T>() { return { success: true, results: row ? [row as T] : [] }; },
             };
           },
         };
